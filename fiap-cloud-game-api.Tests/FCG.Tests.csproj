@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\fiap-cloud-game-api.AppHost\fiap-cloud-game-api.AppHost.csproj" />
+    <ProjectReference Include="..\fiap-cloud-game-api.AppHost\FCG.Host.csproj" />
   </ItemGroup>
 
   <ItemGroup>
