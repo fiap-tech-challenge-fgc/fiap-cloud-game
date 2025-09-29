@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\fiap-cloud-game-api.ApiService\FCG.Api.csproj" />
-    <ProjectReference Include="..\fiap-cloud-game-api.Web\fiap-cloud-game-api.Web.csproj" />
+    <ProjectReference Include="..\fiap-cloud-game-api.Web\FCG.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

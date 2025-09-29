@@ -8,7 +8,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FCG.Infrastructure", "fiap-
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FCG.Api", "fiap-cloud-game-api.ApiService\FCG.Api.csproj", "{B1401983-D974-426D-A863-D6B83687459C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "fiap-cloud-game-api.Web", "fiap-cloud-game-api.Web\fiap-cloud-game-api.Web.csproj", "{8BE94B5A-8AF1-4C3B-A11E-AAF944B67F1D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FCG.Application", "fiap-cloud-game-api.Web\FCG.Application.csproj", "{8BE94B5A-8AF1-4C3B-A11E-AAF944B67F1D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FCG.Tests", "fiap-cloud-game-api.Tests\FCG.Tests.csproj", "{7DF70E76-CA20-43F4-86B1-E3A0EC17CDA4}"
 EndProject
