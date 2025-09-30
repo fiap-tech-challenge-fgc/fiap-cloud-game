@@ -1,4 +1,4 @@
-﻿# fiap-cloud-game-proj
+# fiap-cloud-game
 
 ## Tecnologia: Aspire
 ## DB: Postgres
@@ -19,4 +19,3 @@
 ├── Identity  
 └── Migrations  
 /FCG.Tests
-
