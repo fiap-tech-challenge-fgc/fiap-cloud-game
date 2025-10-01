@@ -2,6 +2,9 @@
 
 ## Tecnologia: Aspire
 ## DB: Postgres
+## Arquitetura: Clean Architecture
+## Requisitos:
+	1: [Docker](https://docs.docker.com/desktop/setup/install/windows-install/)
 
 ## Estrutura base proposta
 /FCG.Host  
