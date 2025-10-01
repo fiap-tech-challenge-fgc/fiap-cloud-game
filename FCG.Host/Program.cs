@@ -1,12 +1,12 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var postgres = builder.AddPostgres("DefaultPostgres")
+var postgres = builder.AddPostgres("Postgres")
     .WithDataVolume("pgData");
 
-var apiService = builder.AddProject<Projects.fiap_cloud_game_api_ApiService>("apiservice")
+var apiService = builder.AddProject<Projects.FCG_Api>("Api")
     .WithReference(postgres);
 
-// builder.AddProject<Projects.fiap_cloud_game_api_Web>("webfrontend")
+// builder.AddProject<Projects.fiap_cloud_game_api_Web>("Application")
 //     .WithExternalHttpEndpoints()
 //     .WithReference(apiService);
 

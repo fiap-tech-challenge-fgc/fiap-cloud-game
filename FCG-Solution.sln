@@ -1,16 +1,24 @@
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.34916.146
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "fiap-cloud-game-api.AppHost", "fiap-cloud-game-api.AppHost\fiap-cloud-game-api.AppHost.csproj", "{A8203E15-58FD-494E-8923-9CE7E01BF1C8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FCG.Host", "FCG.Host\FCG.Host.csproj", "{A8203E15-58FD-494E-8923-9CE7E01BF1C8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "fiap-cloud-game-api.ServiceDefaults", "fiap-cloud-game-api.ServiceDefaults\fiap-cloud-game-api.ServiceDefaults.csproj", "{1E1B2491-7C6F-42D2-A24E-370F07C403D3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FCG.Infrastructure", "FCG.Infrastructure\FCG.Infrastructure.csproj", "{1E1B2491-7C6F-42D2-A24E-370F07C403D3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "fiap-cloud-game-api.ApiService", "fiap-cloud-game-api.ApiService\fiap-cloud-game-api.ApiService.csproj", "{B1401983-D974-426D-A863-D6B83687459C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FCG.Api", "FCG.Api\FCG.Api.csproj", "{B1401983-D974-426D-A863-D6B83687459C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "fiap-cloud-game-api.Web", "fiap-cloud-game-api.Web\fiap-cloud-game-api.Web.csproj", "{8BE94B5A-8AF1-4C3B-A11E-AAF944B67F1D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FCG.Application", "FCG.Application\FCG.Application.csproj", "{8BE94B5A-8AF1-4C3B-A11E-AAF944B67F1D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "fiap-cloud-game-api.Tests", "fiap-cloud-game-api.Tests\fiap-cloud-game-api.Tests.csproj", "{7DF70E76-CA20-43F4-86B1-E3A0EC17CDA4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FCG.Tests", "FCG.Tests\FCG.Tests.csproj", "{7DF70E76-CA20-43F4-86B1-E3A0EC17CDA4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FCG.Domain", "FCG.Domain\FCG.Domain.csproj", "{277CE547-2B7B-4097-83E2-681F9DFF8634}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Itens de Solução", "Itens de Solução", "{380A7511-A354-6D7A-0CC0-8FA1F1BA7B6C}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,6 +46,10 @@ Global
 		{7DF70E76-CA20-43F4-86B1-E3A0EC17CDA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7DF70E76-CA20-43F4-86B1-E3A0EC17CDA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7DF70E76-CA20-43F4-86B1-E3A0EC17CDA4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{277CE547-2B7B-4097-83E2-681F9DFF8634}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{277CE547-2B7B-4097-83E2-681F9DFF8634}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{277CE547-2B7B-4097-83E2-681F9DFF8634}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{277CE547-2B7B-4097-83E2-681F9DFF8634}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

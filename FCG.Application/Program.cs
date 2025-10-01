@@ -1,5 +1,5 @@
-using fiap_cloud_game_api.Web;
-using fiap_cloud_game_api.Web.Components;
+using FCG.Application.Components;
+using FCG.Application;
 
 var builder = WebApplication.CreateBuilder(args);
 

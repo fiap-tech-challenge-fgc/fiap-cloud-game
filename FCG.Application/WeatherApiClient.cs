@@ -1,4 +1,4 @@
-namespace fiap_cloud_game_api.Web;
+namespace FCG.Application;
 
 public class WeatherApiClient(HttpClient httpClient)
 {
