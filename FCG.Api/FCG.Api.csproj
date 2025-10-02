@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FCG.Infrastructure\FCG.Infrastructure.csproj" />
   </ItemGroup>
 
