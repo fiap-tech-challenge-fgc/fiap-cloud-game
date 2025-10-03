@@ -12,8 +12,7 @@ public static class ConfigureIdentityExtensions
 {
     public static void AddIdentity(this WebApplicationBuilder builder)
     {
-
-        var connectionString = "Host=localhost;Port=5432;Username=postgres;Password=postgres;Database=DbFCG;Trust Server Certificate=true";
+        var connectionString = builder.Configuration.GetConnectionString("DbFcg") ;
 
         builder.Services.AddDbContext<AppIdentityDbContext>(options =>
             options.UseNpgsql(connectionString));

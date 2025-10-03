@@ -9,7 +9,7 @@ public static class ConfigureDatabaseExtensions
 {
     public static void AddDatabase(this IHostApplicationBuilder builder)
     {        
-        var connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
+        var connectionString = builder.Configuration.GetConnectionString("DbFcg");
 
         builder.Services.AddDbContext<FcgDbContext>(options =>
             options.UseNpgsql(connectionString));

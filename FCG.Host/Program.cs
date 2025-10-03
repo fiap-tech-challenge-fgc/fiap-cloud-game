@@ -1,20 +1,15 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-#if DEBUG
-    var postgres = builder.AddPostgres("Postgres")
-        .WithDataVolume("pgData")
-        .WithEnvironment("POSTGRES_HOST_AUTH_METHOD", "trust") 
-        .WithEnvironment("POSTGRES_PASSWORD", "postgres")
-        .WithEnvironment("POSTGRES_USER", "postgres")
-        .WithEnvironment("POSTGRES_DB", "MeuBanco");
+var postgres = builder.AddPostgres("mainpostgres")
+    .WithEnvironment("POSTGRES_DB", "maindb")
+    .WithPgAdmin();
+
+var postgresDb = postgres.AddDatabase("DbFcg");
+
 
 builder.AddProject<Projects.FCG_Api>("Api")
-    .WithReference(postgres);
-#else
-    var postgres = builder.AddPostgres("Postgres")
-        .WithDataVolume("pgData");
-#endif
-
+    .WithReference(postgres)
+    .WaitFor(postgres);
 
 builder.AddProject<Projects.FCG_Blazor>("Blazor");
 

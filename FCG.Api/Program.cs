@@ -1,4 +1,6 @@
-﻿using FCG.Infrastructure.Extensions;
+﻿using FCG.Infrastructure.Data;
+using FCG.Infrastructure.Extensions;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,4 +31,10 @@ app.UseExceptionHandler();
 
 app.MapDefaultEndpoints();
 
-app.Run();
+using (var scope = app.Services.CreateScope())
+{
+  var dbContext = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
+  await dbContext.Database.MigrateAsync();
+}
+
+await app.RunAsync();

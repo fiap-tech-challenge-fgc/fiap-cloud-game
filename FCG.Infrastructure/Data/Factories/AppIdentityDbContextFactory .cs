@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
@@ -18,7 +19,7 @@ public class AppIdentityDbContextFactory : IDesignTimeDbContextFactory<AppIdenti
             .AddJsonFile($"appsettings.{environment}.json", optional: true)
             .Build();
 
-        var connectionString = configuration.GetConnectionString("PostgresConnection");
+        var connectionString = configuration.GetConnectionString("DbFcg");
 
         var optionsBuilder = new DbContextOptionsBuilder<AppIdentityDbContext>();
         optionsBuilder.UseNpgsql(connectionString);

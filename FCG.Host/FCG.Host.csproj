@@ -13,8 +13,8 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="9.2.1" />
-    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.2.1" />
-    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.2.0" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="8.2.2" />
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.2.2" />
     <PackageReference Include="KubernetesClient" Version="17.0.14" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.9">
       <PrivateAssets>all</PrivateAssets>
@@ -29,9 +29,7 @@
   </ItemGroup>
 
   <Target Name="CopyInfrastructureDll" AfterTargets="Build">
-    <Copy SourceFiles="..\FCG.Infrastructure\bin\$(Configuration)\net8.0\FCG.Infrastructure.dll"
-  		  DestinationFolder="$(OutputPath)"
-  		  SkipUnchangedFiles="true" />
+    <Copy SourceFiles="..\FCG.Infrastructure\bin\$(Configuration)\net8.0\FCG.Infrastructure.dll" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
   </Target>
 
 
