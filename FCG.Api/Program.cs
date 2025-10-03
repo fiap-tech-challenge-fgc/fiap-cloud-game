@@ -31,10 +31,10 @@ app.UseExceptionHandler();
 
 app.MapDefaultEndpoints();
 
-using (var scope = app.Services.CreateScope())
-{
-  var dbContext = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
-  await dbContext.Database.MigrateAsync();
-}
+// using (var scope = app.Services.CreateScope())
+// {
+//   var dbContext = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
+//   await dbContext.Database.MigrateAsync();
+// }
 
 await app.RunAsync();
