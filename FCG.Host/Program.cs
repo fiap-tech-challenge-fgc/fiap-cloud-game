@@ -1,15 +1,14 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var postgres = builder.AddPostgres("mainpostgres")
-    .WithEnvironment("POSTGRES_DB", "maindb")
-    .WithPgAdmin();
 
-var postgresDb = postgres.AddDatabase("DbFcg");
+var postgres = builder.AddPostgres("postgres")
+    .WithDataVolume("FCG-Data");
 
+var db = postgres.AddDatabase("DbFcg");
 
 builder.AddProject<Projects.FCG_Api>("Api")
-    .WithReference(postgres)
-    .WaitFor(postgres);
+    .WithReference(db)
+    .WaitFor(db);
 
 builder.AddProject<Projects.FCG_Blazor>("Blazor");
 
