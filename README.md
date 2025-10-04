@@ -22,3 +22,8 @@
 ├── Identity  
 └── Migrations  
 /FCG.Tests
+
+## Identity
+### Roles
+	- Admin
+	- User

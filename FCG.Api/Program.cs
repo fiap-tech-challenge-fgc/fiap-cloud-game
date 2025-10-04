@@ -1,6 +1,5 @@
-﻿using FCG.Infrastructure.Data;
-using FCG.Infrastructure.Extensions;
-using Microsoft.EntityFrameworkCore;
+﻿using FCG.Infrastructure.Extensions;
+using FCG.Infrastructure.Seeds;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,10 +30,20 @@ app.UseExceptionHandler();
 
 app.MapDefaultEndpoints();
 
+#region Migrations
 // using (var scope = app.Services.CreateScope())
 // {
 //   var dbContext = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
 //   await dbContext.Database.MigrateAsync();
 // }
+
+//using (var scope = app.Services.CreateScope())
+//{
+//    var services = scope.ServiceProvider;
+//    await services.SeedAppIdentityAsync();
+//}
+#endregion
+
+
 
 await app.RunAsync();

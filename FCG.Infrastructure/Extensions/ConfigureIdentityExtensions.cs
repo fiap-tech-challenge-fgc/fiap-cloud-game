@@ -20,7 +20,12 @@ public static class ConfigureIdentityExtensions
         builder.Services.AddIdentity<AppUserIdentity, IdentityRole<Guid>>(options =>
         {
             options.Password.RequireDigit = true;
-            options.Password.RequiredLength = 6;
+            options.Password.RequiredLength = 8;
+            options.Password.RequireNonAlphanumeric = true;
+            options.Password.RequireUppercase = true;
+            options.Password.RequireLowercase = true;
+            options.Password.RequiredUniqueChars = 1;
+
         })
         .AddEntityFrameworkStores<AppIdentityDbContext>()
         .AddDefaultTokenProviders();

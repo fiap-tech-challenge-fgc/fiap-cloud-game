@@ -4,7 +4,7 @@ namespace FCG.Domain.Entities;
 
 public class Game
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     [Required(ErrorMessage = "O nome do jogo é obrigatório.")]
     [StringLength(25, ErrorMessage = "O nome não pode ter mais de 50 caracteres.")]
@@ -17,8 +17,7 @@ public class Game
     public decimal? Price { get; set; }
 
     [Required(ErrorMessage = "O gênero do jogo é obrigatório.")]
-    [StringLength(50, ErrorMessage = "O gênero não pode ter mais de 30 caracteres.")]
-    
+    [StringLength(50, ErrorMessage = "O gênero não pode ter mais de 30 caracteres.")]    
     public string? Genre { get; set; }
 
     public Game()
