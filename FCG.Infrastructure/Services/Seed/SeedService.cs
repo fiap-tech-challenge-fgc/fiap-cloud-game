@@ -144,8 +144,8 @@ public class SeedService : ISeedService
                 FirstName = "João",
                 LastName = "Carlos Silva de Souza",
                 DisplayName = "João C.",
-                UserName = "m367929",
-                Email = "m367929@fiap.com.br"
+                UserName = "rm367929",
+                Email = "rm367929@fiap.com.br"
             }
         };
     }
