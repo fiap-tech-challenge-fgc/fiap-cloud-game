@@ -17,6 +17,4 @@ await app.ApplyMigrationsAsync();
 
 app.MapDefaultEndpoints();
 
-
-
 await app.RunAsync();

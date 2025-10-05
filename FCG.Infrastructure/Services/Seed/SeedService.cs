@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Net;
 
 namespace FCG.Infrastructure.Services.Seed;
 
@@ -43,52 +42,45 @@ public class SeedService : ISeedService
                 }
             }
 
-            var adminDatas = new[]
-            {
-                "admin|admin|admin@fiap.com.br",
-                "Marcelo Mendes Oliveira|Marcelo M.|rm367563@fiap.com.br",
-                "Miguel de Oliveira Gonçalves|Miguel O.|rm367985@fiap.com.br",
-                "Jhonatan Brayan|Jhonatan B.|rm366874@fiap.com.br",
-                "Matias José dos Santos Neto|Matias J.|matiasjsneto@gmail.com",
-                "João Carlos Silva de Souza|João C.|jocasiso@gmail.com"
-            };
+            var adminDatas = GetPreconfiguredUsers().ToList();
 
             foreach (var adminData in adminDatas)
             {
                 if (cancellationToken.IsCancellationRequested) return;
 
-                if (adminData.Split('|').Length != 3)
-                {
-                    continue;
-                }
+                var user = await userManager.FindByEmailAsync(adminData.Email!);
 
-                string userName = adminData.Split('|')[0];
-                string displayName = adminData.Split('|')[1];
-                string email = adminData.Split('|')[2];
-
-                var user = await userManager.FindByEmailAsync(email);
                 if (user == null)
                 {
-                    var newUser = new AppUserIdentity
-                    {
-                        UserName = userName,
-                        DisplayName = displayName,
-                        Email = email,
-                        EmailConfirmed = true
-                    };
 
                     // Atenção: garanta que a senha atende às políticas de IdentityOptions
-                    var result = await userManager.CreateAsync(newUser, "SenhaForte@123");
+                    var result = await userManager.CreateAsync(adminData, "SenhaForte@123");
 
                     if (result.Succeeded)
                     {
-                        var addRoleResult = await userManager.AddToRoleAsync(newUser, "Admin");
+                        var addRoleResult = await userManager.AddToRoleAsync(adminData, "Admin");
                         if (!addRoleResult.Succeeded)
                             _logger.LogWarning("Falha ao adicionar usuário {Email} ao role Admin: {Errors}", adminData, string.Join(", ", addRoleResult.Errors.Select(e => e.Description)));
                     }
                     else
                     {
                         _logger.LogWarning("Falha ao criar usuário {Email}: {Errors}", adminData, string.Join(", ", result.Errors.Select(e => e.Description)));
+                    }
+                }
+                else
+                {
+                    user.FirstName = adminData.FirstName;
+                    user.LastName = adminData.LastName;
+                    user.UserName = adminData.UserName;
+                    user.DisplayName = adminData.DisplayName;
+                    user.Email = adminData.Email;
+                    user.EmailConfirmed = true;
+
+                    var result = await userManager.UpdateAsync(user);
+
+                    if (!result.Succeeded)
+                    {
+                        _logger.LogWarning("Falha ao atualizar o usuário {Email}: {Errors}", adminData, string.Join(", ", result.Errors.Select(e => e.Description)));
                     }
                 }
             }
@@ -100,5 +92,61 @@ public class SeedService : ISeedService
             _logger.LogError(ex, "Erro durante execução do seed de identidade");
             throw;
         }
+    }
+
+
+    private List<AppUserIdentity> GetPreconfiguredUsers()
+    {
+        return new List<AppUserIdentity>
+        {
+            new AppUserIdentity
+            {
+                FirstName = "Admin",
+                LastName = "Fiap Cloud Games",
+                DisplayName = "Admin FCG",
+                UserName = "Admin",
+                Email = "admin@fiap.com.br"
+            },
+            new AppUserIdentity
+            {
+                FirstName = "Marcelo",
+                LastName = "Mendes Oliveira",
+                DisplayName = "Marcelo M.",
+                UserName = "rm367563",
+                Email = "rm367563@fiap.com.br"
+            },
+            new AppUserIdentity
+            {
+                FirstName = "Miguel",
+                LastName = "de Oliveira Gonçalves",
+                DisplayName = "Miguel O.",
+                UserName = "rm367985",
+                Email = "rm367985@fiap.com.br"
+            },
+            new AppUserIdentity
+            {
+                FirstName = "Jhonatan",
+                LastName = "Brayan",
+                DisplayName = "Jhonatan B.",
+                UserName = "rm366874",
+                Email = "rm366874@fiap.com.br"
+            },
+            new AppUserIdentity
+            {
+                FirstName = "Matias",
+                LastName = "José dos Santos Neto",
+                DisplayName = "Matias J.",
+                UserName = "rm368795",
+                Email = "rm368795@fiap.com.br"
+            },
+            new AppUserIdentity
+            {
+                FirstName = "João",
+                LastName = "Carlos Silva de Souza",
+                DisplayName = "João C.",
+                UserName = "m367929",
+                Email = "m367929@fiap.com.br"
+            }
+        };
     }
 }
