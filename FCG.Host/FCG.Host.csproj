@@ -25,7 +25,9 @@
   <ItemGroup>
     <ProjectReference Include="..\FCG.Api\FCG.Api.csproj" />
     <ProjectReference Include="..\FCG.Blazor\FCG.Blazor.csproj" />
-    <ProjectReference Include="..\FCG.Infrastructure\FCG.Infrastructure.csproj" />
+	<ProjectReference Include="..\FCG.Infrastructure\FCG.Infrastructure.csproj">
+		<IsAspireProjectResource>false</IsAspireProjectResource>
+	</ProjectReference>	  
   </ItemGroup>
 
   <Target Name="CopyInfrastructureDll" AfterTargets="Build">

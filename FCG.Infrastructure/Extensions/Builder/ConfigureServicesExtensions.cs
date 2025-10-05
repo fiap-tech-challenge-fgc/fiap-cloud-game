@@ -1,3 +1,5 @@
+using FCG.Infrastructure.Initializer;
+using FCG.Infrastructure.Services.Seed;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,7 +10,7 @@ using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
-namespace FCG.Infrastructure.Extensions;
+namespace FCG.Infrastructure.Extensions.Builder;
 
 // Adds common .NET Aspire services: service discovery, resilience, health checks, and OpenTelemetry.
 // This project should be referenced by each service project in your solution.
@@ -33,6 +35,25 @@ public static class ConfigureServicesExtensions
             // Turn on service discovery by default
             http.AddServiceDiscovery();
         });
+
+        return builder;
+    }
+
+    public static IHostApplicationBuilder AddInfrastructure(this IHostApplicationBuilder builder)
+    {
+        builder.AddServiceDefaults();
+
+        builder.AddDatabase();
+        builder.AddIdentity();
+
+        // register infra services, repositories, seed service and initializer
+        // Exemplo: services.AddScoped<IRoleRepository, RoleRepository>();
+        // Ajuste de acordo com implementações reais
+        // builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+
+        // registrar seed service e initializer
+        builder.Services.AddScoped<ISeedService, SeedService>();
+        builder.Services.AddScoped<IInfrastructureInitializer, InfrastructureInitializer>();
 
         return builder;
     }

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using FCG.Blazor.Components;
 using FCG.Blazor.Components.Account;
 using FCG.Blazor.Data;
-using FCG.Infrastructure.Extensions;
+using FCG.Infrastructure.Extensions.Builder;
 
 var builder = WebApplication.CreateBuilder(args);
 

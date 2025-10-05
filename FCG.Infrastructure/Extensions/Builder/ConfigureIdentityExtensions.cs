@@ -1,18 +1,19 @@
-﻿using FCG.Infrastructure.Data;
+﻿// FCG.Infrastructure/Extensions/Builder/ConfigureIdentityExtensions.cs
+using FCG.Infrastructure.Data;
 using FCG.Infrastructure.Identity;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-namespace FCG.Infrastructure.Extensions;
+namespace FCG.Infrastructure.Extensions.Builder;
 
 public static class ConfigureIdentityExtensions
 {
-    public static void AddIdentity(this WebApplicationBuilder builder)
+    public static IHostApplicationBuilder AddIdentity(this IHostApplicationBuilder builder)
     {
-        var connectionString = builder.Configuration.GetConnectionString("DbFcg") ;
+        var connectionString = builder.Configuration.GetConnectionString("DbFcg");
 
         builder.Services.AddDbContext<AppIdentityDbContext>(options =>
             options.UseNpgsql(connectionString));
@@ -25,10 +26,10 @@ public static class ConfigureIdentityExtensions
             options.Password.RequireUppercase = true;
             options.Password.RequireLowercase = true;
             options.Password.RequiredUniqueChars = 1;
-
         })
         .AddEntityFrameworkStores<AppIdentityDbContext>()
         .AddDefaultTokenProviders();
+
+        return builder;
     }
 }
-

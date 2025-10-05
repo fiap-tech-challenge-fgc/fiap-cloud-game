@@ -33,7 +33,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FCG.Application\FCG.Application.csproj" />
-    <ProjectReference Include="..\FCG.Domain\FCG.Domain.csproj" />
   </ItemGroup>
 
 </Project>
