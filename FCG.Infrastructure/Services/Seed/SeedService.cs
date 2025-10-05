@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Net;
 
 namespace FCG.Infrastructure.Services.Seed;
 
@@ -42,25 +43,36 @@ public class SeedService : ISeedService
                 }
             }
 
-            var adminEmails = new[]
+            var adminDatas = new[]
             {
-                "admin@fiap.com.br",
-                "rm367563@fiap.com.br",
-                "rm367985@fiap.com.br",
-                "rm366874@fiap.com.br"
+                "admin|admin|admin@fiap.com.br",
+                "Marcelo Mendes Oliveira|Marcelo M.|rm367563@fiap.com.br",
+                "Miguel de Oliveira Gonçalves|Miguel O.|rm367985@fiap.com.br",
+                "Jhonatan Brayan|Jhonatan B.|rm366874@fiap.com.br",
+                "Matias José dos Santos Neto|Matias J.|matiasjsneto@gmail.com",
+                "João Carlos Silva de Souza|João C.|jocasiso@gmail.com"
             };
 
-            foreach (var email in adminEmails)
+            foreach (var adminData in adminDatas)
             {
                 if (cancellationToken.IsCancellationRequested) return;
+
+                if (adminData.Split('|').Length != 3)
+                {
+                    continue;
+                }
+
+                string userName = adminData.Split('|')[0];
+                string displayName = adminData.Split('|')[1];
+                string email = adminData.Split('|')[2];
 
                 var user = await userManager.FindByEmailAsync(email);
                 if (user == null)
                 {
                     var newUser = new AppUserIdentity
                     {
-                        UserName = email,
-                        DisplayName = email.Split("@")[0],
+                        UserName = userName,
+                        DisplayName = displayName,
                         Email = email,
                         EmailConfirmed = true
                     };
@@ -72,11 +84,11 @@ public class SeedService : ISeedService
                     {
                         var addRoleResult = await userManager.AddToRoleAsync(newUser, "Admin");
                         if (!addRoleResult.Succeeded)
-                            _logger.LogWarning("Falha ao adicionar usuário {Email} ao role Admin: {Errors}", email, string.Join(", ", addRoleResult.Errors.Select(e => e.Description)));
+                            _logger.LogWarning("Falha ao adicionar usuário {Email} ao role Admin: {Errors}", adminData, string.Join(", ", addRoleResult.Errors.Select(e => e.Description)));
                     }
                     else
                     {
-                        _logger.LogWarning("Falha ao criar usuário {Email}: {Errors}", email, string.Join(", ", result.Errors.Select(e => e.Description)));
+                        _logger.LogWarning("Falha ao criar usuário {Email}: {Errors}", adminData, string.Join(", ", result.Errors.Select(e => e.Description)));
                     }
                 }
             }
