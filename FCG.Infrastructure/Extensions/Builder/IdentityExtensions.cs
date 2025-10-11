@@ -9,7 +9,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace FCG.Infrastructure.Extensions.Builder;
 
-public static class ConfigureIdentityExtensions
+public static class IdentityExtensions
 {
     public static IHostApplicationBuilder AddIdentity(this IHostApplicationBuilder builder)
     {
