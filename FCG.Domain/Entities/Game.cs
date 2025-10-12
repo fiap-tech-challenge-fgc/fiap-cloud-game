@@ -1,40 +1,36 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace FCG.Domain.Entities;
-
-public class Game
+﻿public class Game
 {
-    public Guid Id { get; set; }
+    public Guid Id { get; private set; }
+    public string Name { get; private set; }
+    public string Genre { get; private set; }
+    public string? Description { get; private set; }
+    public decimal Price { get; private set; }
+    public Promocao Promocao { get; private set; } = Promocao.Nenhuma;
 
-    [Required(ErrorMessage = "O nome do jogo é obrigatório.")]
-    [StringLength(25, ErrorMessage = "O nome não pode ter mais de 50 caracteres.")]
-    public string? Name { get; set; }
-
-    [StringLength(150, ErrorMessage = "A descrição não pode ter mais de 100 caracteres.")]
-    public string? Description { get; set; }
-
-    [Range(minimum: 0.00, maximum: 99999.99, ErrorMessage = "O valor deve constar ente {0} e {1}")]
-    public decimal? Price { get; set; }
-
-    [Required(ErrorMessage = "O gênero do jogo é obrigatório.")]
-    [StringLength(50, ErrorMessage = "O gênero não pode ter mais de 30 caracteres.")]    
-    public string? Genre { get; set; }
-
-    public Game()
-    {
-
-    }
+    private Game() { }
 
     public Game(string name, string genre, string? description, decimal price)
     {
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Nome obrigatório");
+        if (string.IsNullOrWhiteSpace(genre)) throw new ArgumentException("Gênero obrigatório");
+        if (price < 0) throw new ArgumentException("Preço inválido");
+
+        Id = Guid.NewGuid();
         Name = name;
         Genre = genre;
         Description = description;
         Price = price;
     }
 
+    public decimal PrecoFinal => Promocao.AplicarDesconto(Price);
+
+    public void AplicarPromocao(Promocao promocao)
+    {
+        Promocao = promocao ?? Promocao.Nenhuma;
+    }
+
     public string GetDescription()
     {
-        return $"{Name ?? "-"} ({Genre ?? "-"}) - {Price:C}";
+        return $"{Name} ({Genre}) - {PrecoFinal:C}";
     }
 }

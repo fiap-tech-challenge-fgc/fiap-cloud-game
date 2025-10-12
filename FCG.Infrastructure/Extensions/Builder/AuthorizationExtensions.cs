@@ -1,56 +1,29 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 namespace FCG.Infrastructure.Extensions.Builder;
 
-public static class AuthorizationExtensions
+public static class AuthorizationPolicyExtensions
 {
-    public static IHostApplicationBuilder AddAuthorizationJWT(this IHostApplicationBuilder builder)
+    public static IHostApplicationBuilder AddAuthorizationPolicies(this IHostApplicationBuilder builder)
     {
-        var jwtSettings = builder.Configuration.GetSection("Jwt");
-
-        if (string.IsNullOrEmpty(jwtSettings["SecretKey"]))
-            throw new InvalidOperationException("JWT SecretKey não configurado.");
-
-        var secretKey = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!);
-
-        builder.Services.AddAuthentication(options =>
+        builder.Services.AddAuthorization(options =>
         {
-            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options =>
-        {
-            options.RequireHttpsMetadata = false; // true em produção
-            options.SaveToken = true;
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = jwtSettings["Issuer"],
-                ValidAudience = jwtSettings["Audience"],
-                IssuerSigningKey = new SymmetricSecurityKey(secretKey),
-                ClockSkew = TimeSpan.Zero // Remove tolerância de tempo
-            };
+            // Apenas usuários com role "Admin" podem cadastrar jogos
+            options.AddPolicy("AdminOnly", policy =>
+                policy.RequireRole("Admin"));
 
-            // Para Swagger/API testing
-            options.Events = new JwtBearerEvents
-            {
-                OnAuthenticationFailed = context =>
-                {
-                    if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
-                    {
-                        context.Response?.Headers?.Add("Token-Expired", "true");
-                    }
-                    return Task.CompletedTask;
-                }
-            };
+            // Apenas usuários com role "Player" podem adicionar jogos à biblioteca
+            options.AddPolicy("PlayerOnly", policy =>
+                policy.RequireRole("Player"));
+
+            // Qualquer usuário autenticado pode visualizar jogos
+            options.AddPolicy("AuthenticatedUser", policy =>
+                policy.RequireAuthenticatedUser());
+
+            // Exemplo de política baseada em claim personalizada
+            options.AddPolicy("CanManageLibrary", policy =>
+                policy.RequireClaim("Permissao", "GerenciarBiblioteca"));
         });
 
         return builder;

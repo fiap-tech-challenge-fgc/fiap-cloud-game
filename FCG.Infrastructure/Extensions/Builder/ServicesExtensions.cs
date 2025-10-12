@@ -41,10 +41,11 @@ public static class ServicesExtensions
 
     public static IHostApplicationBuilder AddInfrastructure(this IHostApplicationBuilder builder)
     {
-        builder.AddServiceDefaults();
-
         builder.AddDatabase();
         builder.AddIdentity();
+        builder.AddAuthorizationJWT();
+        builder.AddAuthorizationPolicies();
+        builder.AddServiceDefaults();
 
         // register infra services, repositories, seed service and initializer
         // Exemplo: services.AddScoped<IRoleRepository, RoleRepository>();

@@ -16,8 +16,6 @@ app.UseAuthorization();
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
 
-await app.ApplyMigrationsAsync();
-
 app.MapDefaultEndpoints();
 
 await app.RunAsync();
