@@ -58,6 +58,8 @@ public class AuthController : ControllerBase
         var token = await _jwtService.GenerateToken(user);
         var refreshToken = await _jwtService.GenerateRefreshToken(user);
 
+        _logger.LogInformation("Novo usuário cadastrado: {DisplayName}, {Email}", createUserDto.DisplayName, createUserDto.Email);
+
         return Ok(new UserAuthResponseDto
         {
             Token = token,
@@ -158,6 +160,8 @@ public class AuthController : ControllerBase
 
         if (user == null)
             return NotFound(new { message = "Usuário não encontrado" });
+
+        _logger.LogInformation("Usuário logado {DisplayName}", user.DisplayName);
 
         return Ok(new UserInfoDto
         {

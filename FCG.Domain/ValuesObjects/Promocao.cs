@@ -33,7 +33,7 @@ public sealed class Promocao : ValueObject
         return new Promocao(tipo, valor, inicio, fim);
     }
 
-    public bool EstaAtiva(DateTime agora) => Tipo != TipoPromocao.Nenhuma && agora >= Inicio && agora <= Fim;
+    public bool EstaAtiva(DateTime data) => Tipo != TipoPromocao.Nenhuma && data >= Inicio && data <= Fim;
 
     public decimal AplicarDesconto(decimal precoOriginal)
     {
