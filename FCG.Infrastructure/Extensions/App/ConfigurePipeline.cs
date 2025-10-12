@@ -8,7 +8,7 @@ public static class ConfigurePipelineExtensions
     public static async Task<WebApplication> ConfigurePipeline(this WebApplication app)
     {
         app.UseExceptionHandler();
-        // await app.ApplyMigrationsAsync();
+        await app.ApplyMigrationsAsync();
 
         if (app.Environment.IsDevelopment())
         {
