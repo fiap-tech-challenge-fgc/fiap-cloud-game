@@ -15,7 +15,7 @@ builder.AddProject<Projects.FCG_Api>("Api")
     .WithReference(db)
     .WaitFor(db);
 
-builder.AddProject<Projects.FCG_Blazor>("Blazor");
+// builder.AddProject<Projects.FCG_Blazor>("Blazor");
 
 
 // builder.AddProject<Projects.fiap_cloud_game_api_Web>("Application")

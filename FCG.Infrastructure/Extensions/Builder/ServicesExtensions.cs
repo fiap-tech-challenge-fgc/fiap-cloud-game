@@ -49,7 +49,7 @@ public static class ServicesExtensions
 
         // register infra services, repositories, seed service and initializer
         // Exemplo: services.AddScoped<IRoleRepository, RoleRepository>();
-        // Ajuste de acordo com implementações reais
+        // Ajuste de acordo com implementaï¿½ï¿½es reais
         // builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 
         // registrar seed service e initializer

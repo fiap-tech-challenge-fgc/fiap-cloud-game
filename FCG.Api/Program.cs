@@ -8,6 +8,7 @@ builder.AddInfrastructure();
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
+builder.Services.AddSwaggerGen(); // Register Swagger services
 
 var app = builder.Build();
 
@@ -17,13 +18,8 @@ app.UseAuthorization();
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+await app.ConfigurePipeline();
 
-app.MapControllers();
 app.MapDefaultEndpoints();
 
 await app.RunAsync();

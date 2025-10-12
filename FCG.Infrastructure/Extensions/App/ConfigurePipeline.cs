@@ -8,7 +8,7 @@ public static class ConfigurePipelineExtensions
     public static async Task<WebApplication> ConfigurePipeline(this WebApplication app)
     {
         app.UseExceptionHandler();
-        await app.ApplyMigrationsAsync();
+        // await app.ApplyMigrationsAsync();
 
         if (app.Environment.IsDevelopment())
         {
@@ -20,7 +20,6 @@ public static class ConfigurePipelineExtensions
         app.UseAuthentication();
         app.UseAuthorization();
 
-        app.UseRateLimiter();
         app.MapControllers();
 
         return app;
