@@ -1,5 +1,12 @@
+ï»¿using FCG.Api.Dtos;
+using FCG.Api.Dtos.Response;
+using FCG.Infrastructure.Identity;
+using FCG.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 namespace FCG.Api.Controllers;
 
@@ -8,110 +15,157 @@ namespace FCG.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly ILogger<AuthController> _logger;
+    private readonly JwtService _jwtService;
+    private readonly UserManager<AppUserIdentity> _userManager;
+    private readonly SignInManager<AppUserIdentity> _signInManager;
 
-    public AuthController(ILogger<AuthController> logger)
+    public AuthController(
+        ILogger<AuthController> logger,
+        JwtService jwtService,
+        UserManager<AppUserIdentity> userManager,
+        SignInManager<AppUserIdentity> signInManager)
     {
         _logger = logger;
+        _userManager = userManager;
+        _jwtService = jwtService;
+        _signInManager = signInManager;
     }
 
-    /// <summary>
-    /// Realiza o login do usuário
-    /// </summary>
-    /// <param name="request">Credenciais de login</param>
-    /// <returns>Token JWT e informações do usuário</returns>
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] UserCreateDto createUserDto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var user = new AppUserIdentity
+        {
+            UserName = createUserDto.Email,
+            Email = createUserDto.Email,
+            FirstName = createUserDto.FirstName,
+            LastName = createUserDto.LastName
+        };
+
+        var result = await _userManager.CreateAsync(user, createUserDto.Password);
+
+        if (!result.Succeeded)
+            return BadRequest(new { errors = result.Errors });
+
+        // Adicionar role padrÃ£o se quiser
+        // await _userManager.AddToRoleAsync(user, "User");
+
+        var token = await _jwtService.GenerateToken(user);
+        var refreshToken = await _jwtService.GenerateRefreshToken(user);
+
+        return Ok(new UserAuthResponseDto
+        {
+            Token = token,
+            RefreshToken = refreshToken,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(60),
+            User = new UserInfoDto
+            {
+                Id = user.Id,
+                DisplayName = user.DisplayName,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email!
+            }
+        });
+    }
+
     [HttpPost("login")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] UserLoginDto loginDto)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
-        try
-        {
-            // TODO: Injetar e usar o serviço de autenticação da camada Application
-            // Exemplo: var result = await _authService.LoginAsync(request);
-            
-            _logger.LogInformation("Tentativa de login para o usuário: {Email}", request.Email);
+        var user = await _userManager.FindByEmailAsync(loginDto.Email);
 
-            // Implementação temporária - substituir pela chamada ao serviço real
-            return Unauthorized(new { message = "Credenciais inválidas" });
-        }
-        catch (Exception ex)
+        if (user == null || !await _userManager.CheckPasswordAsync(user, loginDto.Password))
+            return Unauthorized(new { message = "Credenciais invÃ¡lidas" });
+
+        var token = await _jwtService.GenerateToken(user);
+        var refreshToken = await _jwtService.GenerateRefreshToken(user);
+
+        _logger.LogInformation("Tentativa de login para o usuÃ¡rio: {Email}", loginDto.Email);
+
+        return Ok(new UserAuthResponseDto
         {
-            _logger.LogError(ex, "Erro ao processar login para o usuário: {Email}", request.Email);
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                new { message = "Erro ao processar login" });
-        }
+            Token = token,
+            RefreshToken = refreshToken,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(60),
+            User = new UserInfoDto
+            {
+                Id = user.Id,
+                Email = user.Email!,
+                DisplayName = user.DisplayName,
+                FirstName = user.FirstName,
+                LastName = user.LastName
+            }
+        });
     }
 
-    /// <summary>
-    /// Renova o token JWT usando o refresh token
-    /// </summary>
-    /// <param name="request">Refresh token</param>
-    /// <returns>Novo token JWT</returns>
     [HttpPost("refresh")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenDto refreshTokenDto)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
-        try
+        var principal = _jwtService.ValidateToken(refreshTokenDto.Token);
+        if (principal == null)
+            return Unauthorized(new { message = "Token invÃ¡lido" });
+
+        var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null)
+            return Unauthorized(new { message = "Token invÃ¡lido" });
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null || !await _jwtService.ValidateRefreshToken(user, refreshTokenDto.RefreshToken))
+            return Unauthorized(new { message = "Refresh token invÃ¡lido" });
+
+        var newToken = await _jwtService.GenerateToken(user);
+        var newRefreshToken = await _jwtService.GenerateRefreshToken(user);
+
+        _logger.LogInformation("Tentativa de renovaÃ§Ã£o de token");
+
+        return Ok(new UserAuthResponseDto
         {
-            // TODO: Implementar lógica de refresh token
-            _logger.LogInformation("Tentativa de renovação de token");
-            
-            return Unauthorized(new { message = "Token inválido" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Erro ao renovar token");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                new { message = "Erro ao renovar token" });
-        }
+            Token = newToken,
+            RefreshToken = newRefreshToken,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(60),
+            User = new UserInfoDto
+            {
+                Id = user.Id,
+                Email = user.Email!,
+                DisplayName = user.DisplayName,
+                FirstName = user.FirstName,
+                LastName = user.LastName
+            }
+        });
     }
 
-    /// <summary>
-    /// Realiza o logout do usuário
-    /// </summary>
-    [HttpPost("logout")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> Logout()
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentUser()
     {
-        try
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var user = await _userManager.FindByIdAsync(userId!);
+
+        if (user == null)
+            return NotFound(new { message = "UsuÃ¡rio nÃ£o encontrado" });
+
+        return Ok(new UserInfoDto
         {
-            // TODO: Implementar lógica de logout (invalidar refresh token)
-            _logger.LogInformation("Usuário realizou logout");
-            
-            return Ok(new { message = "Logout realizado com sucesso" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Erro ao processar logout");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                new { message = "Erro ao processar logout" });
-        }
+            Id = user.Id,
+            Email = user.Email!,
+            DisplayName = user.DisplayName,
+            FirstName = user.FirstName,
+            LastName = user.LastName
+        });
     }
 }
-
-public record LoginRequest(string Email, string Password);
-
-public record LoginResponse(
-    string AccessToken, 
-    string RefreshToken, 
-    DateTime ExpiresAt, 
-    string UserName, 
-    string Email,
-    IEnumerable<string> Roles);
-
-public record RefreshTokenRequest(string RefreshToken);
