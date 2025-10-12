@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	
-  <Sdk Name="Aspire.AppHost.Sdk" Version="9.2.1" />
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.3.1" />
 	
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -12,14 +12,28 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.3.1" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.3.1" />
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.3.1" />
+    <PackageReference Include="KubernetesClient" Version="17.0.14" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.20">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>	
+	
+  <ItemGroup>
     <ProjectReference Include="..\FCG.Api\FCG.Api.csproj" />
     <ProjectReference Include="..\FCG.Application\FCG.Application.csproj" />
+    <ProjectReference Include="..\FCG.Blazor\FCG.Blazor.csproj" />
+	<ProjectReference Include="..\FCG.Infrastructure\FCG.Infrastructure.csproj">
+		<IsAspireProjectResource>false</IsAspireProjectResource>
+	</ProjectReference>	  
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.2.1" />
-    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.2.1" />
-    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.2.0" />
-  </ItemGroup>	
+  <Target Name="CopyInfrastructureDll" AfterTargets="Build">
+    <Copy SourceFiles="..\FCG.Infrastructure\bin\$(Configuration)\net8.0\FCG.Infrastructure.dll" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
+  </Target>
+
 
 </Project>
