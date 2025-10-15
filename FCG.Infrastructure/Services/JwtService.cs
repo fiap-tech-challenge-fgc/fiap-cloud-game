@@ -3,13 +3,14 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using FCG.Infrastructure.Identity;
+using FCG.Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 namespace FCG.Infrastructure.Services;
 
-public class JwtService
+public class JwtService : IJwtService
 {
     private readonly IConfiguration _configuration;
     private readonly UserManager<AppUserIdentity> _userManager;
@@ -36,7 +37,8 @@ public class JwtService
             new Claim(ClaimTypes.NameIdentifier, userIdentity.Id.ToString()),
             new Claim("displayName", userIdentity.DisplayName ?? userIdentity.UserName!),
             new Claim("firstName", userIdentity.FirstName),
-            new Claim("lastName", userIdentity.LastName)
+            new Claim("lastName", userIdentity.LastName),
+            new Claim("fullName", userIdentity.FullName)
         };
 
         // Adicionar roles do usuário

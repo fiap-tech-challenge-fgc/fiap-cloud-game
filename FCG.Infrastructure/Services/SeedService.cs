@@ -1,9 +1,10 @@
 ﻿using FCG.Infrastructure.Identity;
+using FCG.Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace FCG.Infrastructure.Services.Seed;
+namespace FCG.Infrastructure.Services;
 
 public class SeedService : ISeedService
 {
@@ -52,7 +53,6 @@ public class SeedService : ISeedService
 
                 if (user == null)
                 {
-
                     // Atenção: garanta que a senha atende às políticas de IdentityOptions
                     var result = await userManager.CreateAsync(adminData, "SenhaForte@123");
 

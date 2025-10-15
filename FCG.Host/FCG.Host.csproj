@@ -24,10 +24,10 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\FCG.Api\FCG.Api.csproj" />
-		<ProjectReference Include="..\FCG.Blazor\FCG.Blazor.csproj" />
 		<ProjectReference Include="..\FCG.Application\FCG.Application.csproj">
 			<IsAspireProjectResource>false</IsAspireProjectResource>
 		</ProjectReference>
+		<ProjectReference Include="..\FCG.Blazor\FCG.Blazor.csproj" />
 		<ProjectReference Include="..\FCG.Infrastructure\FCG.Infrastructure.csproj">
 			<IsAspireProjectResource>false</IsAspireProjectResource>
 		</ProjectReference>

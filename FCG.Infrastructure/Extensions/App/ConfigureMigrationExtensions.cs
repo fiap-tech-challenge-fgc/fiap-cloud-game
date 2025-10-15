@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using FCG.Infrastructure.Interfaces;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -14,7 +15,7 @@ public static class ConfigureMigrationExtensions
 
         try
         {
-            var initializer = sp.GetRequiredService<Initializer.IInfrastructureInitializer>();
+            var initializer = sp.GetRequiredService<IInfrastructureInitializer>();
             await initializer.InitializeAsync();
             logger.LogInformation("Migrations e seeds aplicadas com sucesso");
         }
