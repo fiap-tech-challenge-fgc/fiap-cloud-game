@@ -15,10 +15,15 @@ postgres.WithPgAdmin(pgAdmin =>
 
 var api = builder.AddProject<Projects.FCG_Api>("fcg-api")
     .WithReference(db)
-    .WaitFor(db);
+    .WaitFor(db)
+    .WithHttpHealthCheck("/health");
 
-// builder.AddProject<Projects.FCG_Blazor>("fcg-blazor")
-//     .WaitFor(api);
+builder.AddProject<Projects.FCG_Blazor>("fcg-blazor")
+    .WithExternalHttpEndpoints()
+    .WithHttpHealthCheck("/health")
+    .WithReference(api)
+    .WaitFor(api);
+
 // builder.AddProject<Projects.fiap_cloud_game_api_Web>("Application")
 //     .WithExternalHttpEndpoints()
 //     .WithReference(apiService);

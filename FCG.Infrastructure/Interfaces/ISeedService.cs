@@ -1,4 +1,4 @@
-﻿namespace FCG.Infrastructure.Services.Seed;
+﻿namespace FCG.Infrastructure.Interfaces;
 public interface ISeedService
 {
     Task SeedAsync(CancellationToken cancellationToken = default);

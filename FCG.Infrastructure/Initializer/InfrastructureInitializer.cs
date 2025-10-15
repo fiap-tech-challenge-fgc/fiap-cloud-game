@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using FCG.Infrastructure.Data;
-using FCG.Infrastructure.Services.Seed;
+using FCG.Infrastructure.Interfaces;
 
 namespace FCG.Infrastructure.Initializer;
 

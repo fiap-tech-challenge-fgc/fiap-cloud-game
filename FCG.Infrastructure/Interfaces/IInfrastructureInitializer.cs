@@ -1,4 +1,4 @@
-﻿namespace FCG.Infrastructure.Initializer;
+﻿namespace FCG.Infrastructure.Interfaces;
 
 public interface IInfrastructureInitializer
 {

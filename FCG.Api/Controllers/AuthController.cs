@@ -1,6 +1,7 @@
 ﻿using FCG.Api.Dtos;
 using FCG.Api.Dtos.Response;
 using FCG.Infrastructure.Identity;
+using FCG.Infrastructure.Interfaces;
 using FCG.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -15,13 +16,13 @@ namespace FCG.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly ILogger<AuthController> _logger;
-    private readonly JwtService _jwtService;
+    private readonly IJwtService _jwtService;
     private readonly UserManager<AppUserIdentity> _userManager;
     private readonly SignInManager<AppUserIdentity> _signInManager;
 
     public AuthController(
         ILogger<AuthController> logger,
-        JwtService jwtService,
+        IJwtService jwtService,
         UserManager<AppUserIdentity> userManager,
         SignInManager<AppUserIdentity> signInManager)
     {

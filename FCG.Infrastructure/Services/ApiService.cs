@@ -1,8 +1,9 @@
-﻿using System.Net.Http.Json;
+﻿using FCG.Infrastructure.Interfaces;
+using System.Net.Http.Json;
 
 namespace FCG.Infrastructure.Services;
 
-public class ApiService
+public class ApiService : IApiService
 {
     private readonly HttpClient _httpClient;
 
