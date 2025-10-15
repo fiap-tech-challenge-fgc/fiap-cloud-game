@@ -1,6 +1,7 @@
-﻿public class Game
+﻿using FCG.Domain.Entities;
+
+public class Game : BaseEntity
 {
-    public Guid Id { get; private set; }
     public string Name { get; private set; }
     public string Genre { get; private set; }
     public string? Description { get; private set; }

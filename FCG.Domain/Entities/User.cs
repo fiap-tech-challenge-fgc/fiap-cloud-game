@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
 
 namespace FCG.Domain.Entities;
-public class User
+public class User : BaseEntity
 {
-    public Guid Id { get; private set; }
     public string DisplayName { get; private set; }
     public List<Game> Biblioteca { get; private set; }
 
