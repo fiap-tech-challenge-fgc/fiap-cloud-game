@@ -3,18 +3,18 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using FCG.Infrastructure.Identity;
 
-namespace FCG.Infrastructure.Data;
+namespace FCG.Infrastructure.Data.Contexts;
 
-public class AppIdentityDbContext : IdentityDbContext<AppUserIdentity, IdentityRole<Guid>, Guid>
+public class UserDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
 {
-    public AppIdentityDbContext(DbContextOptions<AppIdentityDbContext> options)
+    public UserDbContext(DbContextOptions<UserDbContext> options)
         : base(options) { }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
-        builder.Entity<AppUserIdentity>().ToTable("Users");
+        builder.Entity<User>().ToTable("Users");
         builder.Entity<IdentityRole<Guid>>().ToTable("Roles");
         builder.Entity<IdentityUserRole<Guid>>().ToTable("UserRoles");
         builder.Entity<IdentityUserClaim<Guid>>().ToTable("UserClaims");

@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace FCG.Infrastructure.Data
+namespace FCG.Infrastructure.Data.Contexts
 {
     public class FcgDbContext : DbContext
     {
