@@ -1,13 +1,10 @@
 ﻿using FCG.Api.Dtos;
 using FCG.Api.Dtos.Response;
-using FCG.Domain.Entities;
 using FCG.Infrastructure.Identity;
 using FCG.Infrastructure.Interfaces;
-using FCG.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
 namespace FCG.Api.Controllers;
@@ -33,7 +30,24 @@ public class AuthController : ControllerBase
         _signInManager = signInManager;
     }
 
-    [HttpPost("register")]
+    [HttpPost("register-admin")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CreateAdminAsync([FromBody] UserCreateDto createUserDto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var (identityResult, user) = await this.RegisterUser(createUserDto, "Admin");
+
+        if (!identityResult.Succeeded)
+            return BadRequest(new { errors = identityResult.Errors });
+
+        return Ok(await CreateToken(user));
+    }
+
+    [HttpPost("register-player")]
     public async Task<IActionResult> Register([FromBody] UserCreateDto createUserDto)
     {
         if (!ModelState.IsValid)
@@ -41,6 +55,16 @@ public class AuthController : ControllerBase
             return BadRequest(ModelState);
         }
 
+        var (identityResult, user) = await this.RegisterUser(createUserDto, "User");
+
+        if (!identityResult.Succeeded)
+            return BadRequest(new { errors = identityResult.Errors });
+
+        return Ok(await CreateToken(user));
+    }
+
+    private async Task<(IdentityResult, User)> RegisterUser(UserCreateDto createUserDto, string role)
+    {
         var user = new User
         {
             UserName = createUserDto.Email,
@@ -54,13 +78,16 @@ public class AuthController : ControllerBase
         this.LogRegistrationAttempt(createUserDto.Email, result.Succeeded);
 
         if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors });
+            return (result, user);            
 
-        // Adicionar role padrão se quiser
-        // await _userManager.AddToRoleAsync(user, "User");
+        result = await _userManager.AddToRoleAsync(user, role);
+
+        if (!result.Succeeded)
+            return (result, user);
 
         var token = await CreateToken(user);
-        return Ok(token);
+
+        return (result, user);
     }
 
     [HttpPost("login")]

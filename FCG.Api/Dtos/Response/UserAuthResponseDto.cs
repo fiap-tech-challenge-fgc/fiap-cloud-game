@@ -1,6 +1,4 @@
-﻿using FCG.Api.Dtos;
-
-namespace FCG.Api.Dtos.Response;
+﻿namespace FCG.Api.Dtos.Response;
 
 public class UserAuthResponseDto
 {
