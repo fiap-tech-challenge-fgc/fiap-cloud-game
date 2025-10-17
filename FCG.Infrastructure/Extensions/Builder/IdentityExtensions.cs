@@ -1,5 +1,5 @@
 ﻿// FCG.Infrastructure/Extensions/Builder/ConfigureIdentityExtensions.cs
-using FCG.Infrastructure.Data;
+using FCG.Infrastructure.Data.Contexts;
 using FCG.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +15,10 @@ public static class IdentityExtensions
     {
         var connectionString = builder.Configuration.GetConnectionString("DbFcg");
 
-        builder.Services.AddDbContext<AppIdentityDbContext>(options =>
+        builder.Services.AddDbContext<UserDbContext>(options =>
             options.UseNpgsql(connectionString));
 
-        builder.Services.AddIdentity<AppUserIdentity, IdentityRole<Guid>>(options =>
+        builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
         {
             options.Password.RequireDigit = true;
             options.Password.RequiredLength = 8;
@@ -27,7 +27,7 @@ public static class IdentityExtensions
             options.Password.RequireLowercase = true;
             options.Password.RequiredUniqueChars = 1;
         })
-        .AddEntityFrameworkStores<AppIdentityDbContext>()
+        .AddEntityFrameworkStores<UserDbContext>()
         .AddDefaultTokenProviders();
 
         return builder;

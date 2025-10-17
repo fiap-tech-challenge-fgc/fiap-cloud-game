@@ -1,13 +1,14 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using FCG.Infrastructure.Data.Contexts;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
 namespace FCG.Infrastructure.Data.Factories;
 
-public class AppIdentityDbContextFactory : IDesignTimeDbContextFactory<AppIdentityDbContext>
+public class AppIdentityDbContextFactory : IDesignTimeDbContextFactory<UserDbContext>
 {
-    public AppIdentityDbContext CreateDbContext(string[] args)
+    public UserDbContext CreateDbContext(string[] args)
     {
         var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
 
@@ -21,9 +22,9 @@ public class AppIdentityDbContextFactory : IDesignTimeDbContextFactory<AppIdenti
 
         var connectionString = configuration.GetConnectionString("DbFcg");
 
-        var optionsBuilder = new DbContextOptionsBuilder<AppIdentityDbContext>();
+        var optionsBuilder = new DbContextOptionsBuilder<UserDbContext>();
         optionsBuilder.UseNpgsql(connectionString);
 
-        return new AppIdentityDbContext(optionsBuilder.Options);
+        return new UserDbContext(optionsBuilder.Options);
     }
 }

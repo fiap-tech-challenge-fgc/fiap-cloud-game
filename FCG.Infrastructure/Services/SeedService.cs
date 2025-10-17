@@ -27,7 +27,7 @@ public class SeedService : ISeedService
             _logger.LogInformation("Iniciando seed de identidade");
 
             var roleManager = sp.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-            var userManager = sp.GetRequiredService<UserManager<AppUserIdentity>>();
+            var userManager = sp.GetRequiredService<UserManager<User>>();
 
             string[] roles = { "Admin", "Gamer" };
 
@@ -95,11 +95,11 @@ public class SeedService : ISeedService
     }
 
 
-    private List<AppUserIdentity> GetPreconfiguredUsers()
+    private List<User> GetPreconfiguredUsers()
     {
-        return new List<AppUserIdentity>
+        return new List<User>
         {
-            new AppUserIdentity
+            new User
             {
                 FirstName = "Admin",
                 LastName = "Fiap Cloud Games",
@@ -107,7 +107,7 @@ public class SeedService : ISeedService
                 UserName = "Admin",
                 Email = "admin@fiap.com.br"
             },
-            new AppUserIdentity
+            new User
             {
                 FirstName = "Marcelo",
                 LastName = "Mendes Oliveira",
@@ -115,7 +115,7 @@ public class SeedService : ISeedService
                 UserName = "rm367563",
                 Email = "rm367563@fiap.com.br"
             },
-            new AppUserIdentity
+            new User
             {
                 FirstName = "Miguel",
                 LastName = "de Oliveira Gonçalves",
@@ -123,7 +123,7 @@ public class SeedService : ISeedService
                 UserName = "rm367985",
                 Email = "rm367985@fiap.com.br"
             },
-            new AppUserIdentity
+            new User
             {
                 FirstName = "Jhonatan",
                 LastName = "Brayan",
@@ -131,7 +131,7 @@ public class SeedService : ISeedService
                 UserName = "rm366874",
                 Email = "rm366874@fiap.com.br"
             },
-            new AppUserIdentity
+            new User
             {
                 FirstName = "Matias",
                 LastName = "José dos Santos Neto",
@@ -139,7 +139,7 @@ public class SeedService : ISeedService
                 UserName = "rm368795",
                 Email = "rm368795@fiap.com.br"
             },
-            new AppUserIdentity
+            new User
             {
                 FirstName = "João",
                 LastName = "Carlos Silva de Souza",
