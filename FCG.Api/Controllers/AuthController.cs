@@ -1,5 +1,6 @@
 ﻿using FCG.Api.Dtos;
 using FCG.Api.Dtos.Response;
+using FCG.Domain.Entities;
 using FCG.Infrastructure.Identity;
 using FCG.Infrastructure.Interfaces;
 using FCG.Infrastructure.Services;
@@ -17,14 +18,14 @@ public class AuthController : ControllerBase
 {
     private readonly ILogger<AuthController> _logger;
     private readonly IJwtService _jwtService;
-    private readonly UserManager<AppUserIdentity> _userManager;
-    private readonly SignInManager<AppUserIdentity> _signInManager;
+    private readonly UserManager<User> _userManager;
+    private readonly SignInManager<User> _signInManager;
 
     public AuthController(
         ILogger<AuthController> logger,
         IJwtService jwtService,
-        UserManager<AppUserIdentity> userManager,
-        SignInManager<AppUserIdentity> signInManager)
+        UserManager<User> userManager,
+        SignInManager<User> signInManager)
     {
         _logger = logger;
         _userManager = userManager;
@@ -40,7 +41,7 @@ public class AuthController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var user = new AppUserIdentity
+        var user = new User
         {
             UserName = createUserDto.Email,
             Email = createUserDto.Email,
@@ -50,31 +51,16 @@ public class AuthController : ControllerBase
 
         var result = await _userManager.CreateAsync(user, createUserDto.Password);
 
+        this.LogRegistrationAttempt(createUserDto.Email, result.Succeeded);
+
         if (!result.Succeeded)
             return BadRequest(new { errors = result.Errors });
 
         // Adicionar role padrão se quiser
         // await _userManager.AddToRoleAsync(user, "User");
 
-        var token = await _jwtService.GenerateToken(user);
-        var refreshToken = await _jwtService.GenerateRefreshToken(user);
-
-        _logger.LogInformation("Novo usuário cadastrado: {DisplayName}, {Email}", createUserDto.DisplayName, createUserDto.Email);
-
-        return Ok(new UserAuthResponseDto
-        {
-            Token = token,
-            RefreshToken = refreshToken,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(60),
-            User = new UserInfoDto
-            {
-                Id = user.Id,
-                DisplayName = user.DisplayName,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Email = user.Email!
-            }
-        });
+        var token = await CreateToken(user);
+        return Ok(token);
     }
 
     [HttpPost("login")]
@@ -88,27 +74,15 @@ public class AuthController : ControllerBase
         var user = await _userManager.FindByEmailAsync(loginDto.Email);
 
         if (user == null || !await _userManager.CheckPasswordAsync(user, loginDto.Password))
-            return Unauthorized(new { message = "Credenciais inválidas" });
-
-        var token = await _jwtService.GenerateToken(user);
-        var refreshToken = await _jwtService.GenerateRefreshToken(user);
-
-        _logger.LogInformation("Tentativa de login para o usuário: {Email}", loginDto.Email);
-
-        return Ok(new UserAuthResponseDto
         {
-            Token = token,
-            RefreshToken = refreshToken,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(60),
-            User = new UserInfoDto
-            {
-                Id = user.Id,
-                Email = user.Email!,
-                DisplayName = user.DisplayName,
-                FirstName = user.FirstName,
-                LastName = user.LastName
-            }
-        });
+            this.LogLoginAttempt(loginDto.Email, false);
+            return Unauthorized(new { message = "Credenciais inválidas" });
+        }
+
+        this.LogLoginAttempt(loginDto.Email, false);
+
+        var token = await CreateToken(user);
+        return Ok(token);
     }
 
     [HttpPost("refresh")]
@@ -121,35 +95,29 @@ public class AuthController : ControllerBase
 
         var principal = _jwtService.ValidateToken(refreshTokenDto.Token);
         if (principal == null)
+        {
+            this.LogTokenRefreshAttempt("principal inválido", false, "Token inválido");
             return Unauthorized(new { message = "Token inválido" });
+        }
 
         var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId == null)
+        if (string.IsNullOrEmpty(userId))
+        {
+            this.LogTokenRefreshAttempt("User id inválido", false, "Token inválido");
             return Unauthorized(new { message = "Token inválido" });
+        }
 
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null || !await _jwtService.ValidateRefreshToken(user, refreshTokenDto.RefreshToken))
-            return Unauthorized(new { message = "Refresh token inválido" });
-
-        var newToken = await _jwtService.GenerateToken(user);
-        var newRefreshToken = await _jwtService.GenerateRefreshToken(user);
-
-        _logger.LogInformation("Tentativa de renovação de token");
-
-        return Ok(new UserAuthResponseDto
         {
-            Token = newToken,
-            RefreshToken = newRefreshToken,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(60),
-            User = new UserInfoDto
-            {
-                Id = user.Id,
-                Email = user.Email!,
-                DisplayName = user.DisplayName,
-                FirstName = user.FirstName,
-                LastName = user.LastName
-            }
-        });
+            this.LogTokenRefreshAttempt(userId, false, "Refresh token inválido");
+            return Unauthorized(new { message = "Refresh token inválido" });
+        }
+
+        this.LogTokenRefreshAttempt(userId, false);
+
+        var token = await CreateToken(user);
+        return Ok(token);
     }
 
     [Authorize]
@@ -164,13 +132,80 @@ public class AuthController : ControllerBase
 
         _logger.LogInformation("Usuário logado {DisplayName}", user.DisplayName);
 
-        return Ok(new UserInfoDto
+        return Ok(GetUsetInfo(user));
+    }
+
+    private async Task<UserAuthResponseDto> CreateToken(User user)
+    {
+        var token = await _jwtService.GenerateToken(user);
+        var refreshToken = await _jwtService.GenerateRefreshToken(user);
+
+        return new UserAuthResponseDto
+        {
+            Token = token,
+            RefreshToken = refreshToken,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(60),
+            User = GetUsetInfo(user)
+        };
+    }
+
+    private UserInfoDto GetUsetInfo(User user)
+    {
+        return new UserInfoDto
         {
             Id = user.Id,
-            Email = user.Email!,
             DisplayName = user.DisplayName,
             FirstName = user.FirstName,
-            LastName = user.LastName
-        });
+            LastName = user.LastName,
+            Email = user.Email!
+        };
+    }
+
+    private void LogLoginAttempt(string email, bool success)
+    {
+        if (success)
+        {
+            _logger.LogInformation("Login bem-sucedido para o usuário: {Email}", email);
+        }
+        else
+        {
+            _logger.LogWarning("Tentativa de login falhou para o usuário: {Email}", email);
+        }
+    }
+
+    private void LogTokenRefreshAttempt(string userId, bool success, string message = "")
+    {
+        if (success)
+        {
+            _logger.LogInformation("Renovação de token bem-sucedida para o usuário ID: {UserId}", userId);
+        }
+        else
+        {
+            _logger.LogWarning("Tentativa de renovação de token falhou para o usuário ID: {UserId}, Motivo: {Motivo}", userId, message);
+        }
+    }
+
+    private void LogRegistrationAttempt(string email, bool success)
+    {
+        if (success)
+        {
+            _logger.LogInformation("Registro bem-sucedido para o usuário: {Email}", email);
+        }
+        else
+        {
+            _logger.LogWarning("Tentativa de registro falhou para o usuário: {Email}", email);
+        }
+    }
+
+    private void LogGetCurrentUserAttempt(string userId, bool success)
+    {
+        if (success)
+        {
+            _logger.LogInformation("Recuperação de usuário bem-sucedida para o usuário ID: {UserId}", userId);
+        }
+        else
+        {
+            _logger.LogWarning("Tentativa de recuperação de usuário falhou para o usuário ID: {UserId}", userId);
+        }
     }
 }

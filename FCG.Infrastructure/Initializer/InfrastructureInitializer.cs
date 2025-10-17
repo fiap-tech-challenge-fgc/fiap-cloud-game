@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using FCG.Infrastructure.Data;
 using FCG.Infrastructure.Interfaces;
+using FCG.Infrastructure.Data.Contexts;
 
 namespace FCG.Infrastructure.Initializer;
 
@@ -24,7 +24,7 @@ public class InfrastructureInitializer : IInfrastructureInitializer
 
         try
         {
-            var identityDb = sp.GetRequiredService<AppIdentityDbContext>();
+            var identityDb = sp.GetRequiredService<UserDbContext>();
             await identityDb.Database.MigrateAsync(cancellationToken);
 
             var appDb = sp.GetService<FcgDbContext>();

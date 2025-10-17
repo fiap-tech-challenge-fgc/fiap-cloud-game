@@ -13,15 +13,15 @@ namespace FCG.Infrastructure.Services;
 public class JwtService : IJwtService
 {
     private readonly IConfiguration _configuration;
-    private readonly UserManager<AppUserIdentity> _userManager;
+    private readonly UserManager<User> _userManager;
 
-    public JwtService(IConfiguration configuration, UserManager<AppUserIdentity> userManager)
+    public JwtService(IConfiguration configuration, UserManager<User> userManager)
     {
         _configuration = configuration;
         _userManager = userManager;
     }
 
-    public async Task<string> GenerateToken(AppUserIdentity userIdentity)
+    public async Task<string> GenerateToken(User userIdentity)
     {
         var jwtSettings = _configuration.GetSection("Jwt");
         var secretKey = new SymmetricSecurityKey(
@@ -59,7 +59,7 @@ public class JwtService : IJwtService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public async Task<string> GenerateRefreshToken(AppUserIdentity userIdentity)
+    public async Task<string> GenerateRefreshToken(User userIdentity)
     {
         var randomNumber = new byte[32];
         using var rng = RandomNumberGenerator.Create();
@@ -74,7 +74,7 @@ public class JwtService : IJwtService
         return refreshToken;
     }
 
-    public async Task<bool> ValidateRefreshToken(AppUserIdentity userIdentity, string refreshToken)
+    public async Task<bool> ValidateRefreshToken(User userIdentity, string refreshToken)
     {
         var storedToken = await _userManager.GetAuthenticationTokenAsync(
             userIdentity, "FCG.Api", "RefreshToken");
