@@ -58,7 +58,7 @@ public static class ServicesExtensions
 
         builder.Services.AddControllers();
         builder.Services.AddProblemDetails();
-        builder.Services.AddSwaggerGen();
+        builder.Services.AddSwaggerDocumentation();
 
         builder.Services.ConfigureHttpClientDefaults(static http =>
         {
