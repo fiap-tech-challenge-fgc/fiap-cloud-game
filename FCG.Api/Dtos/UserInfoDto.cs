@@ -1,7 +1,4 @@
-﻿using FCG.Api.Interfaces;
-using System.ComponentModel.DataAnnotations;
-
-namespace FCG.Api.Dtos;
+﻿namespace FCG.Api.Dtos;
 
 public class UserInfoDto
 {
