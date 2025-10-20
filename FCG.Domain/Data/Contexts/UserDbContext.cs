@@ -14,6 +14,7 @@ public class UserDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     {
         base.OnModelCreating(builder);
 
+        builder.HasDefaultSchema("identity");
         builder.Entity<User>().ToTable("Users");
         builder.Entity<IdentityRole<Guid>>().ToTable("Roles");
         builder.Entity<IdentityUserRole<Guid>>().ToTable("UserRoles");

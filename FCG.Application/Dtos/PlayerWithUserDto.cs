@@ -1,0 +1,12 @@
+﻿namespace FCG.Application.Dtos.Response;
+
+public class PlayerWithUserDto
+{
+    public Guid PlayerId { get; set; }
+    public string DisplayName { get; set; }
+    public List<string> Games { get; set; } = new();
+
+    public Guid UserId { get; set; }
+    public string UserFullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+}

@@ -8,8 +8,11 @@ namespace FCG.Infrastructure.Extensions.Builder;
 public static class DatabaseExtensions
 {
     public static IHostApplicationBuilder AddDatabase(this IHostApplicationBuilder builder)
-    {        
+    {
         var connectionString = builder.Configuration.GetConnectionString("DbFcg");
+
+        builder.Services.AddDbContext<UserDbContext>(options =>
+            options.UseNpgsql(connectionString));
 
         builder.Services.AddDbContext<FcgDbContext>(options =>
             options.UseNpgsql(connectionString));

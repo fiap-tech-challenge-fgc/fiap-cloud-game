@@ -1,4 +1,5 @@
-﻿using FCG.Infrastructure.Interfaces;
+﻿using FCG.Domain.Data.Contexts;
+using FCG.Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

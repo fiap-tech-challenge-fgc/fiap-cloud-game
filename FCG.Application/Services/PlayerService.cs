@@ -9,10 +9,34 @@ namespace FCG.Application.Services;
 public class PlayerService : IPlayerService
 {
     private readonly FcgDbContext _context;
+    private readonly UserDbContext _userContext;
 
-    public PlayerService(FcgDbContext context)
+    public PlayerService(FcgDbContext context, UserDbContext userContext)
     {
         _context = context;
+        _userContext = userContext;
+    }
+
+    public async Task<PlayerWithUserDto?> GetByIdAsync(Guid playerId)
+    {
+        var player = await _context.Players
+            .Include(p => p.Library)
+            .FirstOrDefaultAsync(p => p.Id == playerId);
+
+        if (player == null) return null;
+
+        var user = await _userContext.Users.FindAsync(player.UserId);
+        if (user == null) return null;
+
+        return new PlayerWithUserDto
+        {
+            PlayerId = player.Id,
+            DisplayName = player.DisplayName,
+            Games = player.Library.Select(g => g.Name).ToList(),
+            UserId = user.Id,
+            UserFullName = user.FullName,
+            Email = user.Email ?? string.Empty
+        };
     }
 
     public async Task<OperationResult> CreateAsync(PlayerCreateDto dto)
@@ -57,22 +81,6 @@ public class PlayerService : IPlayerService
         await _context.SaveChangesAsync();
 
         return OperationResult.Success();
-    }
-
-    public async Task<PlayerResponseDto?> GetByIdAsync(Guid playerId)
-    {
-        var player = await _context.Players
-            .Include(p => p.Library)
-            .FirstOrDefaultAsync(p => p.Id == playerId);
-
-        if (player == null) return null;
-
-        return new PlayerResponseDto
-        {
-            Id = player.Id,
-            DisplayName = player.DisplayName,
-            Games = player.Library.Select(g => g.Name).ToList()
-        };
     }
 
     public async Task<IEnumerable<PlayerResponseDto>> GetAllAsync()

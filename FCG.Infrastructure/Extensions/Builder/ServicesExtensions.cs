@@ -61,6 +61,7 @@ public static class ServicesExtensions
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IGameService, GameService>();
         builder.Services.AddScoped<IUserService, UserService>();
+        builder.Services.AddScoped<IPlayerService, PlayerService>();
 
         builder.Services.AddControllers();
         builder.Services.AddProblemDetails();

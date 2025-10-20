@@ -7,7 +7,6 @@ public class Player
     public List<Game> Library { get; private set; }
 
     public Guid UserId { get; private set; }
-    public User User { get; private set; } = null!;
 
     private Player()
     {

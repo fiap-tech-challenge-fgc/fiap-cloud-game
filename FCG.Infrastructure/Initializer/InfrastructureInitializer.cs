@@ -26,7 +26,8 @@ public class InfrastructureInitializer : IInfrastructureInitializer
         try
         {
             var identityDb = sp.GetRequiredService<UserDbContext>();
-            await identityDb.Database.MigrateAsync(cancellationToken);
+            if (identityDb != null) 
+                await identityDb.Database.MigrateAsync(cancellationToken);
 
             var appDb = sp.GetService<FcgDbContext>();
             if (appDb != null)
