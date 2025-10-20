@@ -74,19 +74,20 @@ public class SeedService : ISeedService
                 }
                 else
                 {
-                    user.FirstName = adminData.FirstName;
-                    user.LastName = adminData.LastName;
-                    user.UserName = adminData.UserName;
-                    user.DisplayName = adminData.DisplayName;
-                    user.Email = adminData.Email;
-                    user.EmailConfirmed = true;
-
-                    var result = await userManager.UpdateAsync(user);
-
-                    if (!result.Succeeded)
-                    {
-                        _logger.LogWarning("Falha ao atualizar o usuário {Email}: {Errors}", adminData, string.Join(", ", result.Errors.Select(e => e.Description)));
-                    }
+                    // user.FirstName = adminData.FirstName;
+                    // user.LastName = adminData.LastName;
+                    // user.UserName = adminData.UserName;
+                    // user.DisplayName = adminData.DisplayName;
+                    // user.Email = adminData.Email;
+                    // user.EmailConfirmed = true;
+                    // user.IsActive = true;
+                    // 
+                    // var result = await userManager.UpdateAsync(user);
+                    // 
+                    // if (!result.Succeeded)
+                    // {
+                    //     _logger.LogWarning("Falha ao atualizar o usuário {Email}: {Errors}", adminData, string.Join(", ", result.Errors.Select(e => e.Description)));
+                    // }
                 }
             }
 
