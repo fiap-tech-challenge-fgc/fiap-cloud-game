@@ -2,7 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using FCG.Infrastructure.Interfaces;
-using FCG.Infrastructure.Data.Contexts;
+using FCG.Domain.Data.Contexts;
+using FCG.Application.Interfaces.Service;
 
 namespace FCG.Infrastructure.Initializer;
 

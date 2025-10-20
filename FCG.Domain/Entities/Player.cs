@@ -1,20 +1,26 @@
-﻿namespace FCG.Domain.Entities;
+﻿using FCG.Domain.Entities;
+
 public class Player
 {
     public Guid Id { get; private set; }
     public string DisplayName { get; private set; }
-    public List<Game> Biblioteca { get; private set; }
+    public List<Game> Library { get; private set; }
 
-    private Player() {
+    public Guid UserId { get; private set; }
+    public User User { get; private set; } = null!;
+
+    private Player()
+    {
         DisplayName = string.Empty;
-        Biblioteca = new List<Game>();
+        Library = new List<Game>();
     }
 
-    public Player(Guid id, string displayName)
+    public Player(Guid userId, string displayName)
     {
-        Id = id;
+        Id = Guid.NewGuid();
+        UserId = userId;
         DisplayName = displayName;
-        Biblioteca = new List<Game>();
+        Library = new List<Game>();
     }
 
     public void AlterarDisplayName(string displayName)
@@ -24,7 +30,7 @@ public class Player
 
     public void AdicionarJogo(Game jogo)
     {
-        if (!Biblioteca.Contains(jogo))
-            Biblioteca.Add(jogo);
+        if (!Library.Contains(jogo))
+            Library.Add(jogo);
     }
 }

@@ -1,6 +1,6 @@
 ﻿// FCG.Infrastructure/Extensions/Builder/ConfigureIdentityExtensions.cs
-using FCG.Infrastructure.Data.Contexts;
-using FCG.Infrastructure.Identity;
+using FCG.Domain.Data.Contexts;
+using FCG.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

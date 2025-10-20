@@ -1,7 +1,10 @@
-using FCG.Infrastructure.Enums;
+using FCG.Application.Interfaces;
+using FCG.Application.Interfaces.Service;
+using FCG.Application.Services;
+using FCG.Application.Services.Auth;
+using FCG.Domain.Enums;
 using FCG.Infrastructure.Initializer;
 using FCG.Infrastructure.Interfaces;
-using FCG.Infrastructure.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,6 +58,9 @@ public static class ServicesExtensions
         builder.Services.AddScoped<ISeedService, SeedService>();
         builder.Services.AddScoped<IInfrastructureInitializer, InfrastructureInitializer>();
         builder.Services.AddScoped<IJwtService, JwtService>();
+        builder.Services.AddScoped<IAuthService, AuthService>();
+        builder.Services.AddScoped<IGameService, GameService>();
+        builder.Services.AddScoped<IUserService, UserService>();
 
         builder.Services.AddControllers();
         builder.Services.AddProblemDetails();

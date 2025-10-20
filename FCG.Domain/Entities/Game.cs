@@ -1,11 +1,12 @@
-﻿public class Game
+﻿namespace FCG.Domain.Entities;
+public class Game
 {
     public Guid Id { get; private set; }
     public string Name { get; private set; }
     public string Genre { get; private set; }
     public string? Description { get; private set; }
     public decimal Price { get; private set; }
-    public Promocao Promocao { get; private set; } = Promocao.Nenhuma;
+    public Promotion Promotion { get; private set; } = Promotion.None;
 
     private Game() { }
 
@@ -22,11 +23,11 @@
         Price = price;
     }
 
-    public decimal PrecoFinal => Promocao.AplicarDesconto(Price);
+    public decimal PrecoFinal => Promotion.AplicarDesconto(Price);
 
-    public void AplicarPromocao(Promocao promocao)
+    public void AplicarPromocao(Promotion promocao)
     {
-        Promocao = promocao ?? Promocao.Nenhuma;
+        Promotion = promocao ?? Promotion.None;
     }
 
     public string GetDescription()

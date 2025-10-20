@@ -1,4 +1,4 @@
-﻿using FCG.Infrastructure.Enums;
+﻿using FCG.Domain.Enums;
 using FCG.Infrastructure.Extensions.Builder;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
