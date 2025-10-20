@@ -59,7 +59,7 @@ public class GameService : IGameService
             Description = game.Description,
             Price = game.Price,
             FinalPrice = game.PrecoFinal,
-            PromotionDescription = game.Promotion.EstaAtiva(DateTime.UtcNow)
+            PromotionDescription = game.Promotion.IsActive(DateTime.UtcNow)
                 ? $"{game.Promotion.Type} - {game.Promotion.Value}"
                 : "Sem promoção"
         };

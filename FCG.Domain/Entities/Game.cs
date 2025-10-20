@@ -23,7 +23,7 @@ public class Game
         Price = price;
     }
 
-    public decimal PrecoFinal => Promotion.AplicarDesconto(Price);
+    public decimal PrecoFinal => Promotion.ApplyDiscount(Price);
 
     public void AplicarPromocao(Promotion promocao)
     {

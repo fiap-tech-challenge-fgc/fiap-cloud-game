@@ -26,11 +26,11 @@ public sealed class Promotion : ValueObject
         return new Promotion(tipo, valor, inicio, fim);
     }
 
-    public bool EstaAtiva(DateTime data) => Type != PromotionType.None && data >= StartOf && data <= EndOf;
+    public bool IsActive(DateTime data) => Type != PromotionType.None && data >= StartOf && data <= EndOf;
 
-    public decimal AplicarDesconto(decimal precoOriginal)
+    public decimal ApplyDiscount(decimal precoOriginal)
     {
-        if (!EstaAtiva(DateTime.UtcNow)) return precoOriginal;
+        if (!IsActive(DateTime.UtcNow)) return precoOriginal;
 
         return Type switch
         {
