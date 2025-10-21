@@ -57,29 +57,30 @@ Recomenda-se criar um seed para o primeiro usuário administrador. Exemplo de c�
 3. Envie um Pull Request com uma descrição clara das mudanças.
 
 ## Estrutura base proposta
-├─ FCG.Host/
+/
+├─/FCG.Host/
 │  └─ (config, startup, seeds)
 │
-├─ FCG.Api/
+├─/FCG.Api/
 │  ├─ Controllers/
 │  ├─ Config/
 │  ├─ Properties/
 │  └─ (Program.cs, appsettings.json no conteúdo do projeto)
 │
-├─ FCG.Blazor/
+├─/FCG.Blazor/
 │  ├─ Pages/
 │  ├─ Shared/
 │  ├─ Services/
 │  ├─ wwwroot/
 │  └─ (Program.cs, _Imports.razor)
 │
-├─ FCG.Application/
+├─/FCG.Application/
 │  ├─ Dtos/
 │  ├─ Interfaces/
 │  ├─ Services/
 │  └─ Security/
 │
-├─ FCG.Domain/
+├─/FCG.Domain/
 │  ├─ Entities/
 │  ├─ ValueObjects/
 │  ├─ Enums/
@@ -89,12 +90,12 @@ Recomenda-se criar um seed para o primeiro usuário administrador. Exemplo de c�
 │     ├─ Factories/
 │     └─ Migrations/
 │
-├─ FCG.Infrastructure/
+├─/FCG.Infrastructure/
 │  ├─ Data/
 │  ├─ Identity/
 │  ├─ Extensions/
 │  └─ (implementations)
 │
-└─ FCG.Tests/
+└─/FCG.Tests/
    ├─ Unit/
    └─ Integration/
