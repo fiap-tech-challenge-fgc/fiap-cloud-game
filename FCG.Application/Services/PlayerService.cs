@@ -2,6 +2,7 @@
 using FCG.Application.Dtos.Response;
 using FCG.Application.Interfaces;
 using FCG.Domain.Data.Contexts;
+using FCG.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace FCG.Application.Services;
@@ -94,6 +95,89 @@ public class PlayerService : IPlayerService
             Id = p.Id,
             DisplayName = p.DisplayName,
             Games = p.Library.Select(g => g.Name).ToList()
+        });
+    }
+
+    public async Task<IEnumerable<GameDto>> GetPurchasedGamesAsync(Guid playerId)
+    {
+        var purchases = await _context.Purchases
+            .Include(p => p.Game)
+            .Where(p => p.PlayerId == playerId)
+            .ToListAsync();
+
+        return purchases.Select(p => new GameDto
+        {
+            Id = p.Game.Id,
+            Name = p.Game.Name,
+            Genre = p.Game.Genre,
+            Description = p.Game.Description,
+            Price = p.Game.PrecoFinal
+        });
+    }
+
+    public async Task<IEnumerable<GameDto>> GetCartItemsAsync(Guid playerId)
+    {
+        var cartItems = await _context.CartItems
+            .Include(c => c.Game)
+            .Where(c => c.PlayerId == playerId)
+            .ToListAsync();
+
+        return cartItems.Select(c => new GameDto
+        {
+            Id = c.Game.Id,
+            Name = c.Game.Name,
+            Genre = c.Game.Genre,
+            Description = c.Game.Description,
+            Price = c.Game.PrecoFinal
+        });
+    }
+
+    public async Task<IEnumerable<GameListDto>> GetAvailableGamesAsync(
+        string? orderBy,
+        bool excludeOwned,
+        Guid? playerId)
+    {
+        var query = _context.Games.AsQueryable();
+
+        if (excludeOwned && playerId.HasValue)
+        {
+            var ownedGameIds = await _context.Purchases
+                .Where(p => p.PlayerId == playerId.Value)
+                .Select(p => p.GameId)
+                .ToListAsync();
+
+            query = query.Where(g => !ownedGameIds.Contains(g.Id));
+        }
+
+        query = orderBy switch
+        {
+            "discount-fixed-desc" => query.OrderByDescending(g =>
+                g.Promotion.Type == PromotionType.FixedDiscount ? g.Promotion.Value : 0),
+
+            "discount-fixed-asc" => query.OrderBy(g =>
+                g.Promotion.Type == PromotionType.FixedDiscount ? g.Promotion.Value : 0),
+
+            "discount-percent-desc" => query.OrderByDescending(g =>
+                g.Promotion.Type == PromotionType.PercentageDiscount ? g.Promotion.Value : 0),
+
+            "discount-percent-asc" => query.OrderBy(g =>
+                g.Promotion.Type == PromotionType.PercentageDiscount ? g.Promotion.Value : 0),
+
+            _ => query.OrderBy(g => g.Name)
+        };
+
+        var games = await query.ToListAsync();
+
+        return games.Select(g => new GameListDto
+        {
+            Id = g.Id,
+            Name = g.Name,
+            Genre = g.Genre,
+            Description = g.Description,
+            PrecoFinal = g.PrecoFinal,
+            EmPromocao = g.Promotion.IsActive(DateTime.UtcNow),
+            TipoPromocao = g.Promotion.Type.ToString(),
+            ValorPromocao = g.Promotion.Value
         });
     }
 }

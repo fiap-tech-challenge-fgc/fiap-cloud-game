@@ -10,5 +10,8 @@ namespace FCG.Application.Interfaces
         Task<OperationResult> AddGameToLibraryAsync(Guid playerId, Guid gameId);
         Task<IEnumerable<PlayerResponseDto>> GetAllAsync();
         Task<PlayerWithUserDto?> GetByIdAsync(Guid playerId);
+        Task<IEnumerable<GameDto>> GetPurchasedGamesAsync(Guid playerId);
+        Task<IEnumerable<GameDto>> GetCartItemsAsync(Guid playerId);
+        Task<IEnumerable<GameListDto>> GetAvailableGamesAsync(string? orderBy, bool excludeOwned, Guid? playerId);
     }
 }
