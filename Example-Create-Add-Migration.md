@@ -1,1 +1,0 @@
-dotnet ef migrations add "Refactor User, Admin & Player" --context UserDbContext --project FCG.Domain --startup-project FCG.Infrastructure

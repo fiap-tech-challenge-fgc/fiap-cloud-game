@@ -57,7 +57,6 @@ Recomenda-se criar um seed para o primeiro usuário administrador. Exemplo de c�
 3. Envie um Pull Request com uma descrição clara das mudanças.
 
 ## Estrutura base proposta
-/
 ├─ FCG.Host/
 │  └─ (config, startup, seeds)
 │
