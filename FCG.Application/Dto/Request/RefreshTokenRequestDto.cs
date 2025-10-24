@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace FCG.Application.Dtos;
+namespace FCG.Application.Dto.Request;
 
-public class RefreshTokenDto
+public class RefreshTokenRequestDto
 {
     [Required]
     public string Token { get; set; } = string.Empty;

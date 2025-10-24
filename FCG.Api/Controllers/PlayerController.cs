@@ -1,4 +1,4 @@
-﻿using FCG.Application.Dtos;
+﻿using FCG.Application.Dto.Request;
 using FCG.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,7 +34,7 @@ public class PlayerController : ControllerBase
     }
 
     [HttpPut("password")]
-    public async Task<IActionResult> UpdatePlayerPassword([FromBody] UserUpdateDto dto)
+    public async Task<IActionResult> UpdatePlayerPassword([FromBody] UserUpdateRequestDto dto)
     {
         var id = GetAuthorizedUserGuid();
         var result = await _userService.UpdatePasswordAsync(id, dto);

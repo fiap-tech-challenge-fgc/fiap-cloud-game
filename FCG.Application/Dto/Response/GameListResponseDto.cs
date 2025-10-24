@@ -1,6 +1,6 @@
-﻿namespace FCG.Application.Dtos.Response;
+﻿namespace FCG.Application.Dto.Response;
 
-public class GameListDto
+public class GameListResponseDto
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;

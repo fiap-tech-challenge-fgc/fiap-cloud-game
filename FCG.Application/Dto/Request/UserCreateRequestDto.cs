@@ -1,9 +1,9 @@
 ﻿using FCG.Application.Interfaces;
 using System.ComponentModel.DataAnnotations;
 
-namespace FCG.Application.Dtos;
+namespace FCG.Application.Dto.Request;
 
-public class UserCreateDto : ICreateUser
+public class UserCreateRequestDto : ICreateUser
 {
     [Required(ErrorMessage = "FirstName é obrigatório")]
     [StringLength(50, MinimumLength = 2)]

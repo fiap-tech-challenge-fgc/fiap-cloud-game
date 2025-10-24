@@ -1,182 +1,165 @@
-﻿using FCG.Application.Dtos;
-using FCG.Application.Dtos.Response;
+﻿using FCG.Application.Dto.Response;
 using FCG.Application.Interfaces.Service;
 using FCG.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
+using FCG.Application.Dto.Result;
+using FCG.Application.Dto.Request;
 
-namespace FCG.Application.Services.Auth;
-
-public class AuthService : IAuthService
+namespace FCG.Application.Services.Auth
 {
-    private readonly UserManager<User> _userManager;
-    private readonly SignInManager<User> _signInManager;
-    private readonly IJwtService _jwtService;
-    private readonly ILogger<AuthService> _logger;
-
-    public AuthService(
-        UserManager<User> userManager,
-        SignInManager<User> signInManager,
-        IJwtService jwtService,
-        ILogger<AuthService> logger)
+    public class AuthService : IAuthService
     {
-        _userManager = userManager;
-        _signInManager = signInManager;
-        _jwtService = jwtService;
-        _logger = logger;
-    }
+        private readonly UserManager<User> _userManager;
+        private readonly SignInManager<User> _signInManager;
+        private readonly IJwtService _jwtService;
+        private readonly ILogger<AuthService> _logger;
 
-    public async Task<(IdentityResult Result, User User)> RegisterUserAsync(UserCreateDto dto, string role)
-    {
-        var user = new User
+        public AuthService(UserManager<User> userManager,
+                           SignInManager<User> signInManager,
+                           IJwtService jwtService,
+                           ILogger<AuthService> logger)
         {
-            UserName = dto.Email,
-            Email = dto.Email,
-            FirstName = dto.FirstName,
-            LastName = dto.LastName
-        };
-
-        var result = await _userManager.CreateAsync(user, dto.Password);
-        LogRegistrationAttempt(dto.Email, result.Succeeded);
-
-        if (!result.Succeeded)
-            return (result, user);
-
-        result = await _userManager.AddToRoleAsync(user, role);
-        return (result, user);
-    }
-
-    public async Task<UserAuthResponseDto> LoginAsync(UserLoginDto dto)
-    {
-        var user = await _userManager.FindByEmailAsync(dto.Email);
-
-        if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
-        {
-            LogLoginAttempt(dto.Email, false);
-            return null!;
+            _userManager = userManager;
+            _signInManager = signInManager;
+            _jwtService = jwtService;
+            _logger = logger;
         }
 
-        LogLoginAttempt(dto.Email, true);
-        return await CreateToken(user);
-    }
-
-    public async Task<UserAuthResponseDto> RefreshTokenAsync(RefreshTokenDto dto)
-    {
-        var principal = _jwtService.ValidateToken(dto.Token);
-        if (principal == null)
+        public async Task<OperationResult<User>> RegisterUserAsync(UserCreateRequestDto dto, string role)
         {
-            LogTokenRefreshAttempt("principal inválido", false, "Token inválido");
-            return null!;
+            var user = new User
+            {
+                UserName = dto.Email,
+                Email = dto.Email,
+                FirstName = dto.FirstName,
+                LastName = dto.LastName
+            };
+
+            var result = await _userManager.CreateAsync(user, dto.Password);
+            LogRegistrationAttempt(dto.Email, result.Succeeded);
+
+            if (!result.Succeeded)
+            {
+                var errors = result.Errors.Select(e => e.Description).ToArray();
+                return OperationResult<User>.Failure(errors);
+            }
+
+            var roleResult = await _userManager.AddToRoleAsync(user, role);
+            if (!roleResult.Succeeded)
+            {
+                var errors = roleResult.Errors.Select(e => e.Description).ToArray();
+                return OperationResult<User>.Failure(errors);
+            }
+
+            return OperationResult<User>.Success(user);
         }
 
-        var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        public async Task<OperationResult<UserAuthResponseDto>> LoginAsync(UserLoginRequestDto dto)
         {
-            LogTokenRefreshAttempt("User id inválido", false, "Token inválido");
-            return null!;
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+
+            if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
+            {
+                LogLoginAttempt(dto.Email, false);
+                return OperationResult<UserAuthResponseDto>.Failure("Credenciais inválidas.");
+            }
+
+            LogLoginAttempt(dto.Email, true);
+            var tokenData = await CreateToken(user);
+            return OperationResult<UserAuthResponseDto>.Success(tokenData);
         }
 
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null || !await _jwtService.ValidateRefreshToken(user, dto.RefreshToken))
+        public async Task<OperationResult<UserAuthResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto dto)
         {
-            LogTokenRefreshAttempt(userId, false, "Refresh token inválido");
-            return null!;
+            var principal = _jwtService.ValidateToken(dto.Token);
+            if (principal == null)
+                return OperationResult<UserAuthResponseDto>.Failure("Token inválido.");
+
+            var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return OperationResult<UserAuthResponseDto>.Failure("Token inválido.");
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null || !await _jwtService.ValidateRefreshToken(user, dto.RefreshToken))
+                return OperationResult<UserAuthResponseDto>.Failure("Refresh token inválido.");
+
+            var tokenData = await CreateToken(user);
+            return OperationResult<UserAuthResponseDto>.Success(tokenData);
         }
 
-        LogTokenRefreshAttempt(userId, true);
-        return await CreateToken(user);
-    }
-
-    public async Task<UserInfoDto> GetCurrentUserAsync(ClaimsPrincipal userPrincipal)
-    {
-        var userId = userPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var user = await _userManager.FindByIdAsync(userId!);
-
-        if (user == null)
+        public async Task<OperationResult<UserInfoResponseDto>> GetCurrentUserAsync(ClaimsPrincipal userPrincipal)
         {
-            LogGetCurrentUserAttempt(userId!, false);
-            return null!;
+            var userId = userPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var user = await _userManager.FindByIdAsync(userId!);
+
+            if (user == null)
+                return OperationResult<UserInfoResponseDto>.Failure("Usuário não encontrado.");
+
+            return OperationResult<UserInfoResponseDto>.Success(GetUserInfo(user));
         }
 
-        LogGetCurrentUserAttempt(userId!, true);
-        return GetUserInfo(user);
-    }
-
-    public async Task<OperationResult> UpdatePasswordAsync(Guid userId, UserUpdateDto dto)
-    {
-        var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user == null)
-            return OperationResult.Failure("Usuário não encontrado.");
-
-        // Verifica se a senha atual está correta
-        var passwordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
-        if (!passwordValid)
-            return OperationResult.Failure("Senha atual incorreta.");
-
-        // Tenta alterar a senha
-        var result = await _userManager.ChangePasswordAsync(user, dto.Password, dto.NewPassword);
-        if (!result.Succeeded)
-            return OperationResult.Failure("Erro ao alterar a senha: " + string.Join(", ", result.Errors.Select(e => e.Description)));
-
-        return OperationResult.Success();
-    }
-
-    private async Task<UserAuthResponseDto> CreateToken(User user)
-    {
-        var token = await _jwtService.GenerateToken(user);
-        var refreshToken = await _jwtService.GenerateRefreshToken(user);
-
-        return new UserAuthResponseDto
+        public async Task<OperationResult> UpdatePasswordAsync(Guid userId, UserUpdateRequestDto dto)
         {
-            Token = token,
-            RefreshToken = refreshToken,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(60),
-            User = GetUserInfo(user)
-        };
-    }
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null)
+                return OperationResult.Failure("Usuário não encontrado.");
 
-    private UserInfoDto GetUserInfo(User user)
-    {
-        return new UserInfoDto
+            var passwordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
+            if (!passwordValid)
+                return OperationResult.Failure("Senha atual incorreta.");
+
+            var result = await _userManager.ChangePasswordAsync(user, dto.Password, dto.NewPassword);
+            if (!result.Succeeded)
+            {
+                var errors = result.Errors.Select(e => e.Description).ToArray();
+                return OperationResult.Failure(errors);
+            }
+
+            return OperationResult.Success();
+        }
+
+        private async Task<UserAuthResponseDto> CreateToken(User user)
         {
-            Id = user.Id,
-            DisplayName = user.DisplayName,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Email = user.Email!
-        };
-    }
+            var token = await _jwtService.GenerateToken(user);
+            var refreshToken = await _jwtService.GenerateRefreshToken(user);
 
-    private void LogLoginAttempt(string email, bool success)
-    {
-        if (success)
-            _logger.LogInformation("Login bem-sucedido para o usuário: {Email}", email);
-        else
-            _logger.LogWarning("Tentativa de login falhou para o usuário: {Email}", email);
-    }
+            return new UserAuthResponseDto
+            {
+                Token = token,
+                RefreshToken = refreshToken,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(60),
+                User = GetUserInfo(user)
+            };
+        }
 
-    private void LogTokenRefreshAttempt(string userId, bool success, string message = "")
-    {
-        if (success)
-            _logger.LogInformation("Renovação de token bem-sucedida para o usuário ID: {UserId}", userId);
-        else
-            _logger.LogWarning("Tentativa de renovação de token falhou para o usuário ID: {UserId}, Motivo: {Motivo}", userId, message);
-    }
+        private UserInfoResponseDto GetUserInfo(User user)
+        {
+            return new UserInfoResponseDto
+            {
+                Id = user.Id,
+                DisplayName = user.DisplayName,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email!
+            };
+        }
 
-    private void LogRegistrationAttempt(string email, bool success)
-    {
-        if (success)
-            _logger.LogInformation("Registro bem-sucedido para o usuário: {Email}", email);
-        else
-            _logger.LogWarning("Tentativa de registro falhou para o usuário: {Email}", email);
-    }
+        private void LogLoginAttempt(string email, bool success)
+        {
+            if (success)
+                _logger.LogInformation("Login bem-sucedido para o usuário: {Email}", email);
+            else
+                _logger.LogWarning("Tentativa de login falhou para o usuário: {Email}", email);
+        }
 
-    private void LogGetCurrentUserAttempt(string userId, bool success)
-    {
-        if (success)
-            _logger.LogInformation("Recuperação de usuário bem-sucedida para o usuário ID: {UserId}", userId);
-        else
-            _logger.LogWarning("Tentativa de recuperação de usuário falhou para o usuário ID: {UserId}", userId);
+        private void LogRegistrationAttempt(string email, bool success)
+        {
+            if (success)
+                _logger.LogInformation("Registro bem-sucedido para o usuário: {Email}", email);
+            else
+                _logger.LogWarning("Tentativa de registro falhou para o usuário: {Email}", email);
+        }
     }
 }

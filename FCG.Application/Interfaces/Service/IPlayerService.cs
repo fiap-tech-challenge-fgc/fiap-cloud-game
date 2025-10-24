@@ -1,5 +1,6 @@
-﻿using FCG.Application.Dtos;
-using FCG.Application.Dtos.Response;
+﻿using FCG.Application.Dto.Request;
+using FCG.Application.Dto.Response;
+using FCG.Application.Dto.Result;
 
 namespace FCG.Application.Interfaces
 {
@@ -9,9 +10,9 @@ namespace FCG.Application.Interfaces
         Task<OperationResult> UpdateDisplayNameAsync(Guid playerId, string newDisplayName);
         Task<OperationResult> AddGameToLibraryAsync(Guid playerId, Guid gameId);
         Task<IEnumerable<PlayerResponseDto>> GetAllAsync();
-        Task<PlayerWithUserDto?> GetByIdAsync(Guid playerId);
-        Task<IEnumerable<GameDto>> GetPurchasedGamesAsync(Guid playerId);
-        Task<IEnumerable<GameDto>> GetCartItemsAsync(Guid playerId);
-        Task<IEnumerable<GameListDto>> GetAvailableGamesAsync(string? orderBy, bool excludeOwned, Guid? playerId);
+        Task<PlayerWithUserResponseDto?> GetByIdAsync(Guid playerId);
+        Task<IEnumerable<GameRequestDto>> GetPurchasedGamesAsync(Guid playerId);
+        Task<IEnumerable<GameRequestDto>> GetCartItemsAsync(Guid playerId);
+        Task<IEnumerable<GameListResponseDto>> GetAvailableGamesAsync(string? orderBy, bool excludeOwned, Guid? playerId);
     }
 }

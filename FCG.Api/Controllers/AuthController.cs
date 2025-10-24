@@ -1,9 +1,9 @@
-﻿using FCG.Application.Dtos;
+﻿using FCG.Application.Dto.Request;
+using FCG.Application.Dto.Response;
 using FCG.Application.Interfaces.Service;
 using FCG.Application.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace FCG.Api.Controllers;
 
@@ -21,32 +21,33 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register-player")]
-    public async Task<IActionResult> Register([FromBody] UserCreateDto createUserDto)
+    public async Task<IActionResult> Register([FromBody] UserCreateRequestDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        var registerResult = await _authService.RegisterUserAsync(dto, RoleConstants.Admin);
 
-        var (result, user) = await _authService.RegisterUserAsync(createUserDto, RoleConstants.Player);
+        if (!registerResult.Succeeded)
+            return BadRequest(new { errors = registerResult.Errors });
 
-        if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors });
-
-        var token = await _authService.LoginAsync(new UserLoginDto
+        var loginResult = await _authService.LoginAsync(new UserLoginRequestDto
         {
-            Email = createUserDto.Email,
-            Password = createUserDto.Password
+            Email = dto.Email,
+            Password = dto.Password
         });
 
-        return Ok(token);
+        if (!loginResult.Succeeded)
+            return BadRequest(new { errors = loginResult.Errors });
+
+        return Ok(loginResult.Data);
+
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] UserLoginDto loginDto)
+    public async Task<IActionResult> Login([FromBody] UserLoginRequestDto dto)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var token = await _authService.LoginAsync(loginDto);
+        var token = await _authService.LoginAsync(dto);
 
         if (token == null)
             return Unauthorized(new { message = "Credenciais inválidas" });
@@ -55,12 +56,12 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh([FromBody] RefreshTokenDto refreshTokenDto)
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto dto)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var token = await _authService.RefreshTokenAsync(refreshTokenDto);
+        var token = await _authService.RefreshTokenAsync(dto);
 
         if (token == null)
             return Unauthorized(new { message = "Token inválido ou expirado" });

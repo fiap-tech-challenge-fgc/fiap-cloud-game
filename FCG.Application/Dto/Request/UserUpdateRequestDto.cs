@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace FCG.Application.Dtos;
+namespace FCG.Application.Dto.Request;
 
-public class UserUpdateDto
+public class UserUpdateRequestDto
 {
     [Required]
     public string FirstName { get; set; } = string.Empty;

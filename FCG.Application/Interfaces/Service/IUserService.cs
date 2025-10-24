@@ -1,14 +1,19 @@
-﻿using FCG.Application.Dtos;
+﻿using FCG.Application.Dto.Filter;
+using FCG.Application.Dto.Order;
+using FCG.Application.Dto.Request;
+using FCG.Application.Dto.Response;
+using FCG.Application.Dto.Result;
 using FCG.Domain.Enums;
 
-namespace FCG.Application.Interfaces;
-
-public interface IUserService
+namespace FCG.Application.Interfaces
 {
-    Task<IEnumerable<UserInfoDto>> GetAllAsync();
-    Task<UserInfoDto?> GetByIdAsync(Guid id);
-    Task<OperationResult> UpdateUserAsync(Guid id, UserUpdateDto dto);
-    Task<OperationResult> UpdatePasswordAsync(Guid userId, UserUpdateDto dto);
-    Task<IEnumerable<UserInfoDto>> GetUsersByRoleAsync(Roles role);
-    Task<OperationResult> DeleteUserAsync(Guid id); 
+    public interface IUserService
+    {
+        Task<PagedResult<UserInfoResponseDto>> GetAllAsync(PagedRequestDto<UserFilterDto, UserOrderDto> pagedRequestDto);
+        Task<PagedResult<UserInfoResponseDto>> GetUsersByRoleAsync(Roles role, PagedRequestDto<UserFilterDto, UserOrderDto> pagedRequestDto);
+        Task<UserInfoResponseDto?> GetByIdAsync(Guid userId);
+        Task<OperationResult> UpdateUserAsync(Guid userId, UserUpdateRequestDto dto);
+        Task<OperationResult> UpdatePasswordAsync(Guid userId, UserUpdateRequestDto dto);
+        Task<OperationResult> DeleteUserAsync(Guid id);
+    }
 }

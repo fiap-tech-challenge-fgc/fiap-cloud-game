@@ -1,10 +1,15 @@
-﻿using FCG.Application.Dtos;
+﻿using FCG.Application.Dto.Filter;
+using FCG.Application.Dto.Order;
+using FCG.Application.Dto.Request;
+using FCG.Application.Dto.Response;
+using FCG.Application.Dto.Result;
 using FCG.Application.Interfaces;
 using FCG.Application.Security;
 using FCG.Domain.Entities;
 using FCG.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace FCG.Application.Services;
 
@@ -17,47 +22,88 @@ public class UserService : IUserService
         _userManager = userManager;
     }
 
-    public async Task<IEnumerable<UserInfoDto>> GetAllAsync()
+    public async Task<PagedResult<UserInfoResponseDto>> GetAllAsync(PagedRequestDto<UserFilterDto,UserOrderDto> dto)
     {
-        var users = await _userManager.Users
-            .Where(u => u.EmailConfirmed)
-            .ToListAsync();
+        var users = await GetUsers(dto);
+        var userDtos = users.Select(Map).ToList();
+        var totalItems = userDtos.Count;
 
-        var players = new List<UserInfoDto>();
-
-        foreach (var user in users)
+        return new PagedResult<UserInfoResponseDto>
         {
-            var roles = await _userManager.GetRolesAsync(user);
-            if (roles.Contains(RoleConstants.Player))
-            {
-                players.Add(Map(user));
-            }
-        }
-
-        return players;
+            Items = userDtos,
+            PageNumber = dto.PageNumber,
+            PageSize = dto.PageSize,
+            TotalItems = totalItems
+        };
     }
 
-    public async Task<IEnumerable<UserInfoDto>> GetUsersByRoleAsync(Roles role)
+    public async Task<PagedResult<UserInfoResponseDto>> GetUsersByRoleAsync(Roles role, PagedRequestDto<UserFilterDto, UserOrderDto> dto)
     {
-        var users = await _userManager.Users
-            .Where(u => u.EmailConfirmed)
-            .ToListAsync();
+        var users = await GetUsers(dto);
 
-        var filteredUsers = new List<UserInfoDto>();
-
-        foreach (var user in users)
+        // Cria uma lista de tarefas para buscar roles de todos os usuários
+        var roleTasks = users.Select(async user => new
         {
-            var roles = await _userManager.GetRolesAsync(user);
-            if (roles.Contains(role.ToString()))
-            {
-                filteredUsers.Add(Map(user));
-            }
-        }
+            User = user,
+            Roles = await _userManager.GetRolesAsync(user)
+        });
 
-        return filteredUsers;
+        var roleName = role.ToString();
+        var usersWithRoles = await Task.WhenAll(roleTasks);
+
+        // Filtra os usuários com base no papel
+        var filteredUsers = usersWithRoles
+            .Where(x => x.Roles.Contains(roleName))
+            .Select(x => Map(x.User))
+            .ToList();
+
+        var totalItems = filteredUsers.Count;
+
+        return new PagedResult<UserInfoResponseDto>
+        {
+            Items = filteredUsers,
+            PageNumber = dto.PageNumber,
+            PageSize = dto.PageSize,
+            TotalItems = totalItems
+        };
     }
 
-    public async Task<UserInfoDto?> GetByIdAsync(Guid userId)
+    private async Task<List<User>> GetUsers(PagedRequestDto<UserFilterDto, UserOrderDto> dto)
+    {
+        var query = _userManager.Users.Where(u => u.EmailConfirmed);
+
+        // ✅ Aplicar filtros
+        if (dto.Filter != null)
+        {
+            if (!string.IsNullOrWhiteSpace(dto.Filter.Name))
+                query = query.Where(u => u.DisplayName.Contains(dto.Filter.Name));
+
+            if (!string.IsNullOrWhiteSpace(dto.Filter.Email))
+                query = query.Where(u => u.Email.Contains(dto.Filter.Email));
+        }
+
+        // ✅ Ordenação dinâmica com TOrder
+        if (dto.OrderBy != null)
+        {
+            query = dto.OrderBy.SortBy.ToLower() switch
+            {
+                "firstname" => dto.OrderBy.Ascending ? query.OrderBy(u => u.FirstName) : query.OrderByDescending(u => u.FirstName),
+                "lastname" => dto.OrderBy.Ascending ? query.OrderBy(u => u.LastName) : query.OrderByDescending(u => u.LastName),
+                "email" => dto.OrderBy.Ascending ? query.OrderBy(u => u.Email) : query.OrderByDescending(u => u.Email),
+                _ => dto.OrderBy.Ascending ? query.OrderBy(u => u.DisplayName) : query.OrderByDescending(u => u.DisplayName)
+            };
+        }
+
+        var users = await query
+            .Skip((dto.PageNumber - 1) * dto.PageSize)
+            .Take(dto.PageSize)
+            .ToListAsync();
+
+        return users;
+    }
+
+
+    public async Task<UserInfoResponseDto?> GetByIdAsync(Guid userId)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user == null) return null;
@@ -66,7 +112,7 @@ public class UserService : IUserService
         return roles.Contains(RoleConstants.Player) ? Map(user) : null;
     }
 
-    public async Task<OperationResult> UpdateUserAsync(Guid userId, UserUpdateDto dto)
+    public async Task<OperationResult> UpdateUserAsync(Guid userId, UserUpdateRequestDto dto)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user == null) return OperationResult.Failure("Usuário não encontrado.");
@@ -80,25 +126,21 @@ public class UserService : IUserService
         return result.Succeeded ? OperationResult.Success() : OperationResult.Failure("Erro ao atualizar usuário.");
     }
 
-    public async Task<OperationResult> UpdatePasswordAsync(Guid userId, UserUpdateDto dto)
+    public async Task<OperationResult> UpdatePasswordAsync(Guid userId, UserUpdateRequestDto dto)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user == null)
             return OperationResult.Failure("Usuário não encontrado.");
 
-        // Verifica se a nova senha e a confirmação são iguais
         if (dto.NewPassword != dto.ConfirmNewPassword)
             return OperationResult.Failure("Nova senha e confirmação não conferem.");
 
-        // Tenta alterar a senha usando o método seguro do UserManager
         var result = await _userManager.ChangePasswordAsync(user, dto.Password, dto.NewPassword);
-
         if (!result.Succeeded)
             return OperationResult.Failure(result.Errors.Select(e => e.Description).ToArray());
 
         return OperationResult.Success();
     }
-
 
     public async Task<OperationResult> DeleteUserAsync(Guid id)
     {
@@ -111,7 +153,7 @@ public class UserService : IUserService
         return result.Succeeded ? OperationResult.Success() : OperationResult.Failure("Erro ao inativar usuário.");
     }
 
-    private UserInfoDto Map(User user) => new UserInfoDto
+    private UserInfoResponseDto Map(User user) => new UserInfoResponseDto
     {
         Id = user.Id,
         DisplayName = user.DisplayName,

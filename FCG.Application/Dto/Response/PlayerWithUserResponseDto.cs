@@ -1,6 +1,6 @@
-﻿namespace FCG.Application.Dtos.Response;
+﻿namespace FCG.Application.Dto.Response;
 
-public class PlayerWithUserDto
+public class PlayerWithUserResponseDto
 {
     public Guid PlayerId { get; set; }
     public string DisplayName { get; set; }

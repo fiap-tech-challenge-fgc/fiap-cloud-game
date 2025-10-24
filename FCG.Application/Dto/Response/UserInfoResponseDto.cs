@@ -1,6 +1,6 @@
-﻿namespace FCG.Application.Dtos;
+﻿namespace FCG.Application.Dto.Response;
 
-public class UserInfoDto
+public class UserInfoResponseDto
 {
     public Guid Id { get; set; }
     public string Email { get; set; } = string.Empty;

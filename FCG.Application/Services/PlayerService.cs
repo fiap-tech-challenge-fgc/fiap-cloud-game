@@ -1,5 +1,6 @@
-﻿using FCG.Application.Dtos;
-using FCG.Application.Dtos.Response;
+﻿using FCG.Application.Dto.Request;
+using FCG.Application.Dto.Response;
+using FCG.Application.Dto.Result;
 using FCG.Application.Interfaces;
 using FCG.Domain.Data.Contexts;
 using FCG.Domain.Enums;
@@ -18,7 +19,7 @@ public class PlayerService : IPlayerService
         _userContext = userContext;
     }
 
-    public async Task<PlayerWithUserDto?> GetByIdAsync(Guid playerId)
+    public async Task<PlayerWithUserResponseDto?> GetByIdAsync(Guid playerId)
     {
         var player = await _context.Players
             .Include(p => p.Library)
@@ -29,7 +30,7 @@ public class PlayerService : IPlayerService
         var user = await _userContext.Users.FindAsync(player.UserId);
         if (user == null) return null;
 
-        return new PlayerWithUserDto
+        return new PlayerWithUserResponseDto
         {
             PlayerId = player.Id,
             DisplayName = player.DisplayName,
@@ -98,14 +99,14 @@ public class PlayerService : IPlayerService
         });
     }
 
-    public async Task<IEnumerable<GameDto>> GetPurchasedGamesAsync(Guid playerId)
+    public async Task<IEnumerable<GameRequestDto>> GetPurchasedGamesAsync(Guid playerId)
     {
         var purchases = await _context.Purchases
             .Include(p => p.Game)
             .Where(p => p.PlayerId == playerId)
             .ToListAsync();
 
-        return purchases.Select(p => new GameDto
+        return purchases.Select(p => new GameRequestDto
         {
             Id = p.Game.Id,
             Name = p.Game.Name,
@@ -115,14 +116,14 @@ public class PlayerService : IPlayerService
         });
     }
 
-    public async Task<IEnumerable<GameDto>> GetCartItemsAsync(Guid playerId)
+    public async Task<IEnumerable<GameRequestDto>> GetCartItemsAsync(Guid playerId)
     {
         var cartItems = await _context.CartItems
             .Include(c => c.Game)
             .Where(c => c.PlayerId == playerId)
             .ToListAsync();
 
-        return cartItems.Select(c => new GameDto
+        return cartItems.Select(c => new GameRequestDto
         {
             Id = c.Game.Id,
             Name = c.Game.Name,
@@ -132,7 +133,7 @@ public class PlayerService : IPlayerService
         });
     }
 
-    public async Task<IEnumerable<GameListDto>> GetAvailableGamesAsync(
+    public async Task<IEnumerable<GameListResponseDto>> GetAvailableGamesAsync(
         string? orderBy,
         bool excludeOwned,
         Guid? playerId)
@@ -168,7 +169,7 @@ public class PlayerService : IPlayerService
 
         var games = await query.ToListAsync();
 
-        return games.Select(g => new GameListDto
+        return games.Select(g => new GameListResponseDto
         {
             Id = g.Id,
             Name = g.Name,

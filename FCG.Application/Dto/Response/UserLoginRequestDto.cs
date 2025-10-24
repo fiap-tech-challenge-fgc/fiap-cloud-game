@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
-namespace FCG.Application.Dtos;
+namespace FCG.Application.Dto.Response;
 
-public class UserLoginDto
+public class UserLoginRequestDto
 {
     [Required(ErrorMessage = "Email é obrigatório")]
     [EmailAddress(ErrorMessage = "Email inválido")]

@@ -1,4 +1,4 @@
-﻿namespace FCG.Application.Dtos;
+﻿namespace FCG.Application.Dto.Response;
 
 public class PlayerCreateDto
 {

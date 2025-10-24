@@ -1,12 +1,13 @@
-﻿using FCG.Application.Dtos;
-using FCG.Application.Dtos.Response;
-
-namespace FCG.Application.Interfaces.Service;
+﻿using FCG.Application.Dto.Filter;
+using FCG.Application.Dto.Order;
+using FCG.Application.Dto.Request;
+using FCG.Application.Dto.Response;
+using FCG.Application.Dto.Result;
 
 public interface IGameService
 {
-    Task<GameResponseDto> CreateGameAsync(GameCreateDto dto);
+    Task<OperationResult<GameResponseDto>> CreateGameAsync(GameCreateRequestDto dto);
     Task<GameResponseDto?> GetGameByIdAsync(Guid id);
-    Task<IEnumerable<GameResponseDto>> GetAllGamesAsync();
+    Task<PagedResult<GameResponseDto>> GetAllGamesAsync(PagedRequestDto<GameFilterDto, GameOrderDto> pagedRequestDto);
     Task<OperationResult> DeleteGameAsync(Guid id);
 }
