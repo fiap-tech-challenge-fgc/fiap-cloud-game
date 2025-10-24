@@ -11,15 +11,15 @@ namespace FCG.Api.Controllers;
 [ApiController]
 [Route("api/admin")]
 [Authorize(Roles = RoleConstants.Admin)]
-public class AdminAuthController : ControllerBase
+public class AdminController : ControllerBase
 {
-    private readonly ILogger<AdminAuthController> _logger;
+    private readonly ILogger<AdminController> _logger;
     private readonly IAuthService _authService;
     private readonly IUserService _userService;
     private readonly IGameService _gameService;
 
-    public AdminAuthController(
-        ILogger<AdminAuthController> logger,
+    public AdminController(
+        ILogger<AdminController> logger,
         IAuthService authService,
         IUserService userService,
         IGameService gameService)
