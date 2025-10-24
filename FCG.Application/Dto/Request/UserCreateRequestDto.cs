@@ -5,17 +5,17 @@ namespace FCG.Application.Dto.Request;
 
 public class UserCreateRequestDto : ICreateUser
 {
-    [Required(ErrorMessage = "FirstName é obrigatório")]
+    [Required(ErrorMessage = "First Name é obrigatório")]
     [StringLength(50, MinimumLength = 2)]
     public string FirstName { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "LastName é obrigatório")]
+    [Required(ErrorMessage = "Last Name é obrigatório")]
     [StringLength(50, MinimumLength = 2)]
     public string LastName { get; set; } = string.Empty;
 
     public string FullName => $"{FirstName} {LastName}".Trim();
 
-    [Required(ErrorMessage = "DisplayName é obrigatório")]
+    [Required(ErrorMessage = "Display Name é obrigatório")]
     [StringLength(30, MinimumLength = 3)]
     public string DisplayName { get; set; } = string.Empty;
 

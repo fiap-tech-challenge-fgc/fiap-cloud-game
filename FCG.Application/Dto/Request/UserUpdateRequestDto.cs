@@ -4,13 +4,15 @@ namespace FCG.Application.Dto.Request;
 
 public class UserUpdateRequestDto
 {
-    [Required]
+    [Required(ErrorMessage = "First Name é obrigatório")]
+    [StringLength(50, MinimumLength = 2)]
     public string FirstName { get; set; } = string.Empty;
 
-    [Required]
+    [Required(ErrorMessage = "Last Name é obrigatório")]
     public string LastName { get; set; } = string.Empty;
 
-    [Required]
+    [Required(ErrorMessage = "Display Name é obrigatório")]
+    [StringLength(30, MinimumLength = 3)]
     public string DisplayName { get; set; } = string.Empty;
 
     [EmailAddress]
@@ -18,6 +20,7 @@ public class UserUpdateRequestDto
     public string Email { get; set; } = string.Empty;
 
     [DataType(DataType.Date)]
+    [Range(typeof(DateTime), "1/1/1900", "1/1/2020")]
     public DateTime Birthday { get; set; }
 
     [DataType(DataType.Password)]

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace FCG.Application.Dtos;
+namespace FCG.Application.Dto.Request;
 
 public class GameCreateRequestDto
 {

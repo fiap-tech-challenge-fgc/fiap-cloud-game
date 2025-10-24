@@ -99,14 +99,14 @@ public class PlayerService : IPlayerService
         });
     }
 
-    public async Task<IEnumerable<GameRequestDto>> GetPurchasedGamesAsync(Guid playerId)
+    public async Task<IEnumerable<Dto.Request.GameResponseDto>> GetPurchasedGamesAsync(Guid playerId)
     {
         var purchases = await _context.Purchases
             .Include(p => p.Game)
             .Where(p => p.PlayerId == playerId)
             .ToListAsync();
 
-        return purchases.Select(p => new GameRequestDto
+        return purchases.Select(p => new Dto.Request.GameResponseDto
         {
             Id = p.Game.Id,
             Name = p.Game.Name,
@@ -116,14 +116,14 @@ public class PlayerService : IPlayerService
         });
     }
 
-    public async Task<IEnumerable<GameRequestDto>> GetCartItemsAsync(Guid playerId)
+    public async Task<IEnumerable<Dto.Request.GameResponseDto>> GetCartItemsAsync(Guid playerId)
     {
         var cartItems = await _context.CartItems
             .Include(c => c.Game)
             .Where(c => c.PlayerId == playerId)
             .ToListAsync();
 
-        return cartItems.Select(c => new GameRequestDto
+        return cartItems.Select(c => new Dto.Request.GameResponseDto
         {
             Id = c.Game.Id,
             Name = c.Game.Name,
@@ -133,7 +133,7 @@ public class PlayerService : IPlayerService
         });
     }
 
-    public async Task<IEnumerable<GameListResponseDto>> GetAvailableGamesAsync(
+    public async Task<IEnumerable<GameResponseDto>> GetAvailableGamesAsync(
         string? orderBy,
         bool excludeOwned,
         Guid? playerId)
@@ -169,16 +169,16 @@ public class PlayerService : IPlayerService
 
         var games = await query.ToListAsync();
 
-        return games.Select(g => new GameListResponseDto
+        return games.Select(g => new GameResponseDto
         {
             Id = g.Id,
             Name = g.Name,
             Genre = g.Genre,
             Description = g.Description,
-            PrecoFinal = g.PrecoFinal,
-            EmPromocao = g.Promotion.IsActive(DateTime.UtcNow),
-            TipoPromocao = g.Promotion.Type.ToString(),
-            ValorPromocao = g.Promotion.Value
+            Price = g.PrecoFinal,
+            OnSale = g.Promotion.IsActive(DateTime.UtcNow),
+            TypePromotion = g.Promotion.Type.ToString(),
+            PromotionValue = g.Promotion.Value
         });
     }
 }

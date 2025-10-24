@@ -10,7 +10,6 @@ namespace FCG.Api.Controllers;
 [Route("api/[controller]")]
 public class PlayerController : ControllerBase
 {
-    private readonly ILogger<PlayerController> _logger;
     private readonly IUserService _userService;
     private readonly IPlayerService _playerService;    
 
@@ -19,7 +18,6 @@ public class PlayerController : ControllerBase
         IUserService userService,
         IPlayerService playerService)
     {
-        _logger = logger;
         _userService = userService;
         _playerService = playerService;
     }

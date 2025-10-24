@@ -11,12 +11,10 @@ namespace FCG.Api.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly ILogger<AuthController> _logger;
     private readonly IAuthService _authService;
 
     public AuthController(ILogger<AuthController> logger, IAuthService authService)
     {
-        _logger = logger;
         _authService = authService;
     }
 

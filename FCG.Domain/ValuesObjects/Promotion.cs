@@ -18,7 +18,7 @@ public sealed class Promotion : ValueObject
 
     public static Promotion None => new Promotion(PromotionType.None, 0, DateTime.MinValue, DateTime.MinValue);
 
-    public static Promotion Criar(PromotionType tipo, decimal valor, DateTime inicio, DateTime fim)
+    public static Promotion Create(PromotionType tipo, decimal valor, DateTime inicio, DateTime fim)
     {
         if (tipo != PromotionType.None && fim <= inicio)
             throw new ArgumentException("Data de fim deve ser posterior à data de início.");

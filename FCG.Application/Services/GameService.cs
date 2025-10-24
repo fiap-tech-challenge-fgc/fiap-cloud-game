@@ -1,9 +1,7 @@
 ﻿using FCG.Application.Dto.Filter;
 using FCG.Application.Dto.Order;
 using FCG.Application.Dto.Request;
-using FCG.Application.Dto.Response;
 using FCG.Application.Dto.Result;
-using FCG.Application.Interfaces.Service;
 using FCG.Domain.Data.Contexts;
 using FCG.Domain.Entities;
 using Microsoft.EntityFrameworkCore;

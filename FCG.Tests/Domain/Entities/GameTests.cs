@@ -96,7 +96,7 @@ public class GameTests
         // Arrange
         var price = 100m;
         var game = new Game(_faker.Commerce.ProductName(), "RPG", null, price);
-        var promocao = Promotion.Criar(
+        var promocao = Promotion.Create(
             PromotionType.PercentageDiscount,
             20m,
             DateTime.Now.AddDays(-1),
@@ -116,7 +116,7 @@ public class GameTests
         // Arrange
         var price = 100m;
         var game = new Game(_faker.Commerce.ProductName(), "RPG", null, price);
-        var promocao = Promotion.Criar(
+        var promocao = Promotion.Create(
             PromotionType.FixedDiscount,
             30m,
             DateTime.Now.AddDays(-1),

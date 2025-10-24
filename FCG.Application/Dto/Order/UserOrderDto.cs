@@ -1,4 +1,5 @@
 ﻿namespace FCG.Application.Dto.Order;
+
 public class UserOrderDto
 {
     public string SortBy { get; set; } = "DisplayName";

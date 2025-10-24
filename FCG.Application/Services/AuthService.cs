@@ -12,7 +12,6 @@ namespace FCG.Application.Services.Auth
     public class AuthService : IAuthService
     {
         private readonly UserManager<User> _userManager;
-        private readonly SignInManager<User> _signInManager;
         private readonly IJwtService _jwtService;
         private readonly ILogger<AuthService> _logger;
 
@@ -22,7 +21,6 @@ namespace FCG.Application.Services.Auth
                            ILogger<AuthService> logger)
         {
             _userManager = userManager;
-            _signInManager = signInManager;
             _jwtService = jwtService;
             _logger = logger;
         }
@@ -106,7 +104,7 @@ namespace FCG.Application.Services.Auth
             if (user == null)
                 return OperationResult.Failure("Usuário não encontrado.");
 
-            var passwordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
+            var passwordValid = await _userManager.CheckPasswordAsync(user, dto.NewPassword);
             if (!passwordValid)
                 return OperationResult.Failure("Senha atual incorreta.");
 
