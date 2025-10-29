@@ -35,7 +35,7 @@ public class AuthController : ControllerBase
         if (!loginResult.Succeeded)
             return BadRequest(new { errors = loginResult.Errors });
 
-        return Ok(loginResult.Data);
+        return Ok(loginResult);
 
     }
 
@@ -45,12 +45,12 @@ public class AuthController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var token = await _authService.LoginAsync(dto);
+        var result = await _authService.LoginAsync(dto);
 
-        if (token == null)
+        if (result == null || !result.Succeeded)
             return Unauthorized(new { message = "Credenciais inválidas" });
 
-        return Ok(token);
+        return Ok(result);
     }
 
     [HttpPost("refresh")]
@@ -59,23 +59,23 @@ public class AuthController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var token = await _authService.RefreshTokenAsync(dto);
+        var result = await _authService.RefreshTokenAsync(dto);
 
-        if (token == null)
+        if (result == null || !result.Succeeded)
             return Unauthorized(new { message = "Token inválido ou expirado" });
 
-        return Ok(token);
+        return Ok(result);
     }
 
     [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> GetCurrentUser()
     {
-        var userInfo = await _authService.GetCurrentUserAsync(User);
+        var result = await _authService.GetCurrentUserAsync(User);
 
-        if (userInfo == null)
+        if (result == null || !result.Succeeded)
             return NotFound(new { message = "Usuário não encontrado" });
 
-        return Ok(userInfo);
+        return Ok(result);
     }
 }

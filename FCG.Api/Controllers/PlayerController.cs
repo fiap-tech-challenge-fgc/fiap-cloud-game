@@ -24,7 +24,7 @@ public class PlayerController : ControllerBase
 
     private Guid GetAuthorizedUserGuid()
     {
-        var userId = User.FindFirst("sub")?.Value;
+        var userId = User.FindFirst("jti")?.Value;
         if (string.IsNullOrEmpty(userId))
             throw new UnauthorizedAccessException("Usuário não autenticado corretamente.");
 

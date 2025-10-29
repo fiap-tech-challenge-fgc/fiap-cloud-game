@@ -10,7 +10,8 @@
 
   <ItemGroup>
 	<PackageReference Include="Aspire.Hosting.Testing" Version="9.2.1" />
-	<PackageReference Include="Bogus" Version="35.6.4" />
+	<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.*" />
+	<PackageReference Include="Bogus" Version="35.*" />
 	<PackageReference Include="coverlet.collector" Version="6.0.2" />
 	<PackageReference Include="KubernetesClient" Version="17.0.14" />
 	<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
@@ -21,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\FCG.Host\FCG.Host.csproj" />
     <ProjectReference Include="..\FCG.Domain\FCG.Domain.csproj" />
+    <ProjectReference Include="..\FCG.Api\FCG.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>

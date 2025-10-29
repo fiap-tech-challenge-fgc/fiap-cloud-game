@@ -32,7 +32,8 @@ namespace FCG.Application.Services.Auth
                 UserName = dto.Email,
                 Email = dto.Email,
                 FirstName = dto.FirstName,
-                LastName = dto.LastName
+                LastName = dto.LastName,
+                DisplayName = dto.DisplayName
             };
 
             var result = await _userManager.CreateAsync(user, dto.Password);
