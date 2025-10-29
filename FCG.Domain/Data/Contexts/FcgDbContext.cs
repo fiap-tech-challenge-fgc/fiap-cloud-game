@@ -1,4 +1,4 @@
-ï»¿using FCG.Domain.Entities;
+using FCG.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace FCG.Domain.Data.Contexts;
@@ -9,9 +9,10 @@ public class FcgDbContext : DbContext
         : base(options) { }
 
     public DbSet<Game> Games { get; set; }
+    public DbSet<GalleryGame> GalleryGames { get; set; }
+    public DbSet<LibraryGame> LibraryGames { get; set; }
     public DbSet<Player> Players { get; set; }
-    public DbSet<Promotion> Promotions { get; set; }
-    public DbSet<Purchase> Purchases { get; set; }
+    public DbSet<Cart> Carts { get; set; }
     public DbSet<CartItem> CartItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -20,11 +21,22 @@ public class FcgDbContext : DbContext
 
         builder.HasDefaultSchema("fcg");
 
+        // TPT: cada classe com sua própria tabela
+        builder.Entity<Game>().ToTable("Games");
+        builder.Entity<GalleryGame>().ToTable("GalleryGames").HasBaseType<Game>();
+        builder.Entity<LibraryGame>().ToTable("LibraryGames").HasBaseType<Game>();
+
+        // Game
         builder.Entity<Game>(game =>
         {
             game.HasKey(g => g.Id);
+            game.HasIndex(g => g.EAN).IsUnique();
+        });
 
-            game.OwnsOne(g => g.Promotion, promocao =>
+        // GalleryGame
+        builder.Entity<GalleryGame>(gallery =>
+        {
+            gallery.OwnsOne(g => g.Promotion, promocao =>
             {
                 promocao.Property(p => p.Type).HasColumnName("Type");
                 promocao.Property(p => p.Value).HasColumnName("Value");
@@ -33,34 +45,50 @@ public class FcgDbContext : DbContext
             });
         });
 
+        // Player
+        builder.Entity<Player>(player =>
+        {
+            player.HasKey(p => p.Id);
+            player.HasIndex(p => p.UserId).IsUnique();
+        });
 
-        builder.Entity<CartItem>()
-            .HasIndex(c => new { c.PlayerId, c.GameId })
-            .IsUnique();
+        // LibraryGame
+        builder.Entity<LibraryGame>(library =>
+        {
+            library.HasOne(l => l.Player)
+                .WithMany(p => p.Library) // usa a coleção da classe Player
+                .HasForeignKey(l => l.PlayerId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
 
-        builder.Entity<CartItem>()
-            .HasOne(c => c.Game)
-            .WithMany()
-            .HasForeignKey(c => c.GameId);
+        // Cart
+        builder.Entity<Cart>(cart =>
+        {
+            cart.HasKey(c => c.Id);
 
-        builder.Entity<CartItem>()
-            .HasOne(c => c.Player)
-            .WithMany()
-            .HasForeignKey(c => c.PlayerId);
+            cart.HasOne(c => c.Player)
+                .WithMany()
+                .HasForeignKey(c => c.PlayerId);
 
-        builder.Entity<Purchase>()
-            .HasIndex(p => new { p.PlayerId, p.GameId })
-            .IsUnique(); 
+            cart.HasMany(c => c.Items)
+                .WithOne(i => i.Cart)
+                .HasForeignKey(i => i.CartId);
+        });
 
-        builder.Entity<Purchase>()
-            .HasOne(p => p.Game)
-            .WithMany()
-            .HasForeignKey(p => p.GameId);
+        // CartItem
+        builder.Entity<CartItem>(item =>
+        {
+            item.HasKey(i => i.Id);
 
-        builder.Entity<Purchase>()
-            .HasOne(p => p.Player)
-            .WithMany()
-            .HasForeignKey(p => p.PlayerId);
+            item.HasIndex(i => new { i.CartId, i.GameId }).IsUnique();
 
+            item.HasOne(i => i.Game)
+                .WithMany()
+                .HasForeignKey(i => i.GameId);
+
+            item.HasOne(i => i.Player)
+                .WithMany()
+                .HasForeignKey(i => i.PlayerId);
+        });
     }
 }

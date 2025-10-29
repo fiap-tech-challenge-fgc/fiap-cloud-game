@@ -1,6 +1,7 @@
 ﻿using FCG.Application.Dto.Filter;
 using FCG.Application.Dto.Order;
 using FCG.Application.Dto.Request;
+using FCG.Application.Dto.Response;
 using FCG.Application.Interfaces;
 using FCG.Application.Interfaces.Service;
 using FCG.Application.Security;
@@ -18,26 +19,34 @@ public class AdminController : ControllerBase
     private readonly IAuthService _authService;
     private readonly IUserService _userService;
     private readonly IGameService _gameService;
+    private readonly IGalleryService _galleryService;
+    private readonly IPurchaseService _purchaseAppService;
 
     public AdminController(
         IAuthService authService,
         IUserService userService,
-        IGameService gameService)
+        IGameService gameService,
+        IGalleryService galleryService,
+        IPurchaseService purchaseAppService)
     {
         _authService = authService;
         _userService = userService;
         _gameService = gameService;
+        _galleryService = galleryService;
+        _purchaseAppService = purchaseAppService;
     }
 
     // 👤 Exibe um usuário
     [HttpGet("users/{id}")]
     public async Task<IActionResult> GetUserById(Guid id)
     {
-        var user = await _userService.GetByIdAsync(id);
-        if (user == null)
-            return NotFound(new { message = "Usuário não encontrado" });
+        var result = await _userService.GetByIdAsync(id);
 
-        return Ok(user);
+        if (!result.Succeeded)
+            return NotFound(new { message = result.Errors });
+
+
+        return Ok(result.Data);
     }
 
     // 👤 Lista todos usuários
@@ -45,29 +54,28 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetAllUsers([FromQuery] PagedRequestDto<UserFilterDto, UserOrderDto> dto)
     {
         var users = await _userService.GetAllAsync(dto);
-        return Ok(users);
+        return Ok(users.Data);
     }
 
     // 🔐 Cadastrar novo admin
     [HttpPost("register-admin")]
     public async Task<IActionResult> RegisterAdmin([FromBody] UserCreateRequestDto dto)
     {
-        var registerResult = await _authService.RegisterUserAsync(dto, RoleConstants.Admin);
+        var result = await _authService.RegisterUserAsync(dto, RoleConstants.Admin);
 
-        if (!registerResult.Succeeded)
-            return BadRequest(new { errors = registerResult.Errors });
+        if (!result.Succeeded)
+            return BadRequest(new { errors = result.Errors });
 
         // ✅ Retorna apenas os dados do usuário criado
-        return CreatedAtAction(nameof(GetUserById), new { id = registerResult.Data!.Id }, registerResult.Data);
-
+        return CreatedAtAction(nameof(GetUserById), new { id = result.Data!.Id }, result.Data);
     }
 
     // 👤 Listar todos os admins
     [HttpGet("admins")]
     public async Task<IActionResult> GetAllAdmins([FromQuery] PagedRequestDto<UserFilterDto,UserOrderDto> dto)
     {
-        var admins = await _userService.GetUsersByRoleAsync(Roles.Admin, dto);
-        return Ok(admins);
+        var result = await _userService.GetUsersByRoleAsync(Roles.Admin, dto);
+        return Ok(result.Data);
     }
 
     // 👤 Atualizar dados de um admin
@@ -96,8 +104,8 @@ public class AdminController : ControllerBase
     [HttpGet("players")]
     public async Task<IActionResult> GetAllPlayers([FromQuery] PagedRequestDto<UserFilterDto, UserOrderDto> dto)
     {
-        var players = await _userService.GetUsersByRoleAsync(Roles.Player, dto);
-        return Ok(players);
+        var result = await _userService.GetUsersByRoleAsync(Roles.Player, dto);
+        return Ok(result.Data);
     }
 
     // 👤 Atualizar dados de um player
@@ -122,7 +130,7 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-    // 🕹️ Criar novo game
+    // 🕹️ Game Management
     [HttpPost("games")]
     public async Task<IActionResult> CreateGame([FromBody] GameCreateRequestDto dto)
     {
@@ -134,26 +142,26 @@ public class AdminController : ControllerBase
         return CreatedAtAction(nameof(GetGameById), new { id = result.Data!.Id }, result.Data);
     }
 
-    // 🕹️ Buscar game por ID
+    // 🕹️ Game Management
     [HttpGet("games/{id}")]
     public async Task<IActionResult> GetGameById(Guid id)
     {
-        var game = await _gameService.GetGameByIdAsync(id);
-        if (game == null)
-            return NotFound(new { message = "Jogo não encontrado" });
+        var result = await _gameService.GetGameByIdAsync(id);
+        if (!result.Succeeded)
+            return NotFound(new { message = result.Errors });
 
-        return Ok(game);
+        return Ok(result.Data);
     }
 
-    // 🕹️ Listar todos os games com paginação
+    // 🕹️ Game Management
     [HttpGet("games")]
     public async Task<IActionResult> GetAllGames([FromQuery] PagedRequestDto<GameFilterDto, GameOrderDto> dto)
     {
-        var games = await _gameService.GetAllGamesAsync(dto);
-        return Ok(games);
+        var result = await _gameService.GetAllGamesAsync(dto);
+        return Ok(result.Data);
     }
 
-    // 🕹️ Remover um game
+    // 🕹️ Game Management
     [HttpDelete("games/{id}")]
     public async Task<IActionResult> DeleteGame(Guid id)
     {
@@ -162,5 +170,94 @@ public class AdminController : ControllerBase
             return BadRequest(new { errors = result.Errors });
 
         return NoContent();
+    }
+
+    // 🎮 Gallery Management
+    [HttpPost("games/gallery")]
+    public async Task<ActionResult<GalleryGameResponseDto>> AddToGallery(GalleryGameCreateRequestDto request)
+    {
+        var result = await _galleryService.AddToGalleryAsync(request);
+        if (!result.Succeeded)
+            return BadRequest(result.Errors);
+
+        return CreatedAtAction(nameof(GetGalleryGame), new { id = result.Data.Id }, result.Data);
+    }
+
+    [HttpGet("games/gallery/{id}")]
+    public async Task<ActionResult<GalleryGameResponseDto>> GetGalleryGame(Guid id)
+    {
+        var result = await _galleryService.GetGalleryGameByIdAsync(id);
+        if (!result.Succeeded)
+            return NotFound(result.Errors);
+        
+        return Ok(result.Data);
+    }
+
+    [HttpPut("games/gallery/{id}")]
+    public async Task<ActionResult<GalleryGameResponseDto>> UpdateGalleryGame(Guid id, GalleryGameCreateRequestDto request)
+    {
+        var result = await _galleryService.UpdateGalleryGameAsync(id, request);
+        if (!result.Succeeded)
+            return BadRequest(result.Errors);
+
+        return Ok(result.Data);
+    }
+
+    [HttpDelete("games/gallery/{id}")]
+    public async Task<ActionResult> RemoveFromGallery(Guid id)
+    {
+        var result = await _galleryService.RemoveFromGalleryAsync(id);
+        if (!result.Succeeded)
+            return BadRequest(result.Errors);
+
+        return NoContent();
+    }
+
+    [HttpPost("games/gallery/{id}/promotion")]
+    public async Task<ActionResult> ApplyPromotion(Guid id, [FromBody] GalleryPromotionRequestDto request)
+    {
+        var result = await _galleryService.ApplyPromotionAsync(
+            id,
+            request.PromotionType,
+            request.PromotionValue,
+            request.PromotionStartDate,
+            request.PromotionEndDate);
+
+        if (!result.Succeeded)
+            return BadRequest(result.Errors);
+
+        return NoContent();
+    }
+
+    [HttpDelete("games/gallery/{id}/promotion")]
+    public async Task<ActionResult> RemovePromotion(Guid id)
+    {
+        var result = await _galleryService.RemovePromotionAsync(id);
+        if (!result.Succeeded)
+            return BadRequest(result.Errors);
+
+        return NoContent();
+    }
+
+    // 📃 Purchase Management
+    [HttpGet("purchases")]
+    public async Task<IActionResult> GetAllPurchases([FromQuery] PagedRequestDto<PurchaseFilterDto, PurchaseOrderDto> dto)
+    {
+        var resultPurchases = await _purchaseAppService.GetAllPurchasesAsync(dto);
+
+        if (!resultPurchases.Succeeded)
+            return NotFound(resultPurchases.Errors);
+
+        return Ok(resultPurchases.Data);
+    }
+
+    [HttpGet("purchases/stats")]
+    public async Task<IActionResult> GetPurchaseStats([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+    {
+        var result = await _purchaseAppService.GetPurchaseStatsAsync(startDate, endDate);
+        if (!result.Succeeded)
+            return NotFound(new { errors = result.Errors });
+
+        return Ok(result.Data);
     }
 }

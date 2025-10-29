@@ -45,12 +45,4 @@ public class OperationResult<T> : OperationResult
             Errors = errors.ToList()
         };
     }
-
-    public void AddError(string error)
-    {
-        var errors = Errors.ToList();
-        errors.Add(error);
-        Errors = errors;
-        Succeeded = false;
-    }
 }

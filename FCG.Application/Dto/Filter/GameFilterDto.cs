@@ -1,4 +1,4 @@
-﻿namespace FCG.Application.Dto.Filter;
+namespace FCG.Application.Dto.Filter;
 
 public class GameFilterDto
 {

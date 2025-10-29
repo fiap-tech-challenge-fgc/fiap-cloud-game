@@ -13,7 +13,7 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
 
-    public AuthController(ILogger<AuthController> logger, IAuthService authService)
+    public AuthController(IAuthService authService)
     {
         _authService = authService;
     }
@@ -21,10 +21,10 @@ public class AuthController : ControllerBase
     [HttpPost("register-player")]
     public async Task<IActionResult> Register([FromBody] UserCreateRequestDto dto)
     {
-        var registerResult = await _authService.RegisterUserAsync(dto, RoleConstants.Admin);
+        var result = await _authService.RegisterUserAsync(dto, RoleConstants.Admin);
 
-        if (!registerResult.Succeeded)
-            return BadRequest(new { errors = registerResult.Errors });
+        if (!result.Succeeded)
+            return BadRequest(new { errors = result.Errors });
 
         var loginResult = await _authService.LoginAsync(new UserLoginRequestDto
         {
@@ -45,12 +45,12 @@ public class AuthController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var token = await _authService.LoginAsync(dto);
+        var result = await _authService.LoginAsync(dto);
 
-        if (token == null)
-            return Unauthorized(new { message = "Credenciais inválidas" });
+        if (!result.Succeeded)
+            return Unauthorized(new { message = result.Errors });
 
-        return Ok(token);
+        return Ok(result.Data);
     }
 
     [HttpPost("refresh")]
@@ -59,23 +59,23 @@ public class AuthController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var token = await _authService.RefreshTokenAsync(dto);
+        var result = await _authService.RefreshTokenAsync(dto);
 
-        if (token == null)
-            return Unauthorized(new { message = "Token inválido ou expirado" });
+        if (!result.Succeeded)
+            return Unauthorized(new { message = result.Errors });
 
-        return Ok(token);
+        return Ok(result.Data);
     }
 
     [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> GetCurrentUser()
     {
-        var userInfo = await _authService.GetCurrentUserAsync(User);
+        var result = await _authService.GetCurrentUserAsync(User);
 
-        if (userInfo == null)
+        if (!result.Succeeded)
             return NotFound(new { message = "Usuário não encontrado" });
 
-        return Ok(userInfo);
+        return Ok(result.Data);
     }
 }

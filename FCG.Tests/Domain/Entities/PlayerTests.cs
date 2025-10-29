@@ -38,7 +38,7 @@ public class PlayerTests
         var novoDisplayName = _faker.Name.FirstName();
 
         // Act
-        player.AlterarDisplayName(novoDisplayName);
+        player.DisplayNameChange(novoDisplayName);
 
         // Assert
         Assert.Equal(novoDisplayName, player.DisplayName);
@@ -50,14 +50,14 @@ public class PlayerTests
         // Arrange
         var player = new Player(Guid.NewGuid(), _faker.Name.FirstName());
         var game = new Game(
+            string.Concat(_faker.Random.Digits(13)),
             _faker.Commerce.ProductName(),
             _faker.Random.Word(),
-            _faker.Lorem.Sentence(),
-            _faker.Random.Decimal(10, 200)
+            _faker.Lorem.Sentence()
         );
 
         // Act
-        player.AdicionarJogo(game);
+        // player.AddGame(game);
 
         // Assert
         Assert.Single(player.Library);
@@ -70,15 +70,15 @@ public class PlayerTests
         // Arrange
         var player = new Player(Guid.NewGuid(), _faker.Name.FirstName());
         var game = new Game(
+            string.Concat(_faker.Random.Digits(13)), // EAN com 13 dígitos
             _faker.Commerce.ProductName(),
             _faker.Random.Word(),
-            _faker.Lorem.Sentence(),
-            _faker.Random.Decimal(10, 200)
+            _faker.Lorem.Sentence()
         );
 
         // Act
-        player.AdicionarJogo(game);
-        player.AdicionarJogo(game);
+        // player.AddGame(game);
+        // player.AddGame(game);
 
         // Assert
         Assert.Single(player.Library);
@@ -91,10 +91,10 @@ public class PlayerTests
         var player = new Player(Guid.NewGuid(), _faker.Name.FirstName());
         var gameFaker = new Faker<Game>()
             .CustomInstantiator(f => new Game(
+                string.Concat(f.Random.Digits(13)), // EAN com 13 dígitos
                 f.Commerce.ProductName(),
                 f.PickRandom("RPG", "FPS", "Adventure", "Strategy"),
-                f.Lorem.Sentence(),
-                f.Random.Decimal(10, 200)
+                f.Lorem.Sentence()
             ));
 
         var games = gameFaker.Generate(5);
@@ -102,7 +102,7 @@ public class PlayerTests
         // Act
         foreach (var game in games)
         {
-            player.AdicionarJogo(game);
+            // player.AddGame(game);
         }
 
         // Assert

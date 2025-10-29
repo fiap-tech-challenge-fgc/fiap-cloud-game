@@ -1,184 +1,132 @@
-﻿using FCG.Application.Dto.Request;
+using FCG.Application.Dto.Request;
 using FCG.Application.Dto.Response;
 using FCG.Application.Dto.Result;
-using FCG.Application.Interfaces;
-using FCG.Domain.Data.Contexts;
-using FCG.Domain.Enums;
-using Microsoft.EntityFrameworkCore;
+using FCG.Application.Interfaces.Repository;
+using FCG.Application.Interfaces.Service;
+using FCG.Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace FCG.Application.Services;
 
 public class PlayerService : IPlayerService
 {
-    private readonly FcgDbContext _context;
-    private readonly UserDbContext _userContext;
+    private readonly IPlayerRepository _playerRepository;
+    private readonly ILogger<PlayerService> _logger;
 
-    public PlayerService(FcgDbContext context, UserDbContext userContext)
+    public PlayerService(
+        IPlayerRepository playerRepository,
+        ILogger<PlayerService> logger)
     {
-        _context = context;
-        _userContext = userContext;
+        _playerRepository = playerRepository;
+        _logger = logger;
     }
 
-    public async Task<PlayerWithUserResponseDto?> GetByIdAsync(Guid playerId)
+    public async Task<OperationResult<PlayerWithUserResponseDto>> GetByIdAsync(Guid playerId)
     {
-        var player = await _context.Players
-            .Include(p => p.Library)
-            .FirstOrDefaultAsync(p => p.Id == playerId);
+        var player = await _playerRepository.GetByIdAsync(playerId);
+        if (player == null)
+        {
+            _logger.LogWarning("Jogador não encontrado: {PlayerId}", playerId);
+            return OperationResult<PlayerWithUserResponseDto>.Failure("Jogador não encontrado.");
+        }
 
-        if (player == null) return null;
-
-        var user = await _userContext.Users.FindAsync(player.UserId);
-        if (user == null) return null;
-
-        return new PlayerWithUserResponseDto
+        var dto = new PlayerWithUserResponseDto
         {
             PlayerId = player.Id,
+            UserId = player.UserId,
             DisplayName = player.DisplayName,
-            Games = player.Library.Select(g => g.Name).ToList(),
-            UserId = user.Id,
-            UserFullName = user.FullName,
-            Email = user.Email ?? string.Empty
+            GamesCount = player.Library?.Count ?? 0
         };
+
+        return OperationResult<PlayerWithUserResponseDto>.Success(dto);
     }
 
     public async Task<OperationResult> CreateAsync(PlayerCreateDto dto)
     {
-        var exists = await _context.Players.AnyAsync(p => p.UserId == dto.UserId);
-        if (exists)
-            return OperationResult.Failure("Jogador já existe para este usuário.");
+        if (string.IsNullOrWhiteSpace(dto.DisplayName))
+            return OperationResult.Failure("DisplayName é obrigatório.");
 
-        var player = new Player(dto.UserId, dto.DisplayName);
-        _context.Players.Add(player);
-        await _context.SaveChangesAsync();
+        if (await _playerRepository.ExistsByUserIdAsync(dto.UserId))
+        {
+            _logger.LogWarning("Tentativa de criar jogador duplicado para usuário: {UserId}", dto.UserId);
+            return OperationResult.Failure("Já existe um jogador para este usuário.");
+        }
 
-        return OperationResult.Success();
+        try
+        {
+            var player = new Player(dto.UserId, dto.DisplayName);
+            await _playerRepository.AddAsync(player);
+
+            _logger.LogInformation("Jogador criado com sucesso: {PlayerId} para usuário: {UserId}", player.Id, dto.UserId);
+            return OperationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao criar jogador para usuário: {UserId}", dto.UserId);
+            return OperationResult.Failure("Erro ao criar jogador.");
+        }
     }
 
     public async Task<OperationResult> UpdateDisplayNameAsync(Guid playerId, string newDisplayName)
     {
-        var player = await _context.Players.FindAsync(playerId);
+        if (string.IsNullOrWhiteSpace(newDisplayName))
+            return OperationResult.Failure("DisplayName não pode ser vazio.");
+
+        var player = await _playerRepository.GetByIdAsync(playerId);
         if (player == null)
+        {
+            _logger.LogWarning("Tentativa de atualizar DisplayName de jogador inexistente: {PlayerId}", playerId);
             return OperationResult.Failure("Jogador não encontrado.");
-
-        player.AlterarDisplayName(newDisplayName);
-        await _context.SaveChangesAsync();
-
-        return OperationResult.Success();
-    }
-
-    public async Task<OperationResult> AddGameToLibraryAsync(Guid playerId, Guid gameId)
-    {
-        var player = await _context.Players
-            .Include(p => p.Library)
-            .FirstOrDefaultAsync(p => p.Id == playerId);
-
-        if (player == null)
-            return OperationResult.Failure("Jogador não encontrado.");
-
-        var game = await _context.Games.FindAsync(gameId);
-        if (game == null)
-            return OperationResult.Failure("Jogo não encontrado.");
-
-        player.AdicionarJogo(game);
-        await _context.SaveChangesAsync();
-
-        return OperationResult.Success();
-    }
-
-    public async Task<IEnumerable<PlayerResponseDto>> GetAllAsync()
-    {
-        var players = await _context.Players
-            .Include(p => p.Library)
-            .ToListAsync();
-
-        return players.Select(p => new PlayerResponseDto
-        {
-            Id = p.Id,
-            DisplayName = p.DisplayName,
-            Games = p.Library.Select(g => g.Name).ToList()
-        });
-    }
-
-    public async Task<IEnumerable<Dto.Request.GameResponseDto>> GetPurchasedGamesAsync(Guid playerId)
-    {
-        var purchases = await _context.Purchases
-            .Include(p => p.Game)
-            .Where(p => p.PlayerId == playerId)
-            .ToListAsync();
-
-        return purchases.Select(p => new Dto.Request.GameResponseDto
-        {
-            Id = p.Game.Id,
-            Name = p.Game.Name,
-            Genre = p.Game.Genre,
-            Description = p.Game.Description,
-            Price = p.Game.PrecoFinal
-        });
-    }
-
-    public async Task<IEnumerable<Dto.Request.GameResponseDto>> GetCartItemsAsync(Guid playerId)
-    {
-        var cartItems = await _context.CartItems
-            .Include(c => c.Game)
-            .Where(c => c.PlayerId == playerId)
-            .ToListAsync();
-
-        return cartItems.Select(c => new Dto.Request.GameResponseDto
-        {
-            Id = c.Game.Id,
-            Name = c.Game.Name,
-            Genre = c.Game.Genre,
-            Description = c.Game.Description,
-            Price = c.Game.PrecoFinal
-        });
-    }
-
-    public async Task<IEnumerable<GameResponseDto>> GetAvailableGamesAsync(
-        string? orderBy,
-        bool excludeOwned,
-        Guid? playerId)
-    {
-        var query = _context.Games.AsQueryable();
-
-        if (excludeOwned && playerId.HasValue)
-        {
-            var ownedGameIds = await _context.Purchases
-                .Where(p => p.PlayerId == playerId.Value)
-                .Select(p => p.GameId)
-                .ToListAsync();
-
-            query = query.Where(g => !ownedGameIds.Contains(g.Id));
         }
 
-        query = orderBy switch
+        try
         {
-            "discount-fixed-desc" => query.OrderByDescending(g =>
-                g.Promotion.Type == PromotionType.FixedDiscount ? g.Promotion.Value : 0),
+            player.DisplayNameChange(newDisplayName);
+            await _playerRepository.UpdateAsync(player);
 
-            "discount-fixed-asc" => query.OrderBy(g =>
-                g.Promotion.Type == PromotionType.FixedDiscount ? g.Promotion.Value : 0),
-
-            "discount-percent-desc" => query.OrderByDescending(g =>
-                g.Promotion.Type == PromotionType.PercentageDiscount ? g.Promotion.Value : 0),
-
-            "discount-percent-asc" => query.OrderBy(g =>
-                g.Promotion.Type == PromotionType.PercentageDiscount ? g.Promotion.Value : 0),
-
-            _ => query.OrderBy(g => g.Name)
-        };
-
-        var games = await query.ToListAsync();
-
-        return games.Select(g => new GameResponseDto
+            _logger.LogInformation("DisplayName atualizado com sucesso para jogador: {PlayerId}", playerId);
+            return OperationResult.Success();
+        }
+        catch (InvalidOperationException ex)
         {
-            Id = g.Id,
-            Name = g.Name,
-            Genre = g.Genre,
-            Description = g.Description,
-            Price = g.PrecoFinal,
-            OnSale = g.Promotion.IsActive(DateTime.UtcNow),
-            TypePromotion = g.Promotion.Type.ToString(),
-            PromotionValue = g.Promotion.Value
-        });
+            _logger.LogWarning(ex, "DisplayName inválido para jogador: {PlayerId}", playerId);
+            return OperationResult.Failure(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao atualizar DisplayName do jogador: {PlayerId}", playerId);
+            return OperationResult.Failure("Erro ao atualizar DisplayName.");
+        }
+    }
+
+    public async Task<OperationResult<IEnumerable<PlayerResponseDto>>> GetAllAsync()
+    {
+        try
+        {
+            var players = await _playerRepository.GetAllAsync();
+            var dtoList = players.Select(p => new PlayerResponseDto
+            {
+                Id = p.Id,
+                DisplayName = p.DisplayName,
+                GamesCount = p.Library?.Count ?? 0
+            });
+
+            return OperationResult<IEnumerable<PlayerResponseDto>>.Success(dtoList);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao buscar lista de jogadores");
+            return OperationResult<IEnumerable<PlayerResponseDto>>.Failure("Erro ao buscar jogadores.");
+        }
+    }
+
+    public async Task<bool> ExistsAsync(Guid playerId)
+    {
+        return await _playerRepository.ExistsAsync(playerId);
+    }
+
+    public async Task<bool> ExistsByUserIdAsync(Guid userId)
+    {
+        return await _playerRepository.ExistsByUserIdAsync(userId);
     }
 }

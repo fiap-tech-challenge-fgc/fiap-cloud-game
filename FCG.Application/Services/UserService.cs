@@ -9,6 +9,7 @@ using FCG.Domain.Entities;
 using FCG.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Data;
 
 namespace FCG.Application.Services;
@@ -22,22 +23,24 @@ public class UserService : IUserService
         _userManager = userManager;
     }
 
-    public async Task<PagedResult<UserInfoResponseDto>> GetAllAsync(PagedRequestDto<UserFilterDto,UserOrderDto> dto)
+    public async Task<OperationResult<PagedResult<UserInfoResponseDto>>> GetAllAsync(PagedRequestDto<UserFilterDto, UserOrderDto> dto)
     {
         var users = await GetUsers(dto);
         var userDtos = users.Select(Map).ToList();
         var totalItems = userDtos.Count;
 
-        return new PagedResult<UserInfoResponseDto>
+        var pagedList = new PagedResult<UserInfoResponseDto>
         {
             Items = userDtos,
             PageNumber = dto.PageNumber,
             PageSize = dto.PageSize,
             TotalItems = totalItems
         };
+
+        return OperationResult<PagedResult<UserInfoResponseDto>>.Success(pagedList);
     }
 
-    public async Task<PagedResult<UserInfoResponseDto>> GetUsersByRoleAsync(Roles role, PagedRequestDto<UserFilterDto, UserOrderDto> dto)
+    public async Task<OperationResult<PagedResult<UserInfoResponseDto>>> GetUsersByRoleAsync(Roles role, PagedRequestDto<UserFilterDto, UserOrderDto> dto)
     {
         var users = await GetUsers(dto);
 
@@ -59,57 +62,29 @@ public class UserService : IUserService
 
         var totalItems = filteredUsers.Count;
 
-        return new PagedResult<UserInfoResponseDto>
+        var pagedList = new PagedResult<UserInfoResponseDto>
         {
             Items = filteredUsers,
             PageNumber = dto.PageNumber,
             PageSize = dto.PageSize,
             TotalItems = totalItems
         };
+
+        return OperationResult<PagedResult<UserInfoResponseDto>>.Success(pagedList);
     }
 
-    private async Task<List<User>> GetUsers(PagedRequestDto<UserFilterDto, UserOrderDto> dto)
-    {
-        var query = _userManager.Users.Where(u => u.EmailConfirmed);
-
-        // ✅ Aplicar filtros
-        if (dto.Filter != null)
-        {
-            if (!string.IsNullOrWhiteSpace(dto.Filter.Name))
-                query = query.Where(u => u.DisplayName.Contains(dto.Filter.Name));
-
-            if (!string.IsNullOrWhiteSpace(dto.Filter.Email))
-                query = query.Where(u => u.Email.Contains(dto.Filter.Email));
-        }
-
-        // ✅ Ordenação dinâmica com TOrder
-        if (dto.OrderBy != null)
-        {
-            query = dto.OrderBy.SortBy.ToLower() switch
-            {
-                "firstname" => dto.OrderBy.Ascending ? query.OrderBy(u => u.FirstName) : query.OrderByDescending(u => u.FirstName),
-                "lastname" => dto.OrderBy.Ascending ? query.OrderBy(u => u.LastName) : query.OrderByDescending(u => u.LastName),
-                "email" => dto.OrderBy.Ascending ? query.OrderBy(u => u.Email) : query.OrderByDescending(u => u.Email),
-                _ => dto.OrderBy.Ascending ? query.OrderBy(u => u.DisplayName) : query.OrderByDescending(u => u.DisplayName)
-            };
-        }
-
-        var users = await query
-            .Skip((dto.PageNumber - 1) * dto.PageSize)
-            .Take(dto.PageSize)
-            .ToListAsync();
-
-        return users;
-    }
-
-
-    public async Task<UserInfoResponseDto?> GetByIdAsync(Guid userId)
+    public async Task<OperationResult<UserInfoResponseDto?>> GetByIdAsync(Guid userId)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user == null) return null;
+        if (user == null) return OperationResult<UserInfoResponseDto?>.Failure("Usuário não encontrado.");
 
         var roles = await _userManager.GetRolesAsync(user);
-        return roles.Contains(RoleConstants.Player) ? Map(user) : null;
+
+        var userMap = roles.Contains(RoleConstants.Player) ? Map(user) : null;
+
+        if (userMap == null) return OperationResult<UserInfoResponseDto?>.Failure("Usuário não encontrado.");
+
+        return OperationResult<UserInfoResponseDto?>.Success(Map(user));
     }
 
     public async Task<OperationResult> UpdateUserAsync(Guid userId, UserUpdateRequestDto dto)
@@ -153,6 +128,41 @@ public class UserService : IUserService
         return result.Succeeded ? OperationResult.Success() : OperationResult.Failure("Erro ao inativar usuário.");
     }
 
+    #region privates methods
+    private async Task<List<User>> GetUsers(PagedRequestDto<UserFilterDto, UserOrderDto> dto)
+    {
+        var query = _userManager.Users.Where(u => u.EmailConfirmed);
+
+        // ✅ Aplicar filtros
+        if (dto.Filter != null)
+        {
+            if (!string.IsNullOrWhiteSpace(dto.Filter.Name))
+                query = query.Where(u => u.DisplayName.Contains(dto.Filter.Name));
+
+            if (!string.IsNullOrWhiteSpace(dto.Filter.Email))
+                query = query.Where(u => u.Email != null && u.Email.Contains(dto.Filter.Email));
+        }
+
+        // ✅ Ordenação dinâmica com TOrder
+        if (dto.OrderBy != null)
+        {
+            query = dto.OrderBy.SortBy.ToLower() switch
+            {
+                "firstname" => dto.OrderBy.Ascending ? query.OrderBy(u => u.FirstName) : query.OrderByDescending(u => u.FirstName),
+                "lastname" => dto.OrderBy.Ascending ? query.OrderBy(u => u.LastName) : query.OrderByDescending(u => u.LastName),
+                "email" => dto.OrderBy.Ascending ? query.OrderBy(u => u.Email) : query.OrderByDescending(u => u.Email),
+                _ => dto.OrderBy.Ascending ? query.OrderBy(u => u.DisplayName) : query.OrderByDescending(u => u.DisplayName)
+            };
+        }
+
+        var users = await query
+            .Skip((dto.PageNumber - 1) * dto.PageSize)
+            .Take(dto.PageSize)
+            .ToListAsync();
+
+        return users;
+    }
+
     private UserInfoResponseDto Map(User user) => new UserInfoResponseDto
     {
         Id = user.Id,
@@ -161,4 +171,5 @@ public class UserService : IUserService
         LastName = user.LastName,
         Email = user.Email!
     };
+    #endregion
 }

@@ -1,5 +1,6 @@
 ﻿using FCG.Domain.Enums;
-using FCG.Domain.ValuesObjects;
+
+namespace FCG.Domain.ValuesObjects;
 
 public sealed class Promotion : ValueObject
 {

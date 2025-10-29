@@ -1,4 +1,5 @@
-﻿using FCG.Domain.Entities;
+﻿using FCG.Domain.Data.Configurations;
+using FCG.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,7 @@ public class UserDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
         base.OnModelCreating(builder);
 
         builder.HasDefaultSchema("identity");
+        builder.ApplyConfiguration(new UserConfiguration());
         builder.Entity<User>().ToTable("Users");
         builder.Entity<IdentityRole<Guid>>().ToTable("Roles");
         builder.Entity<IdentityUserRole<Guid>>().ToTable("UserRoles");

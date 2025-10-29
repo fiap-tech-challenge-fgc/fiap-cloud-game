@@ -4,6 +4,11 @@ namespace FCG.Application.Dto.Request;
 
 public class GameCreateRequestDto
 {
+    [Required(ErrorMessage = "EAN do jogo é obrigatório")]
+    [StringLength(13, MinimumLength = 13, ErrorMessage = "O nome deve ter 13 caracteres")]
+    [RegularExpression(@"^\d{13}$", ErrorMessage = "EAN deve conter exatamente 13 dígitos numéricos.")]
+    public string EAN { get; set; } = string.Empty;
+
     [Required(ErrorMessage = "Nome do jogo é obrigatório")]
     [StringLength(100, MinimumLength = 2, ErrorMessage = "O nome deve ter entre 2 e 100 caracteres")]
     public string Name { get; set; } = string.Empty;

@@ -20,21 +20,47 @@ public class InfrastructureInitializer : IInfrastructureInitializer
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        using var scope = _provider.CreateScope();
-        var sp = scope.ServiceProvider;
-
         try
         {
-            var identityDb = sp.GetRequiredService<UserDbContext>();
-            if (identityDb != null) 
-                await identityDb.Database.MigrateAsync(cancellationToken);
+            _logger.LogInformation("Infraestrutura inicializando seeds.");
 
-            var appDb = sp.GetService<FcgDbContext>();
-            if (appDb != null)
-                await appDb.Database.MigrateAsync(cancellationToken);
+            // 1. Identity
+            using (var scope = _provider.CreateScope())
+            {
+                var sp = scope.ServiceProvider;
+                var identityDb = sp.GetRequiredService<UserDbContext>();
 
-            var seedService = sp.GetRequiredService<ISeedService>();
-            await seedService.SeedAsync(cancellationToken);
+                // Aplica apenas migrations pendentes do Identity
+                var pendingMigrations = await identityDb.Database.GetPendingMigrationsAsync(cancellationToken);
+                if (pendingMigrations.Any())
+                {
+                    _logger.LogInformation("Aplicando migrations do Identity...");
+                    await identityDb.Database.MigrateAsync(cancellationToken);
+                }
+
+                var seedService = sp.GetRequiredService<ISeedService>();
+                await seedService.SeedIdentityAsync(sp, cancellationToken);
+            }
+
+            // 2. Aplicação
+            using (var scope = _provider.CreateScope())
+            {
+                var sp = scope.ServiceProvider;
+                var appDb = sp.GetRequiredService<FcgDbContext>();
+
+                // Apenas garante que o banco existe e aplica migrations pendentes
+                var appPendingMigrations = await appDb.Database.GetPendingMigrationsAsync(cancellationToken);
+                if (appPendingMigrations.Any())
+                {
+                    _logger.LogInformation("Aplicando migrations da aplicação...");
+                    await appDb.Database.MigrateAsync(cancellationToken);
+                }
+
+                var seedService = sp.GetRequiredService<ISeedService>();
+                await seedService.SeedApplicationAsync(cancellationToken);
+            }
+
+            _logger.LogInformation("Infraestrutura e seeds inicializados com sucesso.");
         }
         catch (Exception ex)
         {

@@ -18,14 +18,16 @@ public class CartItemTests
         // Arrange
         var playerId = Guid.NewGuid();
         var gameId = Guid.NewGuid();
+        var cartId = Guid.NewGuid();
 
         // Act
-        var cartItem = new CartItem(playerId, gameId);
+        var cartItem = new CartItem(playerId, gameId, cartId);
 
         // Assert
         Assert.NotEqual(Guid.Empty, cartItem.Id);
         Assert.Equal(playerId, cartItem.PlayerId);
         Assert.Equal(gameId, cartItem.GameId);
+        Assert.Equal(cartId, cartItem.CartId);
     }
 
     [Fact]
@@ -34,53 +36,56 @@ public class CartItemTests
         // Arrange
         var playerId = Guid.NewGuid();
         var gameId = Guid.NewGuid();
+        var cartId = Guid.NewGuid();
 
         // Act
-        var cartItem1 = new CartItem(playerId, gameId);
-        var cartItem2 = new CartItem(playerId, gameId);
+        var cartItem1 = new CartItem(playerId, gameId, cartId);
+        var cartItem2 = new CartItem(playerId, gameId, cartId);
 
         // Assert
         Assert.NotEqual(cartItem1.Id, cartItem2.Id);
     }
 
     [Fact]
-    public void CartItem_DevePermitirMultiplosItensParaMesmoJogador()
+    public void CartItem_DevePermitirMultiplosItensParaMesmoCarrinho()
     {
         // Arrange
         var playerId = Guid.NewGuid();
+        var cartId = Guid.NewGuid();
         var game1Id = Guid.NewGuid();
         var game2Id = Guid.NewGuid();
         var game3Id = Guid.NewGuid();
 
         // Act
-        var cartItem1 = new CartItem(playerId, game1Id);
-        var cartItem2 = new CartItem(playerId, game2Id);
-        var cartItem3 = new CartItem(playerId, game3Id);
+        var cartItem1 = new CartItem(playerId, game1Id, cartId);
+        var cartItem2 = new CartItem(playerId, game2Id, cartId);
+        var cartItem3 = new CartItem(playerId, game3Id, cartId);
 
         // Assert
-        Assert.Equal(playerId, cartItem1.PlayerId);
-        Assert.Equal(playerId, cartItem2.PlayerId);
-        Assert.Equal(playerId, cartItem3.PlayerId);
+        Assert.Equal(cartId, cartItem1.CartId);
+        Assert.Equal(cartId, cartItem2.CartId);
+        Assert.Equal(cartId, cartItem3.CartId);
         Assert.NotEqual(cartItem1.GameId, cartItem2.GameId);
         Assert.NotEqual(cartItem2.GameId, cartItem3.GameId);
     }
 
     [Fact]
-    public void CartItem_DevePermitirMesmoJogoEmCarrinhoDiferentesJogadores()
+    public void CartItem_DevePermitirMesmoJogoEmCarrinhosDiferentes()
     {
         // Arrange
-        var player1Id = Guid.NewGuid();
-        var player2Id = Guid.NewGuid();
+        var playerId = Guid.NewGuid();
+        var cart1Id = Guid.NewGuid();
+        var cart2Id = Guid.NewGuid();
         var gameId = Guid.NewGuid();
 
         // Act
-        var cartItem1 = new CartItem(player1Id, gameId);
-        var cartItem2 = new CartItem(player2Id, gameId);
+        var cartItem1 = new CartItem(playerId, gameId, cart1Id);
+        var cartItem2 = new CartItem(playerId, gameId, cart2Id);
 
         // Assert
         Assert.Equal(gameId, cartItem1.GameId);
         Assert.Equal(gameId, cartItem2.GameId);
-        Assert.NotEqual(cartItem1.PlayerId, cartItem2.PlayerId);
+        Assert.NotEqual(cartItem1.CartId, cartItem2.CartId);
         Assert.NotEqual(cartItem1.Id, cartItem2.Id);
     }
 
@@ -90,29 +95,32 @@ public class CartItemTests
         // Arrange
         var playerId = Guid.NewGuid();
         var gameId = Guid.NewGuid();
+        var cartId = Guid.NewGuid();
 
         // Act
-        var cartItem = new CartItem(playerId, gameId);
+        var cartItem = new CartItem(playerId, gameId, cartId);
 
         // Assert
-        Assert.NotEqual(Guid.Empty, cartItem.Id);
-        Assert.NotEqual(Guid.Empty, cartItem.PlayerId);
-        Assert.NotEqual(Guid.Empty, cartItem.GameId);
+        Assert.NotNull(cartItem.Game);
+        Assert.NotNull(cartItem.Player);
+        Assert.NotNull(cartItem.Cart);
     }
 
     [Fact]
-    public void CartItem_DeveManterConsistenciaEntreIdReferencias()
+    public void CartItem_DeveManterConsistenciaEntreIdEReferencias()
     {
         // Arrange
         var playerId = Guid.NewGuid();
         var gameId = Guid.NewGuid();
+        var cartId = Guid.NewGuid();
 
         // Act
-        var cartItem = new CartItem(playerId, gameId);
+        var cartItem = new CartItem(playerId, gameId, cartId);
 
         // Assert
         Assert.Equal(playerId, cartItem.PlayerId);
         Assert.Equal(gameId, cartItem.GameId);
+        Assert.Equal(cartId, cartItem.CartId);
     }
 
     [Fact]
@@ -120,10 +128,12 @@ public class CartItemTests
     {
         // Arrange
         var playerId = Guid.NewGuid();
+        var cartId = Guid.NewGuid();
         var cartItemFaker = new Faker<CartItem>()
             .CustomInstantiator(f => new CartItem(
                 playerId,
-                Guid.NewGuid()
+                Guid.NewGuid(),
+                cartId
             ));
 
         // Act
@@ -131,7 +141,11 @@ public class CartItemTests
 
         // Assert
         Assert.Equal(10, cartItems.Count);
-        Assert.All(cartItems, item => Assert.Equal(playerId, item.PlayerId));
+        Assert.All(cartItems, item => 
+        {
+            Assert.Equal(playerId, item.PlayerId);
+            Assert.Equal(cartId, item.CartId);
+        });
         Assert.Equal(cartItems.Count, cartItems.Select(c => c.Id).Distinct().Count());
         Assert.Equal(cartItems.Count, cartItems.Select(c => c.GameId).Distinct().Count());
     }

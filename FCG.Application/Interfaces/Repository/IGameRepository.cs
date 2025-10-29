@@ -1,0 +1,16 @@
+using FCG.Domain.Entities;
+
+namespace FCG.Application.Interfaces.Repository;
+
+public interface IGameRepository
+{
+    Task<Game?> GetByIdAsync(Guid id);
+    Task<IEnumerable<Game>> GetAllAsync();
+    Task<IEnumerable<Game>> GetByIdsAsync(IEnumerable<Guid> ids);
+    Task<Game> AddAsync(Game game);
+    Task UpdateAsync(Game game);
+    Task DeleteAsync(Game game);
+    Task<bool> ExistsAsync(Guid id);
+    Task<bool> ExistsAsync(string EAN);
+    Task<int> SaveChangesAsync();
+}
