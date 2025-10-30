@@ -1,7 +1,9 @@
 ﻿using FCG.Application.Interfaces.Service;
+using FCG.Domain.Data.Contexts;
 using FCG.Domain.Entities;
 using FCG.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -98,6 +100,36 @@ public class SeedService : ISeedService
             _logger.LogError(ex, "Erro durante execução do seed de identidade");
             throw;
         }
+
+        try
+        {
+            // Seed de games
+            _logger.LogInformation("Iniciando seed de games");
+
+            var fcgDbContext = sp.GetRequiredService<FcgDbContext>();
+
+            var games = GetPreconfiguredGames().ToList();
+
+            foreach (var game in games)
+            {
+                var exists = await fcgDbContext.Games.AnyAsync(g => g.Name == game.Name);
+                if (!exists)
+                {
+                    await fcgDbContext.Games.AddAsync(game, cancellationToken);
+                    _logger.LogInformation($"Game Adicionado na base. Nome: {game.Name}");
+                }
+                
+                await fcgDbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            _logger.LogInformation("Seed de games concluída. {Count} jogos adicionados", games.Count);
+            
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro durante execução do seed de games");
+            throw;
+        }
     }
 
 
@@ -153,6 +185,56 @@ public class SeedService : ISeedService
                 UserName = "rm367929",
                 Email = "rm367929@fiap.com.br"
             }
+        };
+    }
+
+    private List<Game> GetPreconfiguredGames()
+    {
+        return new List<Game>
+        {
+            new Game
+            (
+                name: "The Legend of Zelda: Breath of the Wild",
+                genre: "Action-Adventure",
+                description: "Um épico jogo de aventura em mundo aberto onde você explora o reino de Hyrule e enfrenta o mal.",
+                price: 299.90m
+            ),
+            new Game
+            (
+                name: "FIFA26",
+                genre: "ESports",
+                description: "A Copa do Mundo da FIFA 26™ será a 23a edição do torneio de Futebol, mas a primeira com 48 equipes e 3 países sedes : Canadá, Estados Unidos e México",
+                price: 279.90m
+            ),
+            new Game
+            (
+                name: "God of War Ragnarök",
+                genre: "Action",
+                description: "Continue a jornada de Kratos e Atreus pelos reinos nórdicos em busca de respostas e batalhas épicas.",
+                price: 349.90m
+            ),
+            new Game
+            (
+                name: "Elden Ring",
+                genre: "RPG",
+                description: "Um RPG de ação desafiador criado por FromSoftware e George R.R. Martin em um vasto mundo de fantasia sombria.",
+                price: 279.90m
+            ),
+            new Game
+            (
+                name: "Minecraft",
+                genre: "Sandbox",
+                description: "O famoso jogo de construção e sobrevivência onde você pode criar qualquer coisa que imaginar.",
+                price: 89.90m
+            ),
+            new Game
+            (
+                name: "AstroBot",
+                genre: "Action",
+                description: "No jogo, o jogador controla Astro em uma missão para resgatar os Lost Bots, recuperar partes da nave-mãe do PlayStation 5 e derrotar o alienígena Space Bully Nebulax, responsável por destruir a nave.",
+                price: 339.90m
+            ),
+
         };
     }
 }

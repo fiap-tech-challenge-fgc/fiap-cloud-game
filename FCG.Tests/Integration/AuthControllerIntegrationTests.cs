@@ -38,7 +38,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
         };
 
         // Act
-        var response = await ApiClient.PostAsJsonAsync("/api/auth/register-player", dto);
+        var response = await ApiClient.PostAsJsonAsync("/api/auth/register-player", dto, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -71,7 +71,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
             Birthday = _faker.Date.Past(30, DateTime.Now.AddYears(-18))
         };
 
-        await ApiClient.PostAsJsonAsync("/api/auth/register-player", firstUser);
+        await ApiClient.PostAsJsonAsync("/api/auth/register-player", firstUser, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act - Tenta registrar com mesmo email
         var duplicateUser = new UserCreateRequestDto
@@ -85,7 +85,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
             Birthday = _faker.Date.Past(30, DateTime.Now.AddYears(-18))
         };
 
-        var response = await ApiClient.PostAsJsonAsync("/api/auth/register-player", duplicateUser);
+        var response = await ApiClient.PostAsJsonAsync("/api/auth/register-player", duplicateUser, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -107,7 +107,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
         };
 
         // Act
-        var response = await ApiClient.PostAsJsonAsync("/api/auth/register-player", dto);
+        var response = await ApiClient.PostAsJsonAsync("/api/auth/register-player", dto, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -129,7 +129,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
         };
 
         // Act
-        var response = await ApiClient.PostAsJsonAsync("/api/auth/register-player", dto);
+        var response = await ApiClient.PostAsJsonAsync("/api/auth/register-player", dto, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -151,7 +151,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
         };
 
         // Act
-        var response = await ApiClient.PostAsJsonAsync("/api/auth/register-player", dto);
+        var response = await ApiClient.PostAsJsonAsync("/api/auth/register-player", dto, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -173,7 +173,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
         };
 
         // Act
-        var response = await ApiClient.PostAsJsonAsync("/api/auth/register-player", dto);
+        var response = await ApiClient.PostAsJsonAsync("/api/auth/register-player", dto, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -199,7 +199,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
             Birthday = _faker.Date.Past(30, DateTime.Now.AddYears(-18))
         };
 
-        await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto);
+        await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act - Faz login
         var loginDto = new UserLoginRequestDto
@@ -208,7 +208,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
             Password = password
         };
 
-        var response = await ApiClient.PostAsJsonAsync("/api/auth/login", loginDto);
+        var response = await ApiClient.PostAsJsonAsync("/api/auth/login", loginDto, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -234,7 +234,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
         };
 
         // Act
-        var response = await ApiClient.PostAsJsonAsync("/api/auth/login", dto);
+        var response = await ApiClient.PostAsJsonAsync("/api/auth/login", dto, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -256,7 +256,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
             Birthday = _faker.Date.Past(30, DateTime.Now.AddYears(-18))
         };
 
-        await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto);
+        await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act - Tenta login com senha errada
         var loginDto = new UserLoginRequestDto
@@ -265,7 +265,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
             Password = "SenhaErrada@123"
         };
 
-        var response = await ApiClient.PostAsJsonAsync("/api/auth/login", loginDto);
+        var response = await ApiClient.PostAsJsonAsync("/api/auth/login", loginDto, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -291,7 +291,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
             Birthday = _faker.Date.Past(30, DateTime.Now.AddYears(-18))
         };
 
-        var registerResponse = await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto);
+        var registerResponse = await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto, cancellationToken: TestContext.Current.CancellationToken);
 
         // ✅ Usa o helper method
         var initialTokens = await ReadServiceResultAsync<UserAuthResponseDto>(registerResponse);
@@ -304,7 +304,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
             RefreshToken = initialTokens.RefreshToken
         };
 
-        var response = await ApiClient.PostAsJsonAsync("/api/auth/refresh", refreshDto);
+        var response = await ApiClient.PostAsJsonAsync("/api/auth/refresh", refreshDto, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -328,7 +328,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
         };
 
         // Act
-        var response = await ApiClient.PostAsJsonAsync("/api/auth/refresh", dto);
+        var response = await ApiClient.PostAsJsonAsync("/api/auth/refresh", dto, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -354,7 +354,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
             Birthday = _faker.Date.Past(30, DateTime.Now.AddYears(-18))
         };
 
-        var registerResponse = await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto);
+        var registerResponse = await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto, cancellationToken: TestContext.Current.CancellationToken);
 
         // ✅ Usa o helper method
         var authResult = await ReadServiceResultAsync<UserAuthResponseDto>(registerResponse);
@@ -363,7 +363,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
         SetAuthorizationHeader(authResult.Token);
 
         // Act
-        var response = await ApiClient.GetAsync("/api/auth/me");
+        var response = await ApiClient.GetAsync("/api/auth/me", cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -384,7 +384,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
         ClearAuthorizationHeader();
 
         // Act
-        var response = await ApiClient.GetAsync("/api/auth/me");
+        var response = await ApiClient.GetAsync("/api/auth/me", cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -397,7 +397,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
         SetAuthorizationHeader("token.invalido.aqui");
 
         // Act
-        var response = await ApiClient.GetAsync("/api/auth/me");
+        var response = await ApiClient.GetAsync("/api/auth/me", cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -410,7 +410,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
         SetAuthorizationHeader("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1MTYyMzkwMjJ9.invalid");
 
         // Act
-        var response = await ApiClient.GetAsync("/api/auth/me");
+        var response = await ApiClient.GetAsync("/api/auth/me", cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -438,7 +438,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
         };
 
         // 1. Registro
-        var registerResponse = await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto);
+        var registerResponse = await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto, cancellationToken: TestContext.Current.CancellationToken);
         var registerTokens = await ReadServiceResultAsync<UserAuthResponseDto>(registerResponse);
 
         // 2. Configura header de autorização
@@ -466,7 +466,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
         };
 
         // 1. Registro
-        var registerResponse = await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto);
+        var registerResponse = await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
 
         // ✅ Usa o helper method
@@ -479,7 +479,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
             Email = registerDto.Email,
             Password = password
         };
-        var loginResponse = await ApiClient.PostAsJsonAsync("/api/auth/login", loginDto);
+        var loginResponse = await ApiClient.PostAsJsonAsync("/api/auth/login", loginDto, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 
         // ✅ Usa o helper method
@@ -504,7 +504,7 @@ public class AuthControllerIntegrationTests : ApiIntegrationTestBase
             Token = loginTokens.Token,
             RefreshToken = loginTokens.RefreshToken
         };
-        var refreshResponse = await ApiClient.PostAsJsonAsync("/api/Auth/refresh", refreshDto);
+        var refreshResponse = await ApiClient.PostAsJsonAsync("/api/Auth/refresh", refreshDto, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
 
         // ✅ Usa o helper method
