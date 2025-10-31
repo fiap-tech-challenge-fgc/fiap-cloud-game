@@ -17,13 +17,19 @@ public class GalleryRepository : IGalleryRepository
         _context = context;
     }
 
-    public async Task<bool> ExistsAsync(string EAN)
+    public async Task<bool> OwnsGalleryGameAsync(string EAN)
     {
-        var game = await _dal.FindAsync(g => g.EAN == EAN);
+        var game = await _dal.FindAsync(g => g.Game.EAN == EAN);
         return game != null;
     }
 
-    public async Task<GalleryGame> AddToGalleryAsync(GalleryGame game)
+    public async Task<bool> OwnsGalleryGameAsync(Guid id)
+    {
+        var game = await _dal.FindAsync(g => g.Id == id);
+        return game != null;
+    }
+
+    public async Task<GalleryGame> AddToGalleryGameAsync(GalleryGame game)
     {
         await _dal.AddAsync(game);
         await SaveChangesAsync();
@@ -46,20 +52,20 @@ public class GalleryRepository : IGalleryRepository
         await SaveChangesAsync();
     }
 
-    public async Task RemoveFromGalleryAsync(GalleryGame game)
+    public async Task RemoveFromGalleryGameAsync(GalleryGame game)
     {
         await _dal.DeleteAsync(game);
         await SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<GalleryGame>> GetPromotionalGamesAsync()
+    public async Task<IEnumerable<GalleryGame>> GetPromotionalGalleryGameAsync()
     {
         return await _dal.FindListAsync(
             g => g.Promotion != null && g.Promotion != Promotion.None,
             g => g.Promotion);
     }
 
-    public async Task<IEnumerable<GalleryGame>> GetGamesByPriceRangeAsync(decimal minPrice, decimal maxPrice)
+    public async Task<IEnumerable<GalleryGame>> GetGalleryGameByPriceRangeAsync(decimal minPrice, decimal maxPrice)
     {
         return await _dal.FindListAsync(
             g => g.Price >= minPrice && g.Price <= maxPrice,
@@ -68,24 +74,24 @@ public class GalleryRepository : IGalleryRepository
 
     public async Task<bool> IsAvailableForPurchaseAsync(Guid id)
     {
-        var game = await GetGalleryGameByIdAsync(id);
-        return game != null;
+        var gallery = await GetGalleryGameByIdAsync(id);
+        return gallery != null;
     }
 
-    public async Task<IEnumerable<GalleryGame>> GetGamesByGenreAsync(string genre)
+    public async Task<IEnumerable<GalleryGame>> GetGalleryGamesByGenreAsync(string genre)
     {
         return await _dal.FindListAsync(
-            g => g.Genre.ToLower() == genre.ToLower(),
+            g => g.Game.Genre.ToLower() == genre.ToLower(),
             g => g.Promotion);
     }
 
-    public async Task<IEnumerable<GalleryGame>> SearchGamesAsync(string searchTerm)
+    public async Task<IEnumerable<GalleryGame>> SearchGalleryGamesAsync(string searchTerm)
     {
         searchTerm = searchTerm.ToLower();
         return await _dal.FindListAsync(
-            g => g.Name.ToLower().Contains(searchTerm) || 
-                 g.Genre.ToLower().Contains(searchTerm) || 
-                 (g.Description != null && g.Description.ToLower().Contains(searchTerm)),
+            g => g.Game.Name.ToLower().Contains(searchTerm) || 
+                 g.Game.Genre.ToLower().Contains(searchTerm) || 
+                 (g.Game.Description != null && g.Game.Description.ToLower().Contains(searchTerm)),
             g => g.Promotion);
     }
 

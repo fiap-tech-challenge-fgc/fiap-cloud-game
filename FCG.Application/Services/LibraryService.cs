@@ -37,14 +37,14 @@ public class LibraryService : ILibraryService
             if (galleryGame == null)
                 return OperationResult<LibraryGameResponseDto>.Failure("Jogo não encontrado na galeria.");
 
-            if (await _libraryRepository.HasGameInLibraryAsync(playerId, galleryGame.Name))
+            if (await _libraryRepository.HasGameInLibraryAsync(playerId, galleryGame.Game.Name))
                 return OperationResult<LibraryGameResponseDto>.Failure("Jogador já possui este jogo.");
 
             var player = await _playerRepository.GetByIdAsync(playerId);
             if (player == null)
                 return OperationResult<LibraryGameResponseDto>.Failure("Jogador não encontrado.");
 
-            var libraryGame = new LibraryGame(galleryGame, player, purchasePrice);
+            var libraryGame = new LibraryGame(galleryGame.Game, player, purchasePrice);
             await _libraryRepository.AddToLibraryAsync(libraryGame);
 
             _logger.LogInformation("Jogo adicionado à biblioteca: {GameId} para o jogador: {PlayerId}", galleryGameId, playerId);
@@ -62,14 +62,14 @@ public class LibraryService : ILibraryService
     {
         try
         {
-            var game = await _libraryRepository.GetLibraryGameAsync(playerId, gameId);
-            if (game == null)
+            var libraryGame = await _libraryRepository.GetLibraryGameAsync(playerId, gameId);
+            if (libraryGame == null)
             {
                 _logger.LogWarning("Jogo não encontrado na biblioteca: {GameId} para o jogador: {PlayerId}", gameId, playerId);
                 return OperationResult<LibraryGameResponseDto>.Failure("Jogo não encontrado na biblioteca.");
             }
 
-            return OperationResult<LibraryGameResponseDto>.Success(MapToResponse(game));
+            return OperationResult<LibraryGameResponseDto>.Success(MapToResponse(libraryGame));
         }
         catch (Exception ex)
         {
@@ -82,30 +82,30 @@ public class LibraryService : ILibraryService
     {
         try
         {
-            var games = (await _libraryRepository.GetPlayerLibraryAsync(playerId)).AsQueryable();
+            var libraryGame = (await _libraryRepository.GetPlayerLibraryAsync(playerId)).AsQueryable();
 
             // Apply filters
             if (!string.IsNullOrWhiteSpace(pagedRequestDto.Filter?.Name))
-                games = games.Where(g => g.Name.Contains(pagedRequestDto.Filter.Name));
+                libraryGame = libraryGame.Where(g => g.Game.Name.Contains(pagedRequestDto.Filter.Name));
 
             if (!string.IsNullOrWhiteSpace(pagedRequestDto.Filter?.Genre))
-                games = games.Where(g => g.Genre.Contains(pagedRequestDto.Filter.Genre));
+                libraryGame = libraryGame.Where(g => g.Game.Genre.Contains(pagedRequestDto.Filter.Genre));
 
             // Apply ordering
             string? orderBy = pagedRequestDto.OrderBy?.OrderBy?.ToLower();
             bool ascending = pagedRequestDto.OrderBy?.Ascending ?? true;
 
-            games = orderBy switch
+            libraryGame = orderBy switch
             {
-                "name" => ascending ? games.OrderBy(g => g.Name) : games.OrderByDescending(g => g.Name),
-                "genre" => ascending ? games.OrderBy(g => g.Genre) : games.OrderByDescending(g => g.Genre),
-                "purchasedate" => ascending ? games.OrderBy(g => g.PurchaseDate) : games.OrderByDescending(g => g.PurchaseDate),
-                _ => games.OrderByDescending(g => g.PurchaseDate)
+                "name" => ascending ? libraryGame.OrderBy(g => g.Game.Name) : libraryGame.OrderByDescending(g => g.Game.Name),
+                "genre" => ascending ? libraryGame.OrderBy(g => g.Game.Genre) : libraryGame.OrderByDescending(g => g.Game.Genre),
+                "purchasedate" => ascending ? libraryGame.OrderBy(g => g.PurchaseDate) : libraryGame.OrderByDescending(g => g.PurchaseDate),
+                _ => libraryGame.OrderByDescending(g => g.PurchaseDate)
             };
 
             // Apply pagination
-            var totalItems = games.Count();
-            var pagedGames = games
+            var totalItems = libraryGame.Count();
+            var pagedGames = libraryGame
                 .Skip((pagedRequestDto.PageNumber - 1) * pagedRequestDto.PageSize)
                 .Take(pagedRequestDto.PageSize)
                 .ToList();
@@ -131,8 +131,8 @@ public class LibraryService : ILibraryService
     {
         try
         {
-            var ownsGame = await _libraryRepository.OwnsGameAsync(playerId, gameId);
-            return OperationResult<bool>.Success(ownsGame);
+            var ownsLibraryGame = await _libraryRepository.OwnsLibraryGameAsync(playerId, gameId);
+            return OperationResult<bool>.Success(ownsLibraryGame);
         }
         catch (Exception ex)
         {
@@ -149,10 +149,10 @@ public class LibraryService : ILibraryService
             if (galleryGame == null)
                 return OperationResult<bool>.Success(false);
 
-            var ownsGame = await _libraryRepository.HasGameInLibraryAsync(playerId, galleryGame.Name);
+            var ownsLibrary = await _libraryRepository.OwnsLibraryGameAsync(playerId, gameId);
             var isAvailable = await _galleryRepository.IsAvailableForPurchaseAsync(gameId);
 
-            return OperationResult<bool>.Success(!ownsGame && isAvailable);
+            return OperationResult<bool>.Success(!ownsLibrary && isAvailable);
         }
         catch (Exception ex)
         {
@@ -193,8 +193,8 @@ public class LibraryService : ILibraryService
     {
         try
         {
-            var games = await _libraryRepository.GetRecentPurchasesAsync(playerId, count);
-            var response = games.Select(MapToResponse);
+            var libraryGame = await _libraryRepository.GetRecentPurchasesAsync(playerId, count);
+            var response = libraryGame.Select(MapToResponse);
             return OperationResult<IEnumerable<LibraryGameResponseDto>>.Success(response);
         }
         catch (Exception ex)
@@ -204,19 +204,19 @@ public class LibraryService : ILibraryService
         }
     }
 
-    private LibraryGameResponseDto MapToResponse(LibraryGame game)
+    private LibraryGameResponseDto MapToResponse(LibraryGame libraryGame)
     {
         return new LibraryGameResponseDto
         {
-            Id = game.Id,
-            EAN = game.EAN,
-            Name = game.Name,
-            Genre = game.Genre,
-            Description = game.Description,
-            PlayerId = game.PlayerId,
-            PlayerDisplayName = game.Player?.DisplayName ?? string.Empty,
-            PurchaseDate = game.PurchaseDate,
-            PurchasePrice = game.PurchasePrice
+            Id = libraryGame.Id,
+            EAN = libraryGame.Game.EAN,
+            Name = libraryGame.Game.Name,
+            Genre = libraryGame.Game.Genre,
+            Description = libraryGame.Game.Description,
+            PlayerId = libraryGame.PlayerId,
+            PlayerDisplayName = libraryGame.Player?.DisplayName ?? string.Empty,
+            PurchaseDate = libraryGame.PurchaseDate,
+            PurchasePrice = libraryGame.PurchasePrice
         };
     }
 }

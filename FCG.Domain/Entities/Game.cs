@@ -1,18 +1,18 @@
-using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace FCG.Domain.Entities;
 
 [Index(nameof(EAN), IsUnique = true)]
 public class Game
 {
-    public Guid Id { get; protected set; }
+    public Guid Id { get; private set; }
 
     [Required]
-    public string EAN { get; protected set; }
-    public string Name { get; protected set; } = string.Empty;
-    public string Genre { get; protected set; } = string.Empty;
-    public string? Description { get; protected set; }
+    public string EAN { get; private set; } = null!;
+    public string Name { get; private set; } = string.Empty;
+    public string Genre { get; private set; } = string.Empty;
+    public string? Description { get; private set; }
 
     protected Game() { }
 
@@ -23,14 +23,11 @@ public class Game
         if (string.IsNullOrWhiteSpace(genre)) throw new ArgumentException("Gênero obrigatório");
 
         Id = Guid.NewGuid();
-        EAN =  ean;
+        EAN = ean;
         Name = name;
         Genre = genre;
         Description = description;
     }
 
-    public virtual string GetDescription()
-    {
-        return $"{Name} ({Description})";
-    }
+    public string GetDescription() => $"{Name} ({Description})";
 }

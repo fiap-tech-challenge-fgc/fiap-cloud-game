@@ -32,12 +32,12 @@ public class Player
         DisplayName = displayName;
     }
 
-    public LibraryGame AddGame(GalleryGame game)
+    public LibraryGame AddGame(GalleryGame gallery)
     {
-        if (_library.Any(g => g.Name == game.Name))
+        if (_library.Any(g => g.Game.Name == gallery.Game.Name))
             throw new InvalidOperationException("Jogo já existe na biblioteca.");
 
-        var libraryGame = new LibraryGame(game, this, game.FinalPrice);
+        var libraryGame = new LibraryGame(gallery.Game, this, gallery.FinalPrice);
         _library.Add(libraryGame);
         return libraryGame;
     }

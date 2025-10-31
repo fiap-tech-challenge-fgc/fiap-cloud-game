@@ -28,6 +28,11 @@ public class GameRepository : IGameRepository
         return await _dal.FindAsync(g => g.Id == id);
     }
 
+    public async Task<Game?> GetByIdAsync(string EAN)
+    {
+        return await _dal.FindAsync(g => g.EAN == EAN);
+    }
+
     public async Task<IEnumerable<Game>> GetByIdsAsync(IEnumerable<Guid> ids)
     {
         var result = await _dal.FindListAsync(g => ids.Contains(g.Id));

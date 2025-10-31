@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FCG.Domain.Data.Migrations.Default
 {
     [DbContext(typeof(FcgDbContext))]
-    [Migration("20251029051058_FcgDbContext primeira migration")]
-    partial class FcgDbContextprimeiramigration
+    [Migration("20251030232930_FcgDbContext refactor entities")]
+    partial class FcgDbContextrefactorentities
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -69,6 +69,25 @@ namespace FCG.Domain.Data.Migrations.Default
                     b.ToTable("Carts", "fcg");
                 });
 
+            modelBuilder.Entity("FCG.Domain.Entities.GalleryGame", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.ToTable("GalleryGames", "fcg");
+                });
+
             modelBuilder.Entity("FCG.Domain.Entities.Game", b =>
                 {
                     b.Property<Guid>("Id")
@@ -96,8 +115,33 @@ namespace FCG.Domain.Data.Migrations.Default
                         .IsUnique();
 
                     b.ToTable("Games", "fcg");
+                });
 
-                    b.UseTptMappingStrategy();
+            modelBuilder.Entity("FCG.Domain.Entities.LibraryGame", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("PurchaseDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("PurchasePrice")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.HasIndex("PlayerId");
+
+                    b.ToTable("LibraryGames", "fcg");
                 });
 
             modelBuilder.Entity("FCG.Domain.Entities.Player", b =>
@@ -121,19 +165,14 @@ namespace FCG.Domain.Data.Migrations.Default
                     b.ToTable("Players", "fcg");
                 });
 
-            modelBuilder.Entity("FCG.Domain.Entities.GalleryGame", b =>
+            modelBuilder.Entity("Purchase", b =>
                 {
-                    b.HasBaseType("FCG.Domain.Entities.Game");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
-                    b.Property<decimal>("Price")
-                        .HasColumnType("numeric");
-
-                    b.ToTable("GalleryGames", "fcg");
-                });
-
-            modelBuilder.Entity("FCG.Domain.Entities.LibraryGame", b =>
-                {
-                    b.HasBaseType("FCG.Domain.Entities.Game");
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("PlayerId")
                         .HasColumnType("uuid");
@@ -141,12 +180,13 @@ namespace FCG.Domain.Data.Migrations.Default
                     b.Property<DateTime>("PurchaseDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal>("PurchasePrice")
-                        .HasColumnType("numeric");
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
 
                     b.HasIndex("PlayerId");
 
-                    b.ToTable("LibraryGames", "fcg");
+                    b.ToTable("Purchases", "fcg");
                 });
 
             modelBuilder.Entity("CartItem", b =>
@@ -189,9 +229,9 @@ namespace FCG.Domain.Data.Migrations.Default
 
             modelBuilder.Entity("FCG.Domain.Entities.GalleryGame", b =>
                 {
-                    b.HasOne("FCG.Domain.Entities.Game", null)
-                        .WithOne()
-                        .HasForeignKey("FCG.Domain.Entities.GalleryGame", "Id")
+                    b.HasOne("FCG.Domain.Entities.Game", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -224,15 +264,17 @@ namespace FCG.Domain.Data.Migrations.Default
                                 .HasForeignKey("GalleryGameId");
                         });
 
+                    b.Navigation("Game");
+
                     b.Navigation("Promotion")
                         .IsRequired();
                 });
 
             modelBuilder.Entity("FCG.Domain.Entities.LibraryGame", b =>
                 {
-                    b.HasOne("FCG.Domain.Entities.Game", null)
-                        .WithOne()
-                        .HasForeignKey("FCG.Domain.Entities.LibraryGame", "Id")
+                    b.HasOne("FCG.Domain.Entities.Game", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -241,6 +283,27 @@ namespace FCG.Domain.Data.Migrations.Default
                         .HasForeignKey("PlayerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Game");
+
+                    b.Navigation("Player");
+                });
+
+            modelBuilder.Entity("Purchase", b =>
+                {
+                    b.HasOne("FCG.Domain.Entities.Game", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FCG.Domain.Entities.Player", "Player")
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Game");
 
                     b.Navigation("Player");
                 });

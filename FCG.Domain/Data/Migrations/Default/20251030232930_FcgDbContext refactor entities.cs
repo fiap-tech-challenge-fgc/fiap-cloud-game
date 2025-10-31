@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FCG.Domain.Data.Migrations.Default
 {
     /// <inheritdoc />
-    public partial class FcgDbContextprimeiramigration : Migration
+    public partial class FcgDbContextrefactorentities : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -50,6 +50,7 @@ namespace FCG.Domain.Data.Migrations.Default
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    GameId = table.Column<Guid>(type: "uuid", nullable: false),
                     Price = table.Column<decimal>(type: "numeric", nullable: false),
                     Type = table.Column<int>(type: "integer", nullable: false),
                     Value = table.Column<decimal>(type: "numeric", nullable: false),
@@ -60,8 +61,8 @@ namespace FCG.Domain.Data.Migrations.Default
                 {
                     table.PrimaryKey("PK_GalleryGames", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_GalleryGames_Games_Id",
-                        column: x => x.Id,
+                        name: "FK_GalleryGames_Games_GameId",
+                        column: x => x.GameId,
                         principalSchema: "fcg",
                         principalTable: "Games",
                         principalColumn: "Id",
@@ -94,6 +95,7 @@ namespace FCG.Domain.Data.Migrations.Default
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    GameId = table.Column<Guid>(type: "uuid", nullable: false),
                     PlayerId = table.Column<Guid>(type: "uuid", nullable: false),
                     PurchaseDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     PurchasePrice = table.Column<decimal>(type: "numeric", nullable: false)
@@ -102,14 +104,43 @@ namespace FCG.Domain.Data.Migrations.Default
                 {
                     table.PrimaryKey("PK_LibraryGames", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_LibraryGames_Games_Id",
-                        column: x => x.Id,
+                        name: "FK_LibraryGames_Games_GameId",
+                        column: x => x.GameId,
                         principalSchema: "fcg",
                         principalTable: "Games",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_LibraryGames_Players_PlayerId",
+                        column: x => x.PlayerId,
+                        principalSchema: "fcg",
+                        principalTable: "Players",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Purchases",
+                schema: "fcg",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    PlayerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    GameId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PurchaseDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Purchases", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Purchases_Games_GameId",
+                        column: x => x.GameId,
+                        principalSchema: "fcg",
+                        principalTable: "Games",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Purchases_Players_PlayerId",
                         column: x => x.PlayerId,
                         principalSchema: "fcg",
                         principalTable: "Players",
@@ -179,11 +210,23 @@ namespace FCG.Domain.Data.Migrations.Default
                 column: "PlayerId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_GalleryGames_GameId",
+                schema: "fcg",
+                table: "GalleryGames",
+                column: "GameId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Games_EAN",
                 schema: "fcg",
                 table: "Games",
                 column: "EAN",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LibraryGames_GameId",
+                schema: "fcg",
+                table: "LibraryGames",
+                column: "GameId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_LibraryGames_PlayerId",
@@ -197,6 +240,18 @@ namespace FCG.Domain.Data.Migrations.Default
                 table: "Players",
                 column: "UserId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Purchases_GameId",
+                schema: "fcg",
+                table: "Purchases",
+                column: "GameId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Purchases_PlayerId",
+                schema: "fcg",
+                table: "Purchases",
+                column: "PlayerId");
         }
 
         /// <inheritdoc />
@@ -212,6 +267,10 @@ namespace FCG.Domain.Data.Migrations.Default
 
             migrationBuilder.DropTable(
                 name: "LibraryGames",
+                schema: "fcg");
+
+            migrationBuilder.DropTable(
+                name: "Purchases",
                 schema: "fcg");
 
             migrationBuilder.DropTable(

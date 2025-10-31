@@ -5,6 +5,7 @@ namespace FCG.Application.Interfaces.Repository;
 public interface IGameRepository
 {
     Task<Game?> GetByIdAsync(Guid id);
+    Task<Game?> GetByIdAsync(string EAN);
     Task<IEnumerable<Game>> GetAllAsync();
     Task<IEnumerable<Game>> GetByIdsAsync(IEnumerable<Guid> ids);
     Task<Game> AddAsync(Game game);

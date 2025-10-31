@@ -1,4 +1,7 @@
-﻿public interface ISeedService
+﻿using FCG.Domain.Data.Contexts;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+
+public interface ISeedService
 {
     /// <summary>
     /// Executa o seed apenas dos dados do Identity (roles, admin e players).
@@ -9,5 +12,5 @@
     /// <summary>
     /// Executa o seed apenas dos dados da aplicação (jogos, players, carrinhos, biblioteca, etc.).
     /// </summary>
-    Task SeedApplicationAsync(CancellationToken cancellationToken);
+    Task SeedApplicationAsync(IServiceProvider sp, CancellationToken cancellationToken);
 }

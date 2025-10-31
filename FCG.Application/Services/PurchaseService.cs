@@ -47,10 +47,10 @@ public class PurchaseService : IPurchaseService
         if (!await _galleryRepository.IsAvailableForPurchaseAsync(dto.GameId))
             return OperationResult<PurchaseResponseDto>.Failure("Jogo não está disponível para compra.");
 
-        if (await _libraryRepository.HasGameInLibraryAsync(dto.PlayerId, galleryGame.Name))
+        if (await _libraryRepository.HasGameInLibraryAsync(dto.PlayerId, galleryGame.Game.Name))
             return OperationResult<PurchaseResponseDto>.Failure("Jogador já possui este jogo.");
 
-        var libraryGame = new LibraryGame(galleryGame, player, galleryGame.FinalPrice);
+        var libraryGame = new LibraryGame(galleryGame.Game, player, galleryGame.FinalPrice);
         await _libraryRepository.AddToLibraryAsync(libraryGame);
 
         _logger.LogInformation("Compra registrada: Player {PlayerId}, Game {GameId}, Preço {Price}",
@@ -60,7 +60,7 @@ public class PurchaseService : IPurchaseService
         {
             PurchaseId = libraryGame.Id,
             PlayerName = player.DisplayName,
-            GameName = galleryGame.Name,
+            GameName = galleryGame.Game.Name,
             Price = galleryGame.FinalPrice,
             PurchaseDate = libraryGame.PurchaseDate
         };
@@ -84,10 +84,10 @@ public class PurchaseService : IPurchaseService
             if (galleryGame == null || !await _galleryRepository.IsAvailableForPurchaseAsync(item.GameId))
                 continue;
 
-            if (await _libraryRepository.HasGameInLibraryAsync(playerId, galleryGame.Name))
+            if (await _libraryRepository.HasGameInLibraryAsync(playerId, galleryGame.Game.Name))
                 continue;
 
-            var libraryGame = new LibraryGame(galleryGame, player, galleryGame.FinalPrice);
+            var libraryGame = new LibraryGame(galleryGame.Game, player, galleryGame.FinalPrice);
             await _libraryRepository.AddToLibraryAsync(libraryGame);
 
             _logger.LogInformation("Compra registrada via carrinho: Player {PlayerId}, Game {GameId}, Preço {Price}",
@@ -104,21 +104,21 @@ public class PurchaseService : IPurchaseService
     {
         try
         {
-            var libraryGames = await _libraryRepository.GetPlayerLibraryAsync(playerId);
-            var purchaseGames = libraryGames.Select(g => new PurchaseResponseDto
+            var libraryGame = await _libraryRepository.GetPlayerLibraryAsync(playerId);
+            var purchase = libraryGame.Select(g => new PurchaseResponseDto
             {
                 PurchaseId = g.Id,
                 PlayerName = g.Player?.DisplayName ?? string.Empty,
-                GameName = g.Name,
+                GameName = g.Game.Name,
                 Price = g.PurchasePrice,
                 PurchaseDate = g.PurchaseDate
             }).OrderByDescending(p => p.PurchaseDate);
 
-            var totalItems = purchaseGames.Count();
+            var totalItems = purchase.Count();
 
             var pagedPurchases = new PagedResult<PurchaseResponseDto>
             {
-                Items = purchaseGames,
+                Items = purchase,
                 PageNumber = dto.PageNumber,
                 PageSize = dto.PageSize,
                 TotalItems = totalItems
@@ -137,17 +137,17 @@ public class PurchaseService : IPurchaseService
     {
         try
         {
-            var libraryGames = await _libraryRepository.GetAllPurchasesAsync();
-            var purchaseGames = libraryGames.Select(g => new PurchaseResponseDto
+            var libraryGame = await _libraryRepository.GetAllPurchasesAsync();
+            var purchase = libraryGame.Select(g => new PurchaseResponseDto
             {
                 PurchaseId = g.Id,
                 PlayerName = g.Player?.DisplayName ?? string.Empty,
-                GameName = g.Name,
+                GameName = g.Game.Name,
                 Price = g.PurchasePrice,
                 PurchaseDate = g.PurchaseDate
             });
 
-            return OperationResult<IEnumerable<PurchaseResponseDto>>.Success(purchaseGames);
+            return OperationResult<IEnumerable<PurchaseResponseDto>>.Success(purchase);
         }
         catch (Exception ex)
         {
@@ -218,7 +218,7 @@ public class PurchaseService : IPurchaseService
                 query = query.Where(p => p.Player.DisplayName.Contains(dto.Filter.PlayerName));
 
             if (!string.IsNullOrWhiteSpace(dto.Filter.GameName))
-                query = query.Where(p => p.Name.Contains(dto.Filter.GameName));
+                query = query.Where(p => p.Game.Name.Contains(dto.Filter.GameName));
 
             if (dto.Filter.MinPrice.HasValue)
                 query = query.Where(p => p.PurchasePrice >= dto.Filter.MinPrice.Value);
@@ -239,7 +239,7 @@ public class PurchaseService : IPurchaseService
             query = dto.OrderBy.SortBy.ToLower() switch
             {
                 "playername" => dto.OrderBy.Ascending ? query.OrderBy(p => p.Player.DisplayName) : query.OrderByDescending(p => p.Player.DisplayName),
-                "gamename" => dto.OrderBy.Ascending ? query.OrderBy(p => p.Name) : query.OrderByDescending(p => p.Name),
+                "gamename" => dto.OrderBy.Ascending ? query.OrderBy(p => p.Game.Name) : query.OrderByDescending(p => p.Game.Name),
                 "price" => dto.OrderBy.Ascending ? query.OrderBy(p => p.PurchasePrice) : query.OrderByDescending(p => p.PurchasePrice),
                 "date" => dto.OrderBy.Ascending ? query.OrderBy(p => p.PurchaseDate) : query.OrderByDescending(p => p.PurchaseDate),
                 _ => query.OrderByDescending(p => p.PurchaseDate)
@@ -255,7 +255,7 @@ public class PurchaseService : IPurchaseService
             {
                 PurchaseId = g.Id,
                 PlayerName = g.Player.DisplayName,
-                GameName = g.Name,
+                GameName = g.Game.Name,
                 Price = g.PurchasePrice,
                 PurchaseDate = g.PurchaseDate
             })

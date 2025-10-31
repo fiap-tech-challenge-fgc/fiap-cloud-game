@@ -1,5 +1,6 @@
 using FCG.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace FCG.Domain.Data.Contexts;
 
@@ -8,12 +9,13 @@ public class FcgDbContext : DbContext
     public FcgDbContext(DbContextOptions<FcgDbContext> options)
         : base(options) { }
 
-    public DbSet<Game> Games { get; set; }
-    public DbSet<GalleryGame> GalleryGames { get; set; }
-    public DbSet<LibraryGame> LibraryGames { get; set; }
-    public DbSet<Player> Players { get; set; }
-    public DbSet<Cart> Carts { get; set; }
-    public DbSet<CartItem> CartItems { get; set; }
+    public DbSet<Game> Games { get; set; } = null!;
+    public DbSet<GalleryGame> GalleryGames { get; set; } = null!;
+    public DbSet<LibraryGame> LibraryGames { get; set; } = null!;
+    public DbSet<Player> Players { get; set; } = null!;
+    public DbSet<Cart> Carts { get; set; } = null!;
+    public DbSet<CartItem> CartItems { get; set; } = null!;
+    public DbSet<Purchase> Purchases { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -21,74 +23,119 @@ public class FcgDbContext : DbContext
 
         builder.HasDefaultSchema("fcg");
 
-        // TPT: cada classe com sua própria tabela
-        builder.Entity<Game>().ToTable("Games");
-        builder.Entity<GalleryGame>().ToTable("GalleryGames").HasBaseType<Game>();
-        builder.Entity<LibraryGame>().ToTable("LibraryGames").HasBaseType<Game>();
-
-        // Game
+        // --- Game ---
         builder.Entity<Game>(game =>
         {
+            game.ToTable("Games");
             game.HasKey(g => g.Id);
             game.HasIndex(g => g.EAN).IsUnique();
         });
 
-        // GalleryGame
+        // --- GalleryGame ---
         builder.Entity<GalleryGame>(gallery =>
         {
-            gallery.OwnsOne(g => g.Promotion, promocao =>
+            gallery.ToTable("GalleryGames");
+            gallery.HasKey(g => g.Id);
+
+            gallery.HasOne(g => g.Game)
+                .WithMany()
+                .HasForeignKey(g => g.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            gallery.OwnsOne(g => g.Promotion, promo =>
             {
-                promocao.Property(p => p.Type).HasColumnName("Type");
-                promocao.Property(p => p.Value).HasColumnName("Value");
-                promocao.Property(p => p.StartOf).HasColumnName("StartOf");
-                promocao.Property(p => p.EndOf).HasColumnName("EndOf");
+                promo.Property(p => p.Type).HasColumnName("Type");
+                promo.Property(p => p.Value).HasColumnName("Value");
+                promo.Property(p => p.StartOf).HasColumnName("StartOf");
+                promo.Property(p => p.EndOf).HasColumnName("EndOf");
             });
         });
 
-        // Player
+        // --- Player ---
         builder.Entity<Player>(player =>
         {
+            player.ToTable("Players");
             player.HasKey(p => p.Id);
             player.HasIndex(p => p.UserId).IsUnique();
         });
 
-        // LibraryGame
+        // --- LibraryGame ---
         builder.Entity<LibraryGame>(library =>
         {
+            library.ToTable("LibraryGames");
+            library.HasKey(l => l.Id);
+
+            library.HasOne(l => l.Game)
+                .WithMany()
+                .HasForeignKey(l => l.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             library.HasOne(l => l.Player)
-                .WithMany(p => p.Library) // usa a coleção da classe Player
+                .WithMany(p => p.Library)
                 .HasForeignKey(l => l.PlayerId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // Cart
+        // --- PurchaseGame ---
+        // --- Purchase ---
+        builder.Entity<Purchase>(purchase =>
+        {
+            purchase.ToTable("Purchases");
+
+            // Chave primária
+            purchase.HasKey(p => p.Id);
+
+            // Propriedades
+            purchase.Property(p => p.PurchaseDate)
+                .IsRequired();
+
+            // Relacionamento com Game
+            purchase.HasOne(p => p.Game)
+                .WithMany() // Game não possui ICollection<Purchase>
+                .HasForeignKey(p => p.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Relacionamento com Player
+            purchase.HasOne(p => p.Player)
+                .WithMany() // Player não possui ICollection<Purchase>
+                .HasForeignKey(p => p.PlayerId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // --- Cart ---
         builder.Entity<Cart>(cart =>
         {
+            cart.ToTable("Carts");
             cart.HasKey(c => c.Id);
 
             cart.HasOne(c => c.Player)
                 .WithMany()
-                .HasForeignKey(c => c.PlayerId);
+                .HasForeignKey(c => c.PlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             cart.HasMany(c => c.Items)
                 .WithOne(i => i.Cart)
-                .HasForeignKey(i => i.CartId);
+                .HasForeignKey(i => i.CartId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // CartItem
+        // --- CartItem ---
         builder.Entity<CartItem>(item =>
         {
+            item.ToTable("CartItems");
             item.HasKey(i => i.Id);
 
             item.HasIndex(i => new { i.CartId, i.GameId }).IsUnique();
 
             item.HasOne(i => i.Game)
                 .WithMany()
-                .HasForeignKey(i => i.GameId);
+                .HasForeignKey(i => i.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             item.HasOne(i => i.Player)
                 .WithMany()
-                .HasForeignKey(i => i.PlayerId);
+                .HasForeignKey(i => i.PlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

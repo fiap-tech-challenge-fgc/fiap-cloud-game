@@ -16,12 +16,14 @@ namespace FCG.Application.Services;
 public class GalleryService : IGalleryService
 {
     private readonly IGalleryRepository _galleryRepository;
+    private readonly IGameRepository _gameRepository;
     private readonly ILogger<GalleryService> _logger;
 
-    public GalleryService(ILogger<GalleryService> logger, IGalleryRepository galleryRepository)
+    public GalleryService(ILogger<GalleryService> logger, IGalleryRepository galleryRepository, IGameRepository gameRepository)
     {
         _logger = logger;
         _galleryRepository = galleryRepository;
+        _gameRepository = gameRepository;
     }
 
     public async Task<OperationResult<GalleryGameResponseDto>> AddToGalleryAsync(GalleryGameCreateRequestDto dto)
@@ -38,25 +40,32 @@ public class GalleryService : IGalleryService
         if (dto.Price <= 0)
             return OperationResult<GalleryGameResponseDto>.Failure("O preço deve ser maior que zero.");
 
-        var exist = await _galleryRepository.ExistsAsync(dto.EAN);
+        var exist = await _galleryRepository.OwnsGalleryGameAsync(dto.EAN);
 
         if (exist)
         {
             return OperationResult<GalleryGameResponseDto>.Failure("O EAN do jogo já existe na galleria, utilize a editação.");
         }
 
-        var game = new GalleryGame(dto.EAN, dto.Name, dto.Genre, dto.Description, dto.Price);
-        await _galleryRepository.AddToGalleryAsync(game);
+        var game = await _gameRepository.GetByIdAsync(dto.EAN);
+
+        if (game == null)
+            return OperationResult<GalleryGameResponseDto>.Failure("Game não encontrado pelo EAN.");
+
+        var galleryGame = new GalleryGame(game, dto.Price);
+
+        await _galleryRepository.AddToGalleryGameAsync(galleryGame);
 
         _logger.LogInformation("Jogo adicionado à galeria com sucesso: {GameId}", game.Id);
 
-        return OperationResult<GalleryGameResponseDto>.Success(MapToResponse(game));
+        return OperationResult<GalleryGameResponseDto>.Success(MapToResponse(galleryGame));
     }
 
     public async Task<OperationResult<GalleryGameResponseDto>> UpdateGalleryGameAsync(Guid id, GalleryGameCreateRequestDto dto)
     {
-        var existingGame = await _galleryRepository.GetGalleryGameByIdAsync(id);
-        if (existingGame == null)
+        var existingGame = await _galleryRepository.OwnsGalleryGameAsync(id);
+
+        if (!existingGame)
             return OperationResult<GalleryGameResponseDto>.Failure("Jogo não encontrado.");
 
         if (string.IsNullOrWhiteSpace(dto.EAN))
@@ -71,22 +80,28 @@ public class GalleryService : IGalleryService
         if (dto.Price <= 0)
             return OperationResult<GalleryGameResponseDto>.Failure("O preço deve ser maior que zero.");
 
+        var game = await _gameRepository.GetByIdAsync(dto.EAN);
+
+        if (game == null)
+            return OperationResult<GalleryGameResponseDto>.Failure("Game não encontrado pelo EAN.");
+
+        var galleryGame = new GalleryGame(game, dto.Price);
+
         // Update properties while keeping the same ID
-        var game = new GalleryGame(dto.EAN, dto.Name, dto.Genre, dto.Description, dto.Price);
-        await _galleryRepository.UpdateGalleryGameAsync(game);
+        await _galleryRepository.UpdateGalleryGameAsync(galleryGame);
 
         _logger.LogInformation("Jogo atualizado na galeria com sucesso: {GameId}", game.Id);
 
-        return OperationResult<GalleryGameResponseDto>.Success(MapToResponse(game));
+        return OperationResult<GalleryGameResponseDto>.Success(MapToResponse(galleryGame));
     }
 
     public async Task<OperationResult> RemoveFromGalleryAsync(Guid id)
     {
-        var game = await _galleryRepository.GetGalleryGameByIdAsync(id);
-        if (game == null)
+        var galleryGames = await _galleryRepository.GetGalleryGameByIdAsync(id);
+        if (galleryGames == null)
             return OperationResult.Failure("Jogo não encontrado.");
 
-        await _galleryRepository.RemoveFromGalleryAsync(game);
+        await _galleryRepository.RemoveFromGalleryGameAsync(galleryGames);
         _logger.LogInformation("Jogo removido da galeria com sucesso: {GameId}", id);
 
         return OperationResult.Success();
@@ -118,12 +133,12 @@ public class GalleryService : IGalleryService
 
     public async Task<OperationResult> RemovePromotionAsync(Guid id)
     {
-        var game = await _galleryRepository.GetGalleryGameByIdAsync(id);
-        if (game == null)
+        var galleryGames = await _galleryRepository.GetGalleryGameByIdAsync(id);
+        if (galleryGames == null)
             return OperationResult.Failure("Jogo não encontrado.");
 
-        game.ApplyPromotion(Promotion.None);
-        await _galleryRepository.UpdateGalleryGameAsync(game);
+        galleryGames.ApplyPromotion(Promotion.None);
+        await _galleryRepository.UpdateGalleryGameAsync(galleryGames);
 
         _logger.LogInformation("Promoção removida com sucesso: {GameId}", id);
 
@@ -132,47 +147,47 @@ public class GalleryService : IGalleryService
 
     public async Task<OperationResult<GalleryGameResponseDto>> GetGalleryGameByIdAsync(Guid id)
     {
-        var game = await _galleryRepository.GetGalleryGameByIdAsync(id);
-        if (game == null)
+        var galleryGame = await _galleryRepository.GetGalleryGameByIdAsync(id);
+        if (galleryGame == null)
             return OperationResult<GalleryGameResponseDto>.Failure("Jogo não encontrado.");
 
-        return OperationResult<GalleryGameResponseDto>.Success(MapToResponse(game));
+        return OperationResult<GalleryGameResponseDto>.Success(MapToResponse(galleryGame));
     }
 
     public async Task<OperationResult<PagedResult<GalleryGameResponseDto>>> GetGalleryGamesAsync(PagedRequestDto<GameFilterDto, GameOrderDto> dto)
     {
         try
         {
-            var games = (await _galleryRepository.GetAllGalleryGamesAsync()).AsQueryable();
+            var galleryGames = (await _galleryRepository.GetAllGalleryGamesAsync()).AsQueryable();
 
             // Apply filters
             if (!string.IsNullOrWhiteSpace(dto.Filter?.Name))
-                games = games.Where(g => g.Name.Contains(dto.Filter.Name));
+                galleryGames = galleryGames.Where(g => g.Game.Name.Contains(dto.Filter.Name));
 
             if (!string.IsNullOrWhiteSpace(dto.Filter?.Genre))
-                games = games.Where(g => g.Genre.Contains(dto.Filter.Genre));
+                galleryGames = galleryGames.Where(g => g.Game.Genre.Contains(dto.Filter.Genre));
 
             if (dto.Filter?.MinPrice.HasValue == true)
-                games = games.Where(g => g.Price >= dto.Filter.MinPrice.Value);
+                galleryGames = galleryGames.Where(g => g.Price >= dto.Filter.MinPrice.Value);
 
             if (dto.Filter?.MaxPrice.HasValue == true)
-                games = games.Where(g => g.Price <= dto.Filter.MaxPrice.Value);
+                galleryGames = galleryGames.Where(g => g.Price <= dto.Filter.MaxPrice.Value);
 
             // Apply ordering
             string? orderBy = dto.OrderBy?.OrderBy?.ToLower();
             bool ascending = dto.OrderBy?.Ascending ?? true;
 
-            games = orderBy switch
+            galleryGames = orderBy switch
             {
-                "name" => ascending ? games.OrderBy(g => g.Name) : games.OrderByDescending(g => g.Name),
-                "price" => ascending ? games.OrderBy(g => g.Price) : games.OrderByDescending(g => g.Price),
-                "genre" => ascending ? games.OrderBy(g => g.Genre) : games.OrderByDescending(g => g.Genre),
-                _ => games.OrderBy(g => g.Name)
+                "name" => ascending ? galleryGames.OrderBy(g =>  g.Game.Name) : galleryGames.OrderByDescending(g =>  g.Game.Name),
+                "genre" => ascending ? galleryGames.OrderBy(g => g.Game.Genre) : galleryGames.OrderByDescending(g => g.Game.Genre),
+                "price" => ascending ? galleryGames.OrderBy(g => g.Price) : galleryGames.OrderByDescending(g => g.Price),
+                _ => galleryGames.OrderBy(g => g.Game.Name)
             };
 
             // Apply pagination
-            var totalItems = games.Count();
-            var pagedGames = games
+            var totalItems = galleryGames.Count();
+            var pagedGames = galleryGames
                 .Skip((dto.PageNumber - 1) * dto.PageSize)
                 .Take(dto.PageSize)
                 .ToList();
@@ -198,8 +213,8 @@ public class GalleryService : IGalleryService
     {
         try
         {
-            var games = await _galleryRepository.GetPromotionalGamesAsync();
-            return OperationResult<IEnumerable<GalleryGameResponseDto>>.Success(games.Select(MapToResponse));
+            var galleryGames = await _galleryRepository.GetPromotionalGalleryGameAsync();
+            return OperationResult<IEnumerable<GalleryGameResponseDto>>.Success(galleryGames.Select(MapToResponse));
         }
         catch (Exception e)
         {
@@ -215,42 +230,42 @@ public class GalleryService : IGalleryService
 
     public async Task<OperationResult<decimal>> GetGamePriceAsync(Guid id)
     {
-        var game = await _galleryRepository.GetGalleryGameByIdAsync(id);
-        return OperationResult<decimal>.Success(game?.FinalPrice ?? 0);
+        var galleryGame = await _galleryRepository.GetGalleryGameByIdAsync(id);
+        return OperationResult<decimal>.Success(galleryGame?.FinalPrice ?? 0);
     }
 
     public async Task<OperationResult<PagedResult<GalleryGameResponseDto>>> GetAvailableGamesAsync(PagedRequestDto<GameFilterDto, GameOrderDto> dto, Guid playerId)
     {
-        var games = (await _galleryRepository.GetAllGalleryGamesAsync()).AsQueryable();
+        var galleryGames = (await _galleryRepository.GetAllGalleryGamesAsync()).AsQueryable();
 
         // Apply filters
         if (!string.IsNullOrWhiteSpace(dto.Filter?.Name))
-            games = games.Where(g => g.Name.Contains(dto.Filter.Name));
+            galleryGames = galleryGames.Where(g => g.Game.Name.Contains(dto.Filter.Name));
 
         if (!string.IsNullOrWhiteSpace(dto.Filter?.Genre))
-            games = games.Where(g => g.Genre.Contains(dto.Filter.Genre));
+            galleryGames = galleryGames.Where(g => g.Game.Genre.Contains(dto.Filter.Genre));
 
         if (dto.Filter?.MinPrice.HasValue == true)
-            games = games.Where(g => g.Price >= dto.Filter.MinPrice.Value);
+            galleryGames = galleryGames.Where(g => g.Price >= dto.Filter.MinPrice.Value);
 
         if (dto.Filter?.MaxPrice.HasValue == true)
-            games = games.Where(g => g.Price <= dto.Filter.MaxPrice.Value);
+            galleryGames = galleryGames.Where(g => g.Price <= dto.Filter.MaxPrice.Value);
 
         // Apply ordering
         string? orderBy = dto.OrderBy?.OrderBy?.ToLower();
         bool ascending = dto.OrderBy?.Ascending ?? true;
 
-        games = orderBy switch
+        galleryGames = orderBy switch
         {
-            "name" => ascending ? games.OrderBy(g => g.Name) : games.OrderByDescending(g => g.Name),
-            "price" => ascending ? games.OrderBy(g => g.Price) : games.OrderByDescending(g => g.Price),
-            "genre" => ascending ? games.OrderBy(g => g.Genre) : games.OrderByDescending(g => g.Genre),
-            _ => games.OrderBy(g => g.Name)
+            "name" => ascending ? galleryGames.OrderBy(g =>  g.Game.Name) : galleryGames.OrderByDescending(g => g.Game.Name),
+            "genre" => ascending ? galleryGames.OrderBy(g => g.Game.Genre) : galleryGames.OrderByDescending(g => g.Game.Genre),
+            "price" => ascending ? galleryGames.OrderBy(g => g.Price) : galleryGames.OrderByDescending(g => g.Price),
+            _ => galleryGames.OrderBy(g => g.Game.Name)
         };
 
         // Apply pagination
-        var totalItems = games.Count();
-        var pagedGames = games
+        var totalItems = galleryGames.Count();
+        var pagedGames = galleryGames
             .Skip((dto.PageNumber - 1) * dto.PageSize)
             .Take(dto.PageSize)
             .ToList();
@@ -267,23 +282,23 @@ public class GalleryService : IGalleryService
         return OperationResult<PagedResult<GalleryGameResponseDto>>.Success(pagedResult);
     }
 
-    private GalleryGameResponseDto MapToResponse(GalleryGame game)
+    private GalleryGameResponseDto MapToResponse(GalleryGame gallery)
     {
         return new GalleryGameResponseDto
         {
-            Id = game.Id,
-            EAN = game.EAN,
-            Name = game.Name,
-            Genre = game.Genre,
-            Description = game.Description,
-            Price = game.Price,
-            FinalPrice = game.FinalPrice,
-            PromotionDescription = game.Promotion != null && game.Promotion.IsActive(DateTime.UtcNow)
-                ? $"{game.Promotion.Type.ToString()} - {game.Promotion.Value}"
+            Id = gallery.Id,
+            EAN = gallery.Game.EAN,
+            Name = gallery.Game.Name,
+            Genre = gallery.Game.Genre,
+            Description = gallery.Game.Description,
+            Price = gallery.Price,
+            FinalPrice = gallery.FinalPrice,
+            PromotionDescription = gallery.Promotion != null && gallery.Promotion.IsActive(DateTime.UtcNow)
+                ? $"{gallery.Promotion.Type.ToString()} - {gallery.Promotion.Value}"
                 : "Sem promoção",
-            OnSale = game.Promotion != null && game.Promotion.IsActive(DateTime.UtcNow),
-            TypePromotion = game.Promotion?.Type.ToString() ?? string.Empty,
-            PromotionValue = game.Promotion?.Value ?? 0
+            OnSale = gallery.Promotion != null && gallery.Promotion.IsActive(DateTime.UtcNow),
+            TypePromotion = gallery.Promotion?.Type.ToString() ?? string.Empty,
+            PromotionValue = gallery.Promotion?.Value ?? 0
         };
     }
 }

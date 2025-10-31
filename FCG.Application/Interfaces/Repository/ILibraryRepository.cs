@@ -10,7 +10,7 @@ public interface ILibraryRepository
     Task<LibraryGame> AddToLibraryAsync(LibraryGame game);
     
     // Ownership and verification
-    Task<bool> OwnsGameAsync(Guid playerId, Guid gameId);
+    Task<bool> OwnsLibraryGameAsync(Guid playerId, Guid gameId);
     Task<bool> HasGameInLibraryAsync(Guid playerId, string gameName);
     
     // Library queries

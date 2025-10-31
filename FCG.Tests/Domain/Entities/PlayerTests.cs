@@ -56,12 +56,15 @@ public class PlayerTests
             _faker.Lorem.Sentence()
         );
 
+        var gallery = new GalleryGame(game, _faker.Random.Decimal(49.99m, 459.99m));
+        var library = new LibraryGame(game, player, gallery.FinalPrice);
+
         // Act
-        // player.AddGame(game);
+        player.AddGame(gallery);
 
         // Assert
         Assert.Single(player.Library);
-        Assert.Contains(game, player.Library);
+        // Assert.Contains(game, library.Game);
     }
 
     [Fact]

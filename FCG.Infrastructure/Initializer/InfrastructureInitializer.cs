@@ -3,7 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using FCG.Infrastructure.Interfaces;
 using FCG.Domain.Data.Contexts;
-using FCG.Application.Interfaces.Service;
+using Microsoft.Extensions.Configuration;
+using FCG.Domain.Data.Contexts.Extension;
 
 namespace FCG.Infrastructure.Initializer;
 
@@ -11,11 +12,13 @@ public class InfrastructureInitializer : IInfrastructureInitializer
 {
     private readonly IServiceProvider _provider;
     private readonly ILogger<InfrastructureInitializer> _logger;
+    private readonly IConfiguration _configuration;
 
-    public InfrastructureInitializer(IServiceProvider provider, ILogger<InfrastructureInitializer> logger)
+    public InfrastructureInitializer(IServiceProvider provider, ILogger<InfrastructureInitializer> logger, IConfiguration configuration)
     {
         _provider = provider;
         _logger = logger;
+        _configuration = configuration;
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -28,36 +31,52 @@ public class InfrastructureInitializer : IInfrastructureInitializer
             using (var scope = _provider.CreateScope())
             {
                 var sp = scope.ServiceProvider;
-                var identityDb = sp.GetRequiredService<UserDbContext>();
+                var identityDbContext = sp.GetRequiredService<UserDbContext>();
+                var seedService = sp.GetRequiredService<ISeedService>();
+
+                var dropDatabase = _configuration.GetValue<bool>("db_delete:database");
+
+                if (dropDatabase)
+                    identityDbContext.Database.EnsureDeleted();
 
                 // Aplica apenas migrations pendentes do Identity
-                var pendingMigrations = await identityDb.Database.GetPendingMigrationsAsync(cancellationToken);
+                var pendingMigrations = await identityDbContext.Database.GetPendingMigrationsAsync(cancellationToken);
                 if (pendingMigrations.Any())
                 {
+#if DEBUG
+                    var dropSchema = _configuration.GetValue<bool>("db_delete:schema:identity");
+
+                    if (dropSchema)
+                        await identityDbContext.DropSchemaAsync(_logger, cancellationToken);
+#endif
+
                     _logger.LogInformation("Aplicando migrations do Identity...");
-                    await identityDb.Database.MigrateAsync(cancellationToken);
+                    await identityDbContext.Database.MigrateAsync(cancellationToken);
+                    _logger.LogInformation("AS migrations do Identity aplicadas ...");
                 }
-
-                var seedService = sp.GetRequiredService<ISeedService>();
+                
                 await seedService.SeedIdentityAsync(sp, cancellationToken);
-            }
 
-            // 2. Aplicação
-            using (var scope = _provider.CreateScope())
-            {
-                var sp = scope.ServiceProvider;
-                var appDb = sp.GetRequiredService<FcgDbContext>();
+                // 2. Aplicação
+                var fcgDbContext = sp.GetRequiredService<FcgDbContext>();
 
                 // Apenas garante que o banco existe e aplica migrations pendentes
-                var appPendingMigrations = await appDb.Database.GetPendingMigrationsAsync(cancellationToken);
+                var appPendingMigrations = await fcgDbContext.Database.GetPendingMigrationsAsync(cancellationToken);
                 if (appPendingMigrations.Any())
                 {
+#if DEBUG
+                    var limparSchema = _configuration.GetValue<bool>("db_delete:schema:fcg");
+
+                    if (limparSchema)
+                        await fcgDbContext.DropSchemaAsync(_logger, cancellationToken);
+#endif
+
                     _logger.LogInformation("Aplicando migrations da aplicação...");
-                    await appDb.Database.MigrateAsync(cancellationToken);
+                    await fcgDbContext.Database.MigrateAsync(cancellationToken);
+                    _logger.LogInformation("AS migrations do Aplicação aplicadas ...");
                 }
 
-                var seedService = sp.GetRequiredService<ISeedService>();
-                await seedService.SeedApplicationAsync(cancellationToken);
+                await seedService.SeedApplicationAsync(sp, cancellationToken);
             }
 
             _logger.LogInformation("Infraestrutura e seeds inicializados com sucesso.");

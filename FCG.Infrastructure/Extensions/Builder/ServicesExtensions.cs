@@ -11,6 +11,7 @@ using FCG.Infrastructure.Initializer;
 using FCG.Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
@@ -58,6 +59,8 @@ public static class ServicesExtensions
         builder.AddIdentity();
         builder.AddAuthorizationJWT();
         builder.AddAuthorizationPolicies();
+
+        builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
         builder.Services.AddScoped(typeof(IdentityDAL<>)); // para identidade
         builder.Services.AddScoped(typeof(IDAL<>), typeof(DomainDAL<>)); // padrão para domínio

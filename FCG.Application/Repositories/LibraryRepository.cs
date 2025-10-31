@@ -39,7 +39,7 @@ public class LibraryRepository : ILibraryRepository
             g => g.Player);
     }
 
-    public async Task<bool> OwnsGameAsync(Guid playerId, Guid gameId)
+    public async Task<bool> OwnsLibraryGameAsync(Guid playerId, Guid gameId)
     {
         var game = await GetLibraryGameAsync(playerId, gameId);
         return game != null;
@@ -48,7 +48,7 @@ public class LibraryRepository : ILibraryRepository
     public async Task<bool> HasGameInLibraryAsync(Guid playerId, string gameName)
     {
         var game = await _dal.FindAsync(
-            g => g.PlayerId == playerId && g.Name.ToLower() == gameName.ToLower());
+            g => g.PlayerId == playerId && g.Game.Name.ToLower() == gameName.ToLower());
         return game != null;
     }
 
@@ -64,7 +64,7 @@ public class LibraryRepository : ILibraryRepository
     public async Task<IEnumerable<LibraryGame>> GetGamesByGenreAsync(Guid playerId, string genre)
     {
         return await _dal.FindListAsync(
-            g => g.PlayerId == playerId && g.Genre.ToLower() == genre.ToLower(),
+            g => g.PlayerId == playerId && g.Game.Genre.ToLower() == genre.ToLower(),
             g => g.Player);
     }
 
@@ -83,8 +83,8 @@ public class LibraryRepository : ILibraryRepository
     public async Task<IEnumerable<LibraryGame>> GetPurchasesByDateRangeAsync(Guid playerId, DateTime startDate, DateTime endDate)
     {
         return await _dal.FindListAsync(
-            g => g.PlayerId == playerId && 
-                 g.PurchaseDate >= startDate && 
+            g => g.PlayerId == playerId &&
+                 g.PurchaseDate >= startDate &&
                  g.PurchaseDate <= endDate,
             g => g.Player);
     }
