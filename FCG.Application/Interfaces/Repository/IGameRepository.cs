@@ -13,5 +13,6 @@ public interface IGameRepository
     Task DeleteAsync(Game game);
     Task<bool> ExistsAsync(Guid id);
     Task<bool> ExistsAsync(string EAN);
+    Task<bool> ExistsAsync(Guid id, string EAN);
     Task<int> SaveChangesAsync();
 }

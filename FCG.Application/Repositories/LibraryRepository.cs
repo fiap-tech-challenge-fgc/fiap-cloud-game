@@ -48,7 +48,7 @@ public class LibraryRepository : ILibraryRepository
     public async Task<bool> HasGameInLibraryAsync(Guid playerId, string gameName)
     {
         var game = await _dal.FindAsync(
-            g => g.PlayerId == playerId && g.Game.Name.ToLower() == gameName.ToLower());
+            g => g.PlayerId == playerId && g.Game.Title.ToLower() == gameName.ToLower());
         return game != null;
     }
 

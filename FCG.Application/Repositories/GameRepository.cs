@@ -68,6 +68,12 @@ public class GameRepository : IGameRepository
         return game != null;
     }
 
+    public async Task<bool> ExistsAsync(Guid id, string EAN)
+    {
+        var game = await _dal.FindAsync(g => g.Id == id && g.EAN == EAN);
+        return game != null;
+    }
+
     public async Task<int> SaveChangesAsync()
     {
         return await _context.SaveChangesAsync();

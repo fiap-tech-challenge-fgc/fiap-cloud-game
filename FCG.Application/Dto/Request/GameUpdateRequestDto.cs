@@ -2,7 +2,7 @@
 
 namespace FCG.Application.Dto.Request;
 
-public class GameCreateRequestDto
+public class GameUpdateRequestDto
 {
     [Display(Name = "EAN")]
     [Required(ErrorMessage = "{0} do jogo é obrigatório")]
@@ -12,8 +12,8 @@ public class GameCreateRequestDto
 
     [Display(Name = "Nome do jogo")]
     [Required(ErrorMessage = "{0} é obrigatório")]
-    [StringLength(100, MinimumLength = 2, ErrorMessage = "O {0} deve ter entre {2} e {1} caracteres")]
-    public string Title { get; set; } = string.Empty;
+    [StringLength(50, MinimumLength = 1, ErrorMessage = "O título do jogo deve ter entre {2} e {1} caracteres.")]
+    public string Title { get; private set; } = string.Empty;
 
     [StringLength(50, MinimumLength = 1, ErrorMessage = "O subtítulo deve ter entre {2} e {1} caracteres.")]
     public string? SubTitle { get; private set; }

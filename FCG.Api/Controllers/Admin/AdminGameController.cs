@@ -1,0 +1,80 @@
+﻿using FCG.Application.Dto.Filter;
+using FCG.Application.Dto.Order;
+using FCG.Application.Dto.Request;
+using FCG.Application.Dto.Response;
+using FCG.Application.Dto.Result;
+using FCG.Application.Interfaces.Service;
+using Microsoft.AspNetCore.Mvc;
+
+namespace FCG.Api.Controllers.Admin;
+
+[ApiController]
+[Route("api/admin")]
+public class AdminGameController : ControllerBase
+{
+    private readonly IGameService _gameService;
+
+    public AdminGameController(IGameService gameService)
+    {
+        _gameService = gameService;
+    }
+
+    // 🕹️ Game Management
+    [HttpPost("games")]
+    public async Task<IActionResult> CreateGame([FromBody] GameCreateRequestDto dto)
+    {
+        var result = await _gameService.CreateGameAsync(dto);
+
+        if (!result.Succeeded)
+            return BadRequest(new { errors = result.Errors });
+
+        return CreatedAtAction(nameof(GetGame), new { id = result.Data!.Id }, result.Data);
+    }
+
+    // 🕹️ Game Management
+    [HttpGet("games/{id}")]
+    public async Task<IActionResult> GetGame(Guid id)
+    {
+        var result = await _gameService.GetGameByIdAsync(id);
+
+        if (!result.Succeeded)
+            return NotFound(new { errors = result.Errors });
+
+        return Ok(result.Data);
+    }
+
+    // 🕹️ Game Management
+    [HttpGet("games")]
+    public async Task<ActionResult<PagedResult<GameResponseDto>>> GetGames([FromQuery] PagedRequestDto<GameFilterDto, GameOrderDto> dto)
+    {
+        var result = await _gameService.GetAllGamesAsync(dto);
+
+        if (!result.Succeeded)
+            return NotFound(new { errors = result.Errors });
+
+        return Ok(result.Data);
+    }
+
+    [HttpPut("games/{id}")]
+    public async Task<IActionResult> UpdateGame(Guid id, [FromBody] GameUpdateRequestDto dto)
+    {
+        var result = await _gameService.UpdateGameAsync(id, dto);
+
+        if (!result.Succeeded)
+            return BadRequest(result.Errors);
+
+        return NoContent();
+    }
+
+    // 🕹️ Game Management
+    [HttpDelete("games/{id}")]
+    public async Task<IActionResult> DeleteGame(Guid id)
+    {
+        var result = await _gameService.DeleteGameAsync(id);
+
+        if (!result.Succeeded)
+            return BadRequest(new { errors = result.Errors });
+
+        return NoContent();
+    }
+}

@@ -10,24 +10,53 @@ public class Game
 
     [Required]
     public string EAN { get; private set; } = null!;
-    public string Name { get; private set; } = string.Empty;
+
+    [Required]
+    [StringLength(50, MinimumLength = 1, ErrorMessage = "O título do jogo deve ter entre {2} e {1} caracteres.")]
+    public string Title { get; private set; } = string.Empty;
+
+    [StringLength(50, MinimumLength = 1, ErrorMessage = "O subtítulo deve ter entre {2} e {1} caracteres.")]
+    public string? SubTitle { get; private set; }
+
+    [Required]
+    [StringLength(50, MinimumLength = 1, ErrorMessage = "O gênero deve ter entre {2} e {1} caracteres.")]
     public string Genre { get; private set; } = string.Empty;
+
+    [StringLength(500, MinimumLength = 10, ErrorMessage = "A descrição deve ter entre {2} e {1} caracteres.")]
     public string? Description { get; private set; }
 
     protected Game() { }
 
-    public Game(string ean, string name, string genre, string? description)
+    public Game(string ean, string title, string genre, string? description, string? subTitle = null)
     {
         if (string.IsNullOrWhiteSpace(ean)) throw new ArgumentException("EAN obrigatório");
-        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Nome obrigatório");
+        if (string.IsNullOrWhiteSpace(title)) throw new ArgumentException("Título obrigatório");
         if (string.IsNullOrWhiteSpace(genre)) throw new ArgumentException("Gênero obrigatório");
 
         Id = Guid.NewGuid();
         EAN = ean;
-        Name = name;
+        Title = title;
         Genre = genre;
         Description = description;
+        SubTitle = subTitle;
     }
 
-    public string GetDescription() => $"{Name} ({Description})";
+    public void Update(string ean, string title, string genre, string? description, string? subTitle = null)
+    {
+        if (string.IsNullOrWhiteSpace(ean)) throw new ArgumentException("EAN obrigatório");
+        if (string.IsNullOrWhiteSpace(title)) throw new ArgumentException("Título obrigatório");
+        if (string.IsNullOrWhiteSpace(genre)) throw new ArgumentException("Gênero obrigatório");
+
+        this.EAN = ean;
+        this.Title = title;
+        this.Genre = genre;
+        this.Description = description;
+        this.SubTitle = subTitle;
+    }
+
+    public string GetDescription()
+    {
+        var baseTitle = string.IsNullOrWhiteSpace(SubTitle) ? Title : $"{Title}: {SubTitle}";
+        return $"{baseTitle} ({Description})";
+    }
 }

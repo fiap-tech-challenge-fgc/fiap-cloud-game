@@ -4,12 +4,16 @@ using FCG.Application.Dto.Request;
 using FCG.Application.Dto.Response;
 using FCG.Application.Dto.Result;
 using FCG.Application.Interfaces.Service;
+using FCG.Application.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FCG.API.Controllers;
+namespace FCG.Api.Controllers;
 
+[Authorize(Roles = RoleConstants.Player)]
+[Route("api/[controller]")]
 [ApiController]
-[Route("api/purchases")]
+
 public class PurchaseController : ControllerBase
 {
     private readonly IPurchaseService _purchaseAppService;
@@ -19,10 +23,28 @@ public class PurchaseController : ControllerBase
         _purchaseAppService = purchaseAppService;
     }
 
+    private Guid? GetCurrentUserId()
+    {
+        // Tenta buscar em várias claims padrão
+        var claim = User.FindFirst("sub")?.Value
+                       ?? User.FindFirst("nameidentifier")?.Value;
+
+        return Guid.TryParse(claim, out var guid) ? guid : null;
+    }
+
     // 📥 Compra direta de um jogo
     [HttpPost("single")]
     public async Task<IActionResult> RegisterSinglePurchase([FromBody] PurchaseCreateRequestDto dto)
     {
+        var playerId = GetCurrentUserId();
+
+        if (playerId == null)
+            return Unauthorized("Não autorizado.");
+
+        // se o id for fiferente por enquanto não libera, podemos ver para presentear, pelo displayname algo assim...
+        if (playerId != dto.PlayerId)        
+            return BadRequest("Ainda não é possivel presentear o jogo para outro jogador.");
+
         var result = await _purchaseAppService.RegisterPurchaseAsync(dto);
 
         if (result.Succeeded)
@@ -32,23 +54,33 @@ public class PurchaseController : ControllerBase
     }
 
     // 🛒 Compra de todos os itens do carrinho
-    [HttpPost("cart/{playerId}")]
-    public async Task<IActionResult> RegisterPurchaseFromCart(Guid playerId)
+    [HttpPost("cart")]
+    public async Task<IActionResult> RegisterPurchaseFromCart()
     {
-        var result = await _purchaseAppService.RegisterPurchaseAsync(playerId);
-        
+        var playerId = GetCurrentUserId();
+
+        if (playerId == null)
+            return Unauthorized("Não autorizado.");
+
+        var result = await _purchaseAppService.RegisterPurchaseAsync(playerId.Value);
+
         if (result.Succeeded)
             return Ok();
-        
+
         return BadRequest(new { result.Errors });
     }
 
     // 🔍 Listar compras de um jogador
-    [HttpGet("player/{playerId}")]
-    public async Task<ActionResult<PagedResult<PurchaseResponseDto>>> GetPurchasesByPlayer(Guid playerId, PagedRequestDto<PurchaseFilterDto, PurchaseOrderDto> dto)
+    [HttpGet("player")]
+    public async Task<ActionResult<PagedResult<PurchaseResponseDto>>> GetPurchasesByPlayer(PagedRequestDto<PurchaseFilterDto, PurchaseOrderDto> dto)
     {
-        var purchases = await _purchaseAppService.GetPurchasesByPlayerAsync(playerId, dto);
-        
+        var playerId = GetCurrentUserId();
+
+        if (playerId == null)
+            return Unauthorized("Não autorizado.");
+
+        var purchases = await _purchaseAppService.GetPurchasesByPlayerAsync(playerId.Value, dto);
+
         return Ok(purchases.Data);
     }
 }

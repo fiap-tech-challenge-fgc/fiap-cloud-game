@@ -23,7 +23,7 @@ public static class CartMapper
         return new CartItemResponseDto
         {
             GameId = item.Game.Id,
-            Name = item.Game.Name,
+            Name = item.Game.Title,
             Genre = item.Game.Genre,
             Description = item.Game.Description,
         };

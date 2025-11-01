@@ -29,7 +29,7 @@ public class GameTests
 
         // Assert
         Assert.NotEqual(Guid.Empty, game.Id);
-        Assert.Equal(name, game.Name);
+        Assert.Equal(name, game.Title);
         Assert.Equal(genre, game.Genre);
         Assert.Equal(description, game.Description);
     }

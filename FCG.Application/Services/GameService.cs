@@ -26,7 +26,7 @@ public class GameService : IGameService
         if (string.IsNullOrWhiteSpace(dto.EAN))
             return OperationResult<GameResponseDto>.Failure("O EAN do jogo é obrigatório.");
 
-        if (string.IsNullOrWhiteSpace(dto.Name))
+        if (string.IsNullOrWhiteSpace(dto.Title))
             return OperationResult<GameResponseDto>.Failure("O nome do jogo é obrigatório.");
 
         if (string.IsNullOrWhiteSpace(dto.Genre))
@@ -39,13 +39,37 @@ public class GameService : IGameService
             return OperationResult<GameResponseDto>.Failure("O EAN do jogo já existe no cadastro.");
         }
 
-        var game = new Game(dto.EAN, dto.Name, dto.Genre, dto.Description);
+        var game = new Game(dto.EAN, dto.Title, dto.Genre, dto.Description);
         await _gameRepository.AddAsync(game);
 
         _logger.LogInformation("Jogo criado com sucesso: {GameId}", game.Id);
 
         return OperationResult<GameResponseDto>.Success(MapToResponse(game));
     }
+
+    public async Task<OperationResult<GameResponseDto>> UpdateGameAsync(Guid id, GameUpdateRequestDto dto)
+    {
+        var game = await _gameRepository.GetByIdAsync(id);
+
+        if (game == null)
+            return OperationResult<GameResponseDto>.Failure("Jogo não encontrado.");
+
+        if (!string.IsNullOrWhiteSpace(dto.EAN))
+        {
+            var exist = await _gameRepository.ExistsAsync(id, dto.EAN);
+
+            if (exist)
+                return OperationResult<GameResponseDto>.Failure("O EAN do jogo já existe no cadastro.");
+        }
+
+        game.Update(dto.EAN, dto.Title, dto.Genre, dto.Description, dto.SubTitle);
+
+        await _gameRepository.UpdateAsync(game);
+        _logger.LogInformation("Jogo atualizado com sucesso: {GameId}", game.Id);
+
+        return OperationResult<GameResponseDto>.Success(MapToResponse(game));
+    }
+
 
     public async Task<OperationResult<GameResponseDto?>> GetGameByIdAsync(Guid id)
     {
@@ -67,7 +91,7 @@ public class GameService : IGameService
 
         // Aplicar filtros
         if (!string.IsNullOrWhiteSpace(pagedRequestDto.Filter?.Name))
-            gamesQuery = gamesQuery.Where(g => g.Name.Contains(pagedRequestDto.Filter.Name));
+            gamesQuery = gamesQuery.Where(g => g.Title.Contains(pagedRequestDto.Filter.Name));
 
         if (!string.IsNullOrWhiteSpace(pagedRequestDto.Filter?.Genre))
             gamesQuery = gamesQuery.Where(g => g.Genre.Contains(pagedRequestDto.Filter.Genre));
@@ -78,9 +102,9 @@ public class GameService : IGameService
 
         gamesQuery = orderBy switch
         {
-            "name" => ascending ? gamesQuery.OrderBy(g => g.Name) : gamesQuery.OrderByDescending(g => g.Name),
+            "name" => ascending ? gamesQuery.OrderBy(g => g.Title) : gamesQuery.OrderByDescending(g => g.Title),
             "genre" => ascending ? gamesQuery.OrderBy(g => g.Genre) : gamesQuery.OrderByDescending(g => g.Genre),
-            _ => gamesQuery.OrderBy(g => g.Name)
+            _ => gamesQuery.OrderBy(g => g.Title)
         };
 
         // Paginação
@@ -133,7 +157,7 @@ public class GameService : IGameService
         {
             Id = game.Id,
             EAN = game.EAN,
-            Name = game.Name,
+            Title = game.Title,
             Genre = game.Genre,
             Description = game.Description
         };

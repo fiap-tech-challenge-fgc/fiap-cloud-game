@@ -47,7 +47,7 @@ public class PurchaseService : IPurchaseService
         if (!await _galleryRepository.IsAvailableForPurchaseAsync(dto.GameId))
             return OperationResult<PurchaseResponseDto>.Failure("Jogo não está disponível para compra.");
 
-        if (await _libraryRepository.HasGameInLibraryAsync(dto.PlayerId, galleryGame.Game.Name))
+        if (await _libraryRepository.HasGameInLibraryAsync(dto.PlayerId, galleryGame.Game.Title))
             return OperationResult<PurchaseResponseDto>.Failure("Jogador já possui este jogo.");
 
         var libraryGame = new LibraryGame(galleryGame.Game, player, galleryGame.FinalPrice);
@@ -60,7 +60,7 @@ public class PurchaseService : IPurchaseService
         {
             PurchaseId = libraryGame.Id,
             PlayerName = player.DisplayName,
-            GameName = galleryGame.Game.Name,
+            GameName = galleryGame.Game.Title,
             Price = galleryGame.FinalPrice,
             PurchaseDate = libraryGame.PurchaseDate
         };
@@ -84,7 +84,7 @@ public class PurchaseService : IPurchaseService
             if (galleryGame == null || !await _galleryRepository.IsAvailableForPurchaseAsync(item.GameId))
                 continue;
 
-            if (await _libraryRepository.HasGameInLibraryAsync(playerId, galleryGame.Game.Name))
+            if (await _libraryRepository.HasGameInLibraryAsync(playerId, galleryGame.Game.Title))
                 continue;
 
             var libraryGame = new LibraryGame(galleryGame.Game, player, galleryGame.FinalPrice);
@@ -109,7 +109,7 @@ public class PurchaseService : IPurchaseService
             {
                 PurchaseId = g.Id,
                 PlayerName = g.Player?.DisplayName ?? string.Empty,
-                GameName = g.Game.Name,
+                GameName = g.Game.Title,
                 Price = g.PurchasePrice,
                 PurchaseDate = g.PurchaseDate
             }).OrderByDescending(p => p.PurchaseDate);
@@ -142,7 +142,7 @@ public class PurchaseService : IPurchaseService
             {
                 PurchaseId = g.Id,
                 PlayerName = g.Player?.DisplayName ?? string.Empty,
-                GameName = g.Game.Name,
+                GameName = g.Game.Title,
                 Price = g.PurchasePrice,
                 PurchaseDate = g.PurchaseDate
             });
@@ -218,7 +218,7 @@ public class PurchaseService : IPurchaseService
                 query = query.Where(p => p.Player.DisplayName.Contains(dto.Filter.PlayerName));
 
             if (!string.IsNullOrWhiteSpace(dto.Filter.GameName))
-                query = query.Where(p => p.Game.Name.Contains(dto.Filter.GameName));
+                query = query.Where(p => p.Game.Title.Contains(dto.Filter.GameName));
 
             if (dto.Filter.MinPrice.HasValue)
                 query = query.Where(p => p.PurchasePrice >= dto.Filter.MinPrice.Value);
@@ -239,7 +239,7 @@ public class PurchaseService : IPurchaseService
             query = dto.OrderBy.SortBy.ToLower() switch
             {
                 "playername" => dto.OrderBy.Ascending ? query.OrderBy(p => p.Player.DisplayName) : query.OrderByDescending(p => p.Player.DisplayName),
-                "gamename" => dto.OrderBy.Ascending ? query.OrderBy(p => p.Game.Name) : query.OrderByDescending(p => p.Game.Name),
+                "gamename" => dto.OrderBy.Ascending ? query.OrderBy(p => p.Game.Title) : query.OrderByDescending(p => p.Game.Title),
                 "price" => dto.OrderBy.Ascending ? query.OrderBy(p => p.PurchasePrice) : query.OrderByDescending(p => p.PurchasePrice),
                 "date" => dto.OrderBy.Ascending ? query.OrderBy(p => p.PurchaseDate) : query.OrderByDescending(p => p.PurchaseDate),
                 _ => query.OrderByDescending(p => p.PurchaseDate)
@@ -255,7 +255,7 @@ public class PurchaseService : IPurchaseService
             {
                 PurchaseId = g.Id,
                 PlayerName = g.Player.DisplayName,
-                GameName = g.Game.Name,
+                GameName = g.Game.Title,
                 Price = g.PurchasePrice,
                 PurchaseDate = g.PurchaseDate
             })

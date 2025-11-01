@@ -37,7 +37,7 @@ public class LibraryService : ILibraryService
             if (galleryGame == null)
                 return OperationResult<LibraryGameResponseDto>.Failure("Jogo não encontrado na galeria.");
 
-            if (await _libraryRepository.HasGameInLibraryAsync(playerId, galleryGame.Game.Name))
+            if (await _libraryRepository.HasGameInLibraryAsync(playerId, galleryGame.Game.Title))
                 return OperationResult<LibraryGameResponseDto>.Failure("Jogador já possui este jogo.");
 
             var player = await _playerRepository.GetByIdAsync(playerId);
@@ -86,7 +86,7 @@ public class LibraryService : ILibraryService
 
             // Apply filters
             if (!string.IsNullOrWhiteSpace(pagedRequestDto.Filter?.Name))
-                libraryGame = libraryGame.Where(g => g.Game.Name.Contains(pagedRequestDto.Filter.Name));
+                libraryGame = libraryGame.Where(g => g.Game.Title.Contains(pagedRequestDto.Filter.Name));
 
             if (!string.IsNullOrWhiteSpace(pagedRequestDto.Filter?.Genre))
                 libraryGame = libraryGame.Where(g => g.Game.Genre.Contains(pagedRequestDto.Filter.Genre));
@@ -97,7 +97,7 @@ public class LibraryService : ILibraryService
 
             libraryGame = orderBy switch
             {
-                "name" => ascending ? libraryGame.OrderBy(g => g.Game.Name) : libraryGame.OrderByDescending(g => g.Game.Name),
+                "name" => ascending ? libraryGame.OrderBy(g => g.Game.Title) : libraryGame.OrderByDescending(g => g.Game.Title),
                 "genre" => ascending ? libraryGame.OrderBy(g => g.Game.Genre) : libraryGame.OrderByDescending(g => g.Game.Genre),
                 "purchasedate" => ascending ? libraryGame.OrderBy(g => g.PurchaseDate) : libraryGame.OrderByDescending(g => g.PurchaseDate),
                 _ => libraryGame.OrderByDescending(g => g.PurchaseDate)
@@ -210,7 +210,7 @@ public class LibraryService : ILibraryService
         {
             Id = libraryGame.Id,
             EAN = libraryGame.Game.EAN,
-            Name = libraryGame.Game.Name,
+            Title = libraryGame.Game.Title,
             Genre = libraryGame.Game.Genre,
             Description = libraryGame.Game.Description,
             PlayerId = libraryGame.PlayerId,

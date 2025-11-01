@@ -89,7 +89,7 @@ public class GalleryRepository : IGalleryRepository
     {
         searchTerm = searchTerm.ToLower();
         return await _dal.FindListAsync(
-            g => g.Game.Name.ToLower().Contains(searchTerm) || 
+            g => g.Game.Title.ToLower().Contains(searchTerm) || 
                  g.Game.Genre.ToLower().Contains(searchTerm) || 
                  (g.Game.Description != null && g.Game.Description.ToLower().Contains(searchTerm)),
             g => g.Promotion);

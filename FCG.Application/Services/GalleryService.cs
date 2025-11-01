@@ -31,7 +31,7 @@ public class GalleryService : IGalleryService
         if (string.IsNullOrWhiteSpace(dto.EAN))
             return OperationResult<GalleryGameResponseDto>.Failure("O EAN do jogo é obrigatório.");
 
-        if (string.IsNullOrWhiteSpace(dto.Name))
+        if (string.IsNullOrWhiteSpace(dto.Title))
             return OperationResult<GalleryGameResponseDto>.Failure("O nome do jogo é obrigatório.");
 
         if (string.IsNullOrWhiteSpace(dto.Genre))
@@ -71,7 +71,7 @@ public class GalleryService : IGalleryService
         if (string.IsNullOrWhiteSpace(dto.EAN))
             return OperationResult<GalleryGameResponseDto>.Failure("O EAN do jogo é obrigatório.");
 
-        if (string.IsNullOrWhiteSpace(dto.Name))
+        if (string.IsNullOrWhiteSpace(dto.Title))
             return OperationResult<GalleryGameResponseDto>.Failure("O nome do jogo é obrigatório.");
 
         if (string.IsNullOrWhiteSpace(dto.Genre))
@@ -162,7 +162,7 @@ public class GalleryService : IGalleryService
 
             // Apply filters
             if (!string.IsNullOrWhiteSpace(dto.Filter?.Name))
-                galleryGames = galleryGames.Where(g => g.Game.Name.Contains(dto.Filter.Name));
+                galleryGames = galleryGames.Where(g => g.Game.Title.Contains(dto.Filter.Name));
 
             if (!string.IsNullOrWhiteSpace(dto.Filter?.Genre))
                 galleryGames = galleryGames.Where(g => g.Game.Genre.Contains(dto.Filter.Genre));
@@ -179,10 +179,10 @@ public class GalleryService : IGalleryService
 
             galleryGames = orderBy switch
             {
-                "name" => ascending ? galleryGames.OrderBy(g =>  g.Game.Name) : galleryGames.OrderByDescending(g =>  g.Game.Name),
+                "name" => ascending ? galleryGames.OrderBy(g =>  g.Game.Title) : galleryGames.OrderByDescending(g =>  g.Game.Title),
                 "genre" => ascending ? galleryGames.OrderBy(g => g.Game.Genre) : galleryGames.OrderByDescending(g => g.Game.Genre),
                 "price" => ascending ? galleryGames.OrderBy(g => g.Price) : galleryGames.OrderByDescending(g => g.Price),
-                _ => galleryGames.OrderBy(g => g.Game.Name)
+                _ => galleryGames.OrderBy(g => g.Game.Title)
             };
 
             // Apply pagination
@@ -240,7 +240,7 @@ public class GalleryService : IGalleryService
 
         // Apply filters
         if (!string.IsNullOrWhiteSpace(dto.Filter?.Name))
-            galleryGames = galleryGames.Where(g => g.Game.Name.Contains(dto.Filter.Name));
+            galleryGames = galleryGames.Where(g => g.Game.Title.Contains(dto.Filter.Name));
 
         if (!string.IsNullOrWhiteSpace(dto.Filter?.Genre))
             galleryGames = galleryGames.Where(g => g.Game.Genre.Contains(dto.Filter.Genre));
@@ -257,10 +257,10 @@ public class GalleryService : IGalleryService
 
         galleryGames = orderBy switch
         {
-            "name" => ascending ? galleryGames.OrderBy(g =>  g.Game.Name) : galleryGames.OrderByDescending(g => g.Game.Name),
+            "name" => ascending ? galleryGames.OrderBy(g =>  g.Game.Title) : galleryGames.OrderByDescending(g => g.Game.Title),
             "genre" => ascending ? galleryGames.OrderBy(g => g.Game.Genre) : galleryGames.OrderByDescending(g => g.Game.Genre),
             "price" => ascending ? galleryGames.OrderBy(g => g.Price) : galleryGames.OrderByDescending(g => g.Price),
-            _ => galleryGames.OrderBy(g => g.Game.Name)
+            _ => galleryGames.OrderBy(g => g.Game.Title)
         };
 
         // Apply pagination
@@ -288,7 +288,7 @@ public class GalleryService : IGalleryService
         {
             Id = gallery.Id,
             EAN = gallery.Game.EAN,
-            Name = gallery.Game.Name,
+            Title = gallery.Game.Title,
             Genre = gallery.Game.Genre,
             Description = gallery.Game.Description,
             Price = gallery.Price,

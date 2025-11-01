@@ -34,7 +34,7 @@ public class Player
 
     public LibraryGame AddGame(GalleryGame gallery)
     {
-        if (_library.Any(g => g.Game.Name == gallery.Game.Name))
+        if (_library.Any(g => g.Game.Title == gallery.Game.Title))
             throw new InvalidOperationException("Jogo já existe na biblioteca.");
 
         var libraryGame = new LibraryGame(gallery.Game, this, gallery.FinalPrice);
