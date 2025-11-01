@@ -21,7 +21,7 @@ public class AuthController : ControllerBase
     [HttpPost("register-player")]
     public async Task<IActionResult> Register([FromBody] UserCreateRequestDto dto)
     {
-        var result = await _authService.RegisterUserAsync(dto, RoleConstants.Admin);
+        var result = await _authService.RegisterUserAsync(dto, RoleConstants.Player);
 
         if (!result.Succeeded)
             return BadRequest(new { errors = result.Errors });

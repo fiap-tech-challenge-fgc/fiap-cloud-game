@@ -45,7 +45,6 @@ public class AdminController : ControllerBase
         if (!result.Succeeded)
             return NotFound(new { message = result.Errors });
 
-
         return Ok(result.Data);
     }
 
