@@ -2,12 +2,15 @@
 using FCG.Application.Dto.Order;
 using FCG.Application.Dto.Request;
 using FCG.Application.Interfaces;
+using FCG.Application.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FCG.Api.Controllers.Admin;
 
 [Route("api/admin/user")]
 [ApiController]
+[Authorize(Roles = RoleConstants.Admin)]
 public class AdminUserController : ControllerBase
 {
     private readonly IUserService _userService;

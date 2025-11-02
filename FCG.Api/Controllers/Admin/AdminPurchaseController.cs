@@ -4,12 +4,15 @@ using FCG.Application.Dto.Request;
 using FCG.Application.Dto.Response;
 using FCG.Application.Dto.Result;
 using FCG.Application.Interfaces.Service;
+using FCG.Application.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FCG.Api.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/purchases")]
+[Authorize(Roles = RoleConstants.Admin)]
 public class AdminPurchaseController : ControllerBase
 {
     private readonly IPurchaseService _purchaseAppService;

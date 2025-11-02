@@ -1,12 +1,16 @@
 ﻿using FCG.Application.Dto.Request;
 using FCG.Application.Dto.Response;
 using FCG.Application.Interfaces.Service;
+using FCG.Application.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FCG.Api.Controllers.Admin;
 
 [Route("api/admin/gallery")]
 [ApiController]
+[Authorize(Roles = RoleConstants.Admin)]
+
 public class AdminGalleryController : ControllerBase
 {
     private readonly IGalleryService _galleryService;

@@ -2,6 +2,7 @@ using FCG.Application.Dto.Filter;
 using FCG.Application.Dto.Order;
 using FCG.Application.Dto.Request;
 using FCG.Application.Interfaces;
+using FCG.Application.Security;
 using FCG.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +12,7 @@ namespace FCG.Api.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/admin/player")]
+[Authorize(Roles = RoleConstants.Admin)]
 public class AdminPlayerController : ControllerBase
 {
     private readonly IUserService _userService;

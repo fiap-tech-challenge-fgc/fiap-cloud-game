@@ -1,11 +1,14 @@
 ﻿using FCG.Application.Dto.Request;
 using FCG.Application.Interfaces.Service;
+using FCG.Application.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FCG.Api.Controllers.Admin;
 
 [Route("api/admin/cart")]
 [ApiController]
+[Authorize(Roles = RoleConstants.Admin)]
 public class AdminCartController : ControllerBase
 {
     private readonly ICartService _cartService;

@@ -4,12 +4,15 @@ using FCG.Application.Dto.Request;
 using FCG.Application.Dto.Response;
 using FCG.Application.Dto.Result;
 using FCG.Application.Interfaces.Service;
+using FCG.Application.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FCG.Api.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin")]
+[Authorize(Roles = RoleConstants.Admin)]
 public class AdminGameController : ControllerBase
 {
     private readonly IGameService _gameService;
