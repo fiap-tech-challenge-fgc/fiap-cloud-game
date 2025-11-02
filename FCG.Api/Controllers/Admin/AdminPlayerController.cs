@@ -9,10 +9,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FCG.Api.Controllers;
 
-[Authorize]
 [ApiController]
-[Route("api/admin/player")]
 [Authorize(Roles = RoleConstants.Admin)]
+[Tags("Admin")]
+[Route("api/admin/player")]
 public class AdminPlayerController : ControllerBase
 {
     private readonly IUserService _userService;

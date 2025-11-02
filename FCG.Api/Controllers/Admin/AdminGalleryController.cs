@@ -7,10 +7,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FCG.Api.Controllers.Admin;
 
-[Route("api/admin/gallery")]
 [ApiController]
 [Authorize(Roles = RoleConstants.Admin)]
-
+[Tags("Admin")]
+[Route("api/admin/gallery")]
 public class AdminGalleryController : ControllerBase
 {
     private readonly IGalleryService _galleryService;

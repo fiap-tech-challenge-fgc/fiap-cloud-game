@@ -11,8 +11,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace FCG.Api.Controllers.Admin;
 
 [ApiController]
-[Route("api/admin/[Controller]")]
 [Authorize(Roles = RoleConstants.Admin)]
+[Tags("Admin")]
+[Route("api/admin/[Controller]")]
 public class AdminController : ControllerBase
 {
     private readonly IAuthService _authService;

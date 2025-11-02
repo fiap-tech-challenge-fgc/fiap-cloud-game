@@ -11,8 +11,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace FCG.Api.Controllers.Admin;
 
 [ApiController]
-[Route("api/admin/purchases")]
 [Authorize(Roles = RoleConstants.Admin)]
+[Tags("Admin")]
+[Route("api/admin/purchases")]
 public class AdminPurchaseController : ControllerBase
 {
     private readonly IPurchaseService _purchaseAppService;

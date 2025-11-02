@@ -11,8 +11,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace FCG.Api.Controllers.Admin;
 
 [ApiController]
-[Route("api/admin")]
 [Authorize(Roles = RoleConstants.Admin)]
+[Tags("Admin")]
+[Route("api/admin/game")]
 public class AdminGameController : ControllerBase
 {
     private readonly IGameService _gameService;
@@ -23,7 +24,7 @@ public class AdminGameController : ControllerBase
     }
 
     // 🕹️ Game Management
-    [HttpPost("games")]
+    [HttpPost]
     public async Task<IActionResult> CreateGame([FromBody] GameCreateRequestDto dto)
     {
         var result = await _gameService.CreateGameAsync(dto);
@@ -35,7 +36,7 @@ public class AdminGameController : ControllerBase
     }
 
     // 🕹️ Game Management
-    [HttpGet("games/{id}")]
+    [HttpGet("{id}")]
     public async Task<IActionResult> GetGame(Guid id)
     {
         var result = await _gameService.GetGameByIdAsync(id);
@@ -47,7 +48,7 @@ public class AdminGameController : ControllerBase
     }
 
     // 🕹️ Game Management
-    [HttpGet("games")]
+    [HttpGet]
     public async Task<ActionResult<PagedResult<GameResponseDto>>> GetGames([FromQuery] PagedRequestDto<GameFilterDto, GameOrderDto> dto)
     {
         var result = await _gameService.GetAllGamesAsync(dto);
@@ -58,7 +59,7 @@ public class AdminGameController : ControllerBase
         return Ok(result.Data);
     }
 
-    [HttpPut("games/{id}")]
+    [HttpPut("{id}")]
     public async Task<IActionResult> UpdateGame(Guid id, [FromBody] GameUpdateRequestDto dto)
     {
         var result = await _gameService.UpdateGameAsync(id, dto);
@@ -70,7 +71,7 @@ public class AdminGameController : ControllerBase
     }
 
     // 🕹️ Game Management
-    [HttpDelete("games/{id}")]
+    [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteGame(Guid id)
     {
         var result = await _gameService.DeleteGameAsync(id);

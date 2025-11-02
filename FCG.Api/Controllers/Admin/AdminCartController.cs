@@ -6,9 +6,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FCG.Api.Controllers.Admin;
 
-[Route("api/admin/cart")]
 [ApiController]
 [Authorize(Roles = RoleConstants.Admin)]
+[Tags("Admin")]
+[Route("api/admin/cart")]
 public class AdminCartController : ControllerBase
 {
     private readonly ICartService _cartService;
@@ -17,6 +18,7 @@ public class AdminCartController : ControllerBase
         _cartService = cartService;
     }
 
+    [Swashbuckle.AspNetCore.Annotations.SwaggerOperation()]
     [HttpPost("{playerId}/add/{gameId}")]
     public async Task<IActionResult> AddItem(Guid playerId, Guid gameId)
     {
