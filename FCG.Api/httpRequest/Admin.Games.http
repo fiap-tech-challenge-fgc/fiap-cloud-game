@@ -1,0 +1,487 @@
+﻿@FCG_API_HostAddress = http://localhost:5104
+@AuthToken = your_jwt_token_here
+
+@user = seu_usuario
+@password = sua_senha
+
+# Login
+POST {{FCG_API_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": {{user}}},
+  "password": {{password}}
+}
+
+> {%
+    if (response.status === 200) {
+        const loginResponse = response.body;
+        console.log("✅🔐 LOGIN REALIZADO COM SUCESSO!");
+        console.log("👤 Usuário: maria.santos@email.com");
+        
+        if (loginResponse.token) {
+            client.global.set("AuthToken", loginResponse.token);
+            console.log("🎫 Access Token obtido: " + loginResponse.token.substring(0, 50) + "...");
+        }
+        
+        if (loginResponse.refreshToken) {
+            client.global.set("refreshToken", loginResponse.refreshToken);
+            console.log("🔄 Refresh Token obtido: " + loginResponse.refreshToken.substring(0, 50) + "...");
+        }
+        
+        if (loginResponse.expiresIn) {
+            console.log("⏰ Token expira em: " + loginResponse.expiresIn);
+        }
+        
+        console.log("✅ Token salvo nas variáveis globais para uso nas próximas requisições");
+    } else {
+        console.log("❌ Falha no login: " + response.status);
+        console.log("📄 Response: " + response.body);
+    }
+%}
+
+### Admin Game Endpoints - Dynamic Game Management
+
+### Step 1: Get Initial Games List with Filters
+# @name getInitialGames
+GET {{FCG_API_HostAddress}}/api/admin/game?PageNumber=1&PageSize=20&OrderBy.OrderBy=title&OrderBy.Ascending=true
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const games = response.body;
+        console.log("🎮 Jogos Existentes (Admin):");
+        console.log("📊 Total: " + games.totalItems);
+        console.log("📄 Páginas: " + games.totalPages);
+        
+        if (games.items && games.items.length > 0) {
+            console.log("📋 Primeiros jogos:");
+            games.items.slice(0, 5).forEach((game, index) => {
+                console.log("   " + (index + 1) + ". " + game.title + 
+                    " - " + game.genre + " - R$ " + (game.price || "N/A"));
+            });
+            
+            // Store existing game for update tests
+            const firstGame = games.items[0];
+            client.global.set("ExistingGameId", firstGame.id);
+            client.global.set("ExistingGameTitle", firstGame.title);
+            client.global.set("ExistingGameGenre", firstGame.genre);
+            
+            console.log("✅ Jogo existente capturado para testes: " + firstGame.title);
+        }
+    }
+%}
+
+### Step 2: Test Genre Filter
+# @name testGenreFilter
+GET {{FCG_API_HostAddress}}/api/admin/game?PageNumber=1&PageSize=50&Filter.Genre=Action&Filter.MinPrice=20&Filter.MaxPrice=150
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const filteredGames = response.body;
+        console.log("🎯 Jogos Filtrados - Action (R$ 20-150):");
+        console.log("📊 Encontrados: " + filteredGames.totalItems);
+        
+        if (filteredGames.items && filteredGames.items.length > 0) {
+            console.log("📋 Jogos de Action:");
+            filteredGames.items.slice(0, 5).forEach((game, index) => {
+                console.log("   " + (index + 1) + ". " + game.title + 
+                    " - " + game.genre + " - R$ " + game.price);
+            });
+        } else {
+            console.log("   Nenhum jogo de Action encontrado no range de preço");
+        }
+    }
+%}
+
+### Step 3: Test RPG Filter
+# @name testRPGFilter
+GET {{FCG_API_HostAddress}}/api/admin/game?PageNumber=1&PageSize=30&Filter.Genre=RPG
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const rpgGames = response.body;
+        console.log("⚔️ Jogos Filtrados - RPG:");
+        console.log("📊 Encontrados: " + rpgGames.totalItems);
+        
+        if (rpgGames.items && rpgGames.items.length > 0) {
+            console.log("📋 Jogos de RPG:");
+            rpgGames.items.slice(0, 3).forEach((game, index) => {
+                console.log("   " + (index + 1) + ". " + game.title + " - R$ " + game.price);
+            });
+        }
+    }
+%}
+
+### Step 4: Create New Game
+# @name createNewGame
+POST {{FCG_API_HostAddress}}/api/admin/game
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "ean": "9876543210987",
+  "title": "Elden Ring: Shadow of the Erdtree",
+  "subTitle": "Nova Expansão",
+  "genre": "Action RPG",
+  "description": "Uma nova jornada épica no mundo de Elden Ring, explorando terras inexploradas e enfrentando novos desafios. Descubra segredos antigos e enfrente chefes lendários.",
+  "price": 199.90
+}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅🎮 NOVO JOGO CRIADO!");
+        console.log("📛 Título: Elden Ring: Shadow of the Erdtree");
+        console.log("🎯 Gênero: Action RPG");
+        console.log("💰 Preço: R$ 199.90");
+        console.log("📖 EAN: 9876543210987");
+        
+        // If response contains the created game ID, capture it
+        if (response.body && response.body.id) {
+            client.global.set("CreatedGameId", response.body.id);
+            console.log("🆔 ID do jogo criado: " + response.body.id);
+        }
+    } else {
+        console.log("❌ Falha ao criar jogo: " + response.status);
+    }
+%}
+
+### Step 5: Verify Game Creation in List
+# @name verifyGameCreation
+GET {{FCG_API_HostAddress}}/api/admin/game?PageNumber=1&PageSize=25&OrderBy.OrderBy=title&OrderBy.Ascending=true
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const games = response.body;
+        
+        // Try to find the newly created game
+        const eldenRingGame = games.items.find(game => 
+            game.title && game.title.includes("Elden Ring")
+        );
+        
+        if (eldenRingGame) {
+            client.global.set("CreatedGameId", eldenRingGame.id);
+            console.log("✅ Jogo criado encontrado na lista:");
+            console.log("📛 Título: " + eldenRingGame.title);
+            console.log("🎯 Gênero: " + eldenRingGame.genre);
+            console.log("💰 Preço: R$ " + eldenRingGame.price);
+            console.log("🆔 ID: " + eldenRingGame.id);
+        } else {
+            console.log("⚠️  Jogo criado não encontrado na lista");
+        }
+    }
+%}
+
+### Step 6: Get Game by ID (Admin)
+# @name getGameById
+GET {{FCG_API_HostAddress}}/api/admin/game/{{CreatedGameId}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const game = response.body;
+        console.log("👤 DETALHES DO JOGO (Admin View):");
+        console.log("🆔 ID: " + game.id);
+        console.log("📛 Título: " + game.title);
+        console.log("📖 Subtítulo: " + game.subTitle);
+        console.log("🎯 Gênero: " + game.genre);
+        console.log("📝 Descrição: " + (game.description ? game.description.substring(0, 100) + "..." : "N/A"));
+        console.log("💰 Preço: R$ " + game.price);
+        console.log("📖 EAN: " + game.ean);
+    } else if (response.status === 404) {
+        console.log("❌ Jogo não encontrado com ID: {{CreatedGameId}}");
+    }
+%}
+
+### Step 7: Create Second Game for More Testing
+# @name createSecondGame
+POST {{FCG_API_HostAddress}}/api/admin/game
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "ean": "9876543210123",
+  "title": "Cyberpunk 2077: Ultimate Edition",
+  "subTitle": "Edição Completa",
+  "genre": "RPG",
+  "description": "A experiência definitiva de Cyberpunk 2077 com todo o conteúdo adicional. Explore Night City em toda sua glória.",
+  "price": 149.90
+}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅🎮 SEGUNDO JOGO CRIADO!");
+        console.log("📛 Título: Cyberpunk 2077: Ultimate Edition");
+        console.log("🎯 Gênero: RPG");
+        console.log("💰 Preço: R$ 149.90");
+        
+        if (response.body && response.body.id) {
+            client.global.set("SecondGameId", response.body.id);
+            console.log("🆔 ID do segundo jogo: " + response.body.id);
+        }
+    }
+%}
+
+### Step 8: Update First Created Game
+# @name updateGame
+PUT {{FCG_API_HostAddress}}/api/admin/game/{{CreatedGameId}}
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "ean": "9876543210987",
+  "title": "Elden Ring: Shadow of the Erdtree",
+  "subTitle": "Expansão Definitiva",
+  "genre": "Action RPG",
+  "description": "Uma nova jornada épica no mundo de Elden Ring, explorando terras inexploradas e enfrentando desafios ainda maiores. Conteúdo expandido com novas áreas e mecânicas.",
+  "price": 179.90
+}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅✏️ JOGO ATUALIZADO COM SUCESSO!");
+        console.log("📛 Título: Elden Ring: Shadow of the Erdtree");
+        console.log("📖 Novo Subtítulo: Expansão Definitiva");
+        console.log("💰 Novo Preço: R$ 179.90 (reduzido de R$ 199.90)");
+        console.log("📝 Descrição expandida");
+    }
+%}
+
+### Step 9: Verify Game After Update
+# @name verifyUpdatedGame
+GET {{FCG_API_HostAddress}}/api/admin/game/{{CreatedGameId}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const updatedGame = response.body;
+        console.log("✅ VERIFICAÇÃO DA ATUALIZAÇÃO:");
+        console.log("📖 Subtítulo: " + updatedGame.subTitle + " (deve ser: Expansão Definitiva)");
+        console.log("💰 Preço: R$ " + updatedGame.price + " (deve ser: 179.90)");
+        console.log("📝 Descrição: " + (updatedGame.description ? "Atualizada ✓" : "Não atualizada"));
+        
+        if (updatedGame.subTitle === "Expansão Definitiva" && updatedGame.price === 179.90) {
+            console.log("🎉 Todas as atualizações foram aplicadas corretamente!");
+        }
+    }
+%}
+
+### Step 10: Test Price Range Filter
+# @name testPriceFilter
+GET {{FCG_API_HostAddress}}/api/admin/game?PageNumber=1&PageSize=20&Filter.MinPrice=150&Filter.MaxPrice=200
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const priceFilteredGames = response.body;
+        console.log("💰 Jogos Filtrados por Preço (R$ 150-200):");
+        console.log("📊 Encontrados: " + priceFilteredGames.totalItems);
+        
+        if (priceFilteredGames.items && priceFilteredGames.items.length > 0) {
+            console.log("📋 Jogos no range de preço:");
+            priceFilteredGames.items.forEach((game, index) => {
+                console.log("   " + (index + 1) + ". " + game.title + " - R$ " + game.price);
+            });
+            
+            // Check if our updated game appears in this filter
+            const eldenRingInFilter = priceFilteredGames.items.find(game => 
+                game.id === client.global.get("CreatedGameId")
+            );
+            if (eldenRingInFilter) {
+                console.log("✅ Elden Ring aparece no filtro de preço (R$ 179.90)");
+            }
+        }
+    }
+%}
+
+### Step 11: Test Name Filter
+# @name testNameFilter
+GET {{FCG_API_HostAddress}}/api/admin/game?PageNumber=1&PageSize=10&Filter.Name=Elden
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const nameFilteredGames = response.body;
+        console.log("🔍 Jogos Filtrados por Nome (Elden):");
+        console.log("📊 Encontrados: " + nameFilteredGames.totalItems);
+        
+        if (nameFilteredGames.items && nameFilteredGames.items.length > 0) {
+            nameFilteredGames.items.forEach((game, index) => {
+                console.log("   " + (index + 1) + ". " + game.title + " - " + game.genre);
+            });
+        }
+    }
+%}
+
+### Step 12: Delete Second Game (Cleanup)
+# @name deleteSecondGame
+DELETE {{FCG_API_HostAddress}}/api/admin/game/{{SecondGameId}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("🗑️  SEGUNDO JOGO EXCLUÍDO:");
+        console.log("🎮 Jogo: Cyberpunk 2077: Ultimate Edition");
+        console.log("🆔 ID: {{SecondGameId}}");
+    }
+%}
+
+### Step 13: Verify Deletion
+# @name verifyDeletion
+GET {{FCG_API_HostAddress}}/api/admin/game?PageNumber=1&PageSize=30
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const games = response.body;
+        const cyberpunkExists = games.items && games.items.some(game => 
+            game.id === client.global.get("SecondGameId")
+        );
+        const eldenRingExists = games.items && games.items.some(game => 
+            game.id === client.global.get("CreatedGameId")
+        );
+        
+        console.log("✅ VERIFICAÇÃO DA EXCLUSÃO:");
+        console.log("🎮 Cyberpunk ainda existe: " + cyberpunkExists);
+        console.log("🎮 Elden Ring ainda existe: " + eldenRingExists);
+        
+        if (!cyberpunkExists && eldenRingExists) {
+            console.log("🎉 Exclusão realizada com sucesso!");
+        }
+    }
+%}
+
+### Step 14: Final Games Summary
+# @name finalSummary
+GET {{FCG_API_HostAddress}}/api/admin/game?PageNumber=1&PageSize=5&OrderBy.OrderBy=price&OrderBy.Ascending=false
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const games = response.body;
+        console.log("🏁 RESUMO FINAL DOS JOGOS:");
+        console.log("📊 Total de jogos na base: " + games.totalItems);
+        
+        if (games.items && games.items.length > 0) {
+            console.log("💰 Jogos mais caros:");
+            games.items.forEach((game, index) => {
+                console.log("   " + (index + 1) + ". " + game.title + " - R$ " + game.price);
+            });
+        }
+        
+        console.log("✅🎉 Fluxo de Admin Game concluído com sucesso!");
+    }
+%}
+
+### Individual Operations (Para testes específicos)
+
+### Get Games with Custom Filters
+GET {{FCG_API_HostAddress}}/api/admin/game?PageNumber=1&PageSize=50&Filter.Genre=Action&Filter.MinPrice=20&Filter.MaxPrice=150
+Authorization: Bearer {{AuthToken}}
+
+### Create Game (Template)
+POST {{FCG_API_HostAddress}}/api/admin/game
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "ean": "9876543210987",
+  "title": "Novo Jogo",
+  "subTitle": "Subtítulo do Jogo",
+  "genre": "Gênero",
+  "description": "Descrição detalhada do jogo.",
+  "price": 99.90
+}
+
+### Delete Game
+DELETE {{FCG_API_HostAddress}}/api/admin/game/{{GameId}}
+Authorization: Bearer {{AuthToken}}
+
+### Get Game by ID (Admin)
+GET {{FCG_API_HostAddress}}/api/admin/game/{{GameId}}
+Authorization: Bearer {{AuthToken}}
+
+### Update Game (Template)
+PUT {{FCG_API_HostAddress}}/api/admin/game/{{GameId}}
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "ean": "9876543210987",
+  "title": "Título Atualizado",
+  "subTitle": "Subtítulo Atualizado",
+  "genre": "Gênero Atualizado",
+  "description": "Descrição atualizada do jogo.",
+  "price": 129.90
+}
+
+### Bulk Create Test Games
+# @name bulkCreateGames
+### Game 1 - Adventure
+POST {{FCG_API_HostAddress}}/api/admin/game
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "ean": "9786555520333",
+  "title": "The Legend of Zelda: Breath of the Wild",
+  "subTitle": "Aventura Épica",
+  "genre": "Adventure",
+  "description": "Explore Hyrule em uma aventura aberta cheia de descobertas.",
+  "price": 299.90
+}
+
+### Game 2 - FPS
+POST {{FCG_API_HostAddress}}/api/admin/game
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "ean": "9786555520444",
+  "title": "Call of Duty: Modern Warfare III",
+  "subTitle": "FPS Intenso",
+  "genre": "FPS",
+  "description": "Experimente o combate moderno em campanha emocionante e multiplayer.",
+  "price": 249.90
+}
+
+### Test Multiple Filters Combined
+# @name testCombinedFilters
+GET {{FCG_API_HostAddress}}/api/admin/game?PageNumber=1&PageSize=15&Filter.Genre=RPG&Filter.MinPrice=100&Filter.MaxPrice=300&OrderBy.OrderBy=title&OrderBy.Ascending=true
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const games = response.body;
+        console.log("🎯 Jogos RPG entre R$ 100-300:");
+        console.log("📊 Encontrados: " + games.totalItems);
+        
+        if (games.items && games.items.length > 0) {
+            games.items.forEach((game, index) => {
+                console.log("   " + (index + 1) + ". " + game.title + " - R$ " + game.price);
+            });
+        }
+    }
+%}
+
+### Quick Games Status Check
+# @name quickGamesCheck
+GET {{FCG_API_HostAddress}}/api/admin/game?PageNumber=1&PageSize=5
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const games = response.body;
+        console.log("🔍 Status rápido dos Jogos (Admin):");
+        console.log("📊 Total: " + games.totalItems);
+        console.log("📋 Últimos jogos:");
+        if (games.items && games.items.length > 0) {
+            games.items.forEach((game, index) => {
+                console.log("   " + (index + 1) + ". " + game.title + " - " + game.genre + " - R$ " + game.price);
+            });
+        }
+    }
+%}

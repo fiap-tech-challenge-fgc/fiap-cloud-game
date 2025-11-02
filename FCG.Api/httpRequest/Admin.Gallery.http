@@ -1,0 +1,469 @@
+﻿@FCG_API_HostAddress = http://localhost:5104
+@AuthToken = your_jwt_token_here
+
+@user = seu_usuario
+@password = sua_senha
+
+# Login
+POST {{FCG_API_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": {{user}}},
+  "password": {{password}}
+}
+
+> {%
+    if (response.status === 200) {
+        const loginResponse = response.body;
+        console.log("✅🔐 LOGIN REALIZADO COM SUCESSO!");
+        console.log("👤 Usuário: maria.santos@email.com");
+        
+        if (loginResponse.token) {
+            client.global.set("AuthToken", loginResponse.token);
+            console.log("🎫 Access Token obtido: " + loginResponse.token.substring(0, 50) + "...");
+        }
+        
+        if (loginResponse.refreshToken) {
+            client.global.set("refreshToken", loginResponse.refreshToken);
+            console.log("🔄 Refresh Token obtido: " + loginResponse.refreshToken.substring(0, 50) + "...");
+        }
+        
+        if (loginResponse.expiresIn) {
+            console.log("⏰ Token expira em: " + loginResponse.expiresIn);
+        }
+        
+        console.log("✅ Token salvo nas variáveis globais para uso nas próximas requisições");
+    } else {
+        console.log("❌ Falha no login: " + response.status);
+        console.log("📄 Response: " + response.body);
+    }
+%}
+
+### Admin Gallery Endpoints - Dynamic Game Management
+
+### Step 1: Get Existing Gallery Games for Reference
+# @name getExistingGalleryGames
+GET {{FCG_API_HostAddress}}/api/admin/game?PageNumber=1&PageSize=5
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const games = response.body;
+        console.log("🎮 Jogos Existentes na Galeria:");
+        console.log("📊 Total: " + games.totalItems);
+        
+        if (games.items && games.items.length > 0) {
+            games.items.forEach((game, index) => {
+                console.log("   " + (index + 1) + ". " + game.title + " - " + game.genre + " - ID: " + game.id);
+            });
+            
+            // Store an existing game ID for update/delete tests
+            client.global.set("ExistingGameId", games.items[0].id);
+            client.global.set("ExistingGameTitle", games.items[0].title);
+        }
+    }
+%}
+
+### Step 2: Create New Gallery Game
+# @name createGalleryGame
+POST {{FCG_API_HostAddress}}/api/admin/gallery
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "ean": "9786555520123",
+  "title": "Cyberpunk 2077: Phantom Liberty",
+  "subTitle": "Expansão Definitiva",
+  "genre": "RPG",
+  "description": "Uma expansão massiva para o aclamado Cyberpunk 2077, adicionando novas missões, áreas e mecânicas de jogo. Explore novas histórias em Night City.",
+  "price": 149.90,
+  "promotionType": "Percentage",
+  "promotionValue": 20,
+  "promotionStartDate": "2024-06-01T00:00:00.000Z",
+  "promotionEndDate": "2024-06-30T23:59:59.000Z"
+}
+
+> {%
+    if (response.status === 200) {
+        const createdGame = response.body;
+        console.log("✅🎮 NOVO JOGO CRIADO NA GALERIA!");
+        console.log("📛 Título: " + createdGame.title);
+        console.log("🎯 Gênero: " + createdGame.genre);
+        console.log("💰 Preço: R$ " + createdGame.price);
+        console.log("🔥 Promoção: " + createdGame.promotionValue + "% off");
+        console.log("🆔 ID: " + createdGame.id);
+        
+        client.global.set("CreatedGameId", createdGame.id);
+        client.global.set("CreatedGameTitle", createdGame.title);
+    } else {
+        console.log("❌ Falha ao criar jogo: " + response.status);
+    }
+%}
+
+### Step 3: Verify Created Game in Gallery
+# @name verifyCreatedGame
+GET {{FCG_API_HostAddress}}/api/admin/gallery/{{CreatedGameId}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const game = response.body;
+        console.log("✅ JOGO CRIADO VERIFICADO:");
+        console.log("🆔 ID: " + game.id);
+        console.log("📛 Título: " + game.title);
+        console.log("📖 Subtítulo: " + game.subTitle);
+        console.log("🎯 Gênero: " + game.genre);
+        console.log("💰 Preço: R$ " + game.price);
+        console.log("🔥 Preço Final: R$ " + game.finalPrice);
+        console.log("📅 Promoção: " + game.promotionDescription);
+        console.log("🏷️ Tipo Promoção: " + game.typePromotion);
+    }
+%}
+
+### Step 4: Create Second Game for More Testing
+# @name createSecondGame
+POST {{FCG_API_HostAddress}}/api/admin/gallery
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "ean": "9786555520456",
+  "title": "Elden Ring: Shadow of the Erdtree",
+  "subTitle": "Nova Expansão Épica",
+  "genre": "Action RPG",
+  "description": "Uma jornada épica em terras inexploradas do mundo de Elden Ring. Enfrente novos chefes desafiadores e descubra segredos antigos.",
+  "price": 199.90,
+  "promotionType": "FixedAmount",
+  "promotionValue": 40,
+  "promotionStartDate": "2024-07-15T00:00:00.000Z",
+  "promotionEndDate": "2024-08-15T23:59:59.000Z"
+}
+
+> {%
+    if (response.status === 200) {
+        const secondGame = response.body;
+        console.log("✅🎮 SEGUNDO JOGO CRIADO:");
+        console.log("📛 Título: " + secondGame.title);
+        console.log("💰 Preço: R$ " + secondGame.price);
+        console.log("🔥 Desconto: R$ " + secondGame.promotionValue + " off");
+        console.log("🆔 ID: " + secondGame.id);
+        
+        client.global.set("SecondGameId", secondGame.id);
+        client.global.set("SecondGameTitle", secondGame.title);
+    }
+%}
+
+### Step 5: Update First Created Game
+# @name updateGalleryGame
+PUT {{FCG_API_HostAddress}}/api/admin/gallery/{{CreatedGameId}}
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "ean": "9786555520123",
+  "title": "Cyberpunk 2077: Phantom Liberty - Edição Especial",
+  "subTitle": "Expansão Definitiva + Conteúdo Extra",
+  "genre": "RPG",
+  "description": "Uma expansão massiva para o aclamado Cyberpunk 2077, agora com conteúdo adicional exclusivo. Inclui missões extras e itens raros.",
+  "price": 169.90,
+  "promotionType": "FixedAmount",
+  "promotionValue": 30,
+  "promotionStartDate": "2024-07-01T00:00:00.000Z",
+  "promotionEndDate": "2024-07-31T23:59:59.000Z"
+}
+
+> {%
+    if (response.status === 200) {
+        const updatedGame = response.body;
+        console.log("✅✏️ JOGO ATUALIZADO COM SUCESSO!");
+        console.log("📛 Novo Título: " + updatedGame.title);
+        console.log("📖 Novo Subtítulo: " + updatedGame.subTitle);
+        console.log("💰 Novo Preço: R$ " + updatedGame.price);
+        console.log("🔥 Novo Desconto: R$ " + updatedGame.promotionValue + " off");
+        console.log("🏷️ Novo Tipo: " + updatedGame.typePromotion);
+    }
+%}
+
+### Step 6: Verify Game After Update
+# @name verifyUpdatedGame
+GET {{FCG_API_HostAddress}}/api/admin/gallery/{{CreatedGameId}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const game = response.body;
+        console.log("✅ VERIFICAÇÃO DA ATUALIZAÇÃO:");
+        console.log("📛 Título: " + game.title + " (deve conter 'Edição Especial')");
+        console.log("💰 Preço: R$ " + game.price + " (deve ser 169.90)");
+        console.log("🔥 Tipo Promoção: " + game.typePromotion + " (deve ser FixedAmount)");
+        console.log("💵 Valor Promoção: " + game.promotionValue + " (deve ser 30)");
+        
+        if (game.title.includes("Edição Especial") && game.price === 169.90) {
+            console.log("🎉 Todas as atualizações foram aplicadas corretamente!");
+        }
+    }
+%}
+
+### Step 7: Create Promotion for Second Game
+# @name createPromotion
+POST {{FCG_API_HostAddress}}/api/admin/gallery/{{SecondGameId}}/promotion
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "promotionType": "Percentage",
+  "promotionValue": 25,
+  "promotionStartDate": "2024-08-01T00:00:00.000Z",
+  "promotionEndDate": "2024-08-15T23:59:59.000Z"
+}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅🔥 PROMOÇÃO CRIADA COM SUCESSO!");
+        console.log("🎮 Jogo: {{SecondGameTitle}}");
+        console.log("🏷️ Tipo: Percentage");
+        console.log("📊 Valor: 25%");
+        console.log("📅 Período: 01/08/2024 - 15/08/2024");
+    }
+%}
+
+### Step 8: Verify Promotion Creation
+# @name verifyPromotion
+GET {{FCG_API_HostAddress}}/api/admin/gallery/{{SecondGameId}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const game = response.body;
+        console.log("✅ VERIFICAÇÃO DA PROMOÇÃO:");
+        console.log("🎮 Jogo: " + game.title);
+        console.log("🔥 Em Promoção: " + game.onSale);
+        console.log("🏷️ Tipo: " + game.typePromotion);
+        console.log("📊 Valor: " + game.promotionValue + "%");
+        console.log("💵 Preço Final: R$ " + game.finalPrice);
+        
+        if (game.onSale === true && game.typePromotion === "Percentage") {
+            console.log("🎉 Promoção ativa e configurada corretamente!");
+        }
+    }
+%}
+
+### Step 9: Delete Promotion from First Game
+# @name deletePromotion
+DELETE {{FCG_API_HostAddress}}/api/admin/gallery/{{CreatedGameId}}/promotion
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅🗑️ PROMOÇÃO REMOVIDA!");
+        console.log("🎮 Jogo: {{CreatedGameTitle}}");
+        console.log("📛 A promoção foi removida com sucesso");
+    }
+%}
+
+### Step 10: Verify Promotion Deletion
+# @name verifyPromotionDeletion
+GET {{FCG_API_HostAddress}}/api/admin/gallery/{{CreatedGameId}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const game = response.body;
+        console.log("✅ VERIFICAÇÃO DA REMOÇÃO DA PROMOÇÃO:");
+        console.log("🎮 Jogo: " + game.title);
+        console.log("🔥 Em Promoção: " + game.onSale);
+        console.log("🏷️ Tipo: " + game.typePromotion);
+        
+        if (game.onSale === false) {
+            console.log("🎉 Promoção removida com sucesso - jogo não está mais em promoção!");
+        } else {
+            console.log("⚠️  Jogo ainda aparece em promoção");
+        }
+    }
+%}
+
+### Step 11: Test Public Gallery View
+# @name testPublicGallery
+GET {{FCG_API_HostAddress}}/api/Gallery?PageNumber=1&PageSize=10
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const gallery = response.body;
+        console.log("🏪 VISÃO PÚBLICA DA GALERIA:");
+        console.log("📊 Total de jogos: " + gallery.totalItems);
+        
+        // Find our created games in public view
+        const cyberpunkGame = gallery.items.find(game => game.title && game.title.includes("Cyberpunk"));
+        const eldenRingGame = gallery.items.find(game => game.title && game.title.includes("Elden Ring"));
+        
+        if (cyberpunkGame) {
+            console.log("✅ Cyberpunk na galeria pública - Preço: R$ " + cyberpunkGame.finalPrice);
+        }
+        if (eldenRingGame) {
+            console.log("✅ Elden Ring na galeria pública - Preço: R$ " + eldenRingGame.finalPrice);
+        }
+    }
+%}
+
+### Step 12: Delete Second Game (Cleanup)
+# @name deleteSecondGame
+DELETE {{FCG_API_HostAddress}}/api/admin/gallery/{{SecondGameId}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("🗑️  SEGUNDO JOGO EXCLUÍDO:");
+        console.log("🎮 Jogo: {{SecondGameTitle}}");
+        console.log("🆔 ID: {{SecondGameId}}");
+    }
+%}
+
+### Step 13: Final Verification - Remaining Games
+# @name finalVerification
+GET {{FCG_API_HostAddress}}/api/admin/game?PageNumber=1&PageSize=10
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const games = response.body;
+        console.log("🏁 VERIFICAÇÃO FINAL:");
+        console.log("📊 Total de jogos na galeria: " + games.totalItems);
+        
+        const cyberpunkExists = games.items && games.items.some(game => 
+            game.id === client.global.get("CreatedGameId")
+        );
+        const eldenRingExists = games.items && games.items.some(game => 
+            game.id === client.global.get("SecondGameId")
+        );
+        
+        console.log("🎮 Cyberpunk ainda existe: " + cyberpunkExists);
+        console.log("🎮 Elden Ring ainda existe: " + eldenRingExists);
+        
+        if (cyberpunkExists && !eldenRingExists) {
+            console.log("✅🎉 Fluxo de Admin Gallery concluído com sucesso!");
+            console.log("✅ Cyberpunk mantido para demonstração");
+            console.log("✅ Elden Ring excluído conforme esperado");
+        }
+    }
+%}
+
+### Individual Operations (Para testes específicos)
+
+### Create Gallery Game (Template)
+POST {{FCG_API_HostAddress}}/api/admin/gallery
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "ean": "1234567890123",
+  "title": "Novo Jogo de Teste",
+  "subTitle": "Subtítulo do Jogo",
+  "genre": "Ação",
+  "description": "Descrição detalhada do jogo para testes.",
+  "price": 99.90,
+  "promotionType": "Percentage",
+  "promotionValue": 15,
+  "promotionStartDate": "2024-01-01T00:00:00.000Z",
+  "promotionEndDate": "2024-12-31T23:59:59.000Z"
+}
+
+### Delete Gallery Game
+DELETE {{FCG_API_HostAddress}}/api/admin/gallery/{{GameId}}
+Authorization: Bearer {{AuthToken}}
+
+### Get Gallery Game by ID (Admin)
+GET {{FCG_API_HostAddress}}/api/admin/gallery/{{GameId}}
+Authorization: Bearer {{AuthToken}}
+
+### Update Gallery Game (Template)
+PUT {{FCG_API_HostAddress}}/api/admin/gallery/{{GameId}}
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "ean": "1234567890123",
+  "title": "Título Atualizado",
+  "subTitle": "Subtítulo Atualizado",
+  "genre": "Gênero Atualizado",
+  "description": "Descrição atualizada do jogo.",
+  "price": 129.90,
+  "promotionType": "FixedAmount",
+  "promotionValue": 25,
+  "promotionStartDate": "2024-07-01T00:00:00.000Z",
+  "promotionEndDate": "2024-07-31T23:59:59.000Z"
+}
+
+### Delete Promotion
+DELETE {{FCG_API_HostAddress}}/api/admin/gallery/{{GameId}}/promotion
+Authorization: Bearer {{AuthToken}}
+
+### Create Promotion (Template)
+POST {{FCG_API_HostAddress}}/api/admin/gallery/{{GameId}}/promotion
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "promotionType": "Percentage",
+  "promotionValue": 25,
+  "promotionStartDate": "2024-08-01T00:00:00.000Z",
+  "promotionEndDate": "2024-08-15T23:59:59.000Z"
+}
+
+### Bulk Create Test Games
+# @name bulkCreateGames
+### Game 1 - FPS
+POST {{FCG_API_HostAddress}}/api/admin/gallery
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "ean": "9786555520789",
+  "title": "Call of Duty: Modern Warfare III",
+  "subTitle": "Campanha Especial",
+  "genre": "FPS",
+  "description": "A mais nova entrega da franquia Call of Duty com campanha emocionante e multiplayer intenso.",
+  "price": 249.90,
+  "promotionType": "Percentage",
+  "promotionValue": 10,
+  "promotionStartDate": "2024-09-01T00:00:00.000Z",
+  "promotionEndDate": "2024-09-30T23:59:59.000Z"
+}
+
+### Game 2 - Adventure
+POST {{FCG_API_HostAddress}}/api/admin/gallery
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "ean": "9786555520890",
+  "title": "The Legend of Zelda: Tears of the Kingdom",
+  "subTitle": "Aventura Épica",
+  "genre": "Adventure",
+  "description": "Explore Hyrule em uma aventura épica cheia de mistérios e desafios.",
+  "price": 299.90,
+  "promotionType": "FixedAmount",
+  "promotionValue": 50,
+  "promotionStartDate": "2024-10-01T00:00:00.000Z",
+  "promotionEndDate": "2024-10-31T23:59:59.000Z"
+}
+
+### Quick Gallery Status Check
+# @name quickGalleryCheck
+GET {{FCG_API_HostAddress}}/api/admin/game?PageNumber=1&PageSize=5
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const games = response.body;
+        console.log("🔍 Status rápido da Galeria Admin:");
+        console.log("📊 Total de jogos: " + games.totalItems);
+        console.log("📋 Últimos jogos:");
+        if (games.items && games.items.length > 0) {
+            games.items.slice(0, 3).forEach((game, index) => {
+                console.log("   " + (index + 1) + ". " + game.title + " - R$ " + game.price);
+            });
+        }
+    }
+%}

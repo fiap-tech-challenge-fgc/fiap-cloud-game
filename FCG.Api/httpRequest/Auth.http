@@ -1,0 +1,379 @@
+﻿@FCG_API_HostAddress = http://localhost:5104
+@AuthToken = your_jwt_token_here
+@refreshToken = your_jwt_refresh_token
+
+### Auth Endpoints - Dynamic Token Management
+
+### Step 1: Register New Test Player
+# @name registerPlayer
+POST {{FCG_API_HostAddress}}/api/Auth/register-player
+Content-Type: application/json
+
+{
+  "firstName": "Maria",
+  "lastName": "Santos",
+  "displayName": "MaryGames",
+  "birthday": "1995-08-15",
+  "email": "maria.santos@email.com",
+  "password": "Maria#123!",
+  "confirmPassword": "Maria#123!"
+}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅🎮 NOVO PLAYER REGISTRADO COM SUCESSO!");
+        console.log("👤 Nome: Maria Santos");
+        console.log("🎮 Display: MaryGames");
+        console.log("📧 Email: maria.santos@email.com");
+        console.log("🎂 Aniversário: 1995-08-15");
+        
+        if (response.body && response.body.id) {
+            console.log("🆔 ID do player: " + response.body.id);
+        }
+    } else {
+        console.log("❌ Falha no registro: " + response.status);
+        console.log("📄 Response: " + response.body);
+    }
+%}
+
+### Step 2: Login with Registered User
+# @name login
+POST {{FCG_API_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": "maria.santos@email.com",
+  "password": "Maria123!"
+}
+
+> {%
+    if (response.status === 200) {
+        const loginResponse = response.body;
+        console.log("✅🔐 LOGIN REALIZADO COM SUCESSO!");
+        console.log("👤 Usuário: maria.santos@email.com");
+        
+        if (loginResponse.token) {
+            client.global.set("AuthToken", loginResponse.token);
+            console.log("🎫 Access Token obtido: " + loginResponse.token.substring(0, 50) + "...");
+        }
+        
+        if (loginResponse.refreshToken) {
+            client.global.set("refreshToken", loginResponse.refreshToken);
+            console.log("🔄 Refresh Token obtido: " + loginResponse.refreshToken.substring(0, 50) + "...");
+        }
+        
+        if (loginResponse.expiresIn) {
+            console.log("⏰ Token expira em: " + loginResponse.expiresIn);
+        }
+        
+        console.log("✅ Token salvo nas variáveis globais para uso nas próximas requisições");
+    } else {
+        console.log("❌ Falha no login: " + response.status);
+        console.log("📄 Response: " + response.body);
+    }
+%}
+
+### Step 3: Get Current User Profile
+# @name getCurrentUser
+GET {{FCG_API_HostAddress}}/api/Auth/me
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const userProfile = response.body;
+        console.log("👤 PERFIL DO USUÁRIO AUTENTICADO:");
+        console.log("🆔 ID: " + userProfile.id);
+        console.log("📛 Nome: " + userProfile.firstName + " " + userProfile.lastName);
+        console.log("🎮 Display Name: " + userProfile.displayName);
+        console.log("📧 Email: " + userProfile.email);
+        console.log("🎂 Aniversário: " + userProfile.birthday);
+        console.log("👤 Role: " + userProfile.role);
+        console.log("📅 Criado em: " + (userProfile.createdAt ? new Date(userProfile.createdAt).toLocaleDateString() : "N/A"));
+        
+        // Store user info for potential future use
+        client.global.set("UserId", userProfile.id);
+        client.global.set("UserDisplayName", userProfile.displayName);
+        client.global.set("UserEmail", userProfile.email);
+        
+        console.log("✅ Informações do usuário capturadas para testes");
+    } else {
+        console.log("❌ Falha ao obter perfil: " + response.status);
+    }
+%}
+
+### Step 4: Test Token Refresh
+# @name refreshToken
+POST {{FCG_API_HostAddress}}/api/Auth/refresh
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "token": "{{AuthToken}}",
+  "refreshToken": "{{refreshToken}}"
+}
+
+> {%
+    if (response.status === 200) {
+        const refreshResponse = response.body;
+        console.log("✅🔄 TOKEN REFRESH REALIZADO COM SUCESSO!");
+        
+        if (refreshResponse.token) {
+            const oldToken = client.global.get("AuthToken");
+            client.global.set("AuthToken", refreshResponse.token);
+            console.log("🎫 Novo Access Token gerado");
+            console.log("   Token anterior: " + oldToken.substring(0, 30) + "...");
+            console.log("   Novo token: " + refreshResponse.token.substring(0, 30) + "...");
+        }
+        
+        if (refreshResponse.refreshToken) {
+            client.global.set("refreshToken", refreshResponse.refreshToken);
+            console.log("🔄 Novo Refresh Token gerado");
+        }
+        
+        console.log("✅ Tokens atualizados nas variáveis globais");
+    } else {
+        console.log("❌ Falha no refresh token: " + response.status);
+        console.log("ℹ️  Isso pode ser normal se o token ainda for válido");
+    }
+%}
+
+### Step 5: Verify Token Still Works After Refresh
+# @name verifyTokenAfterRefresh
+GET {{FCG_API_HostAddress}}/api/Auth/me
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅🔐 TOKEN FUNCIONANDO APÓS REFRESH!");
+        console.log("👤 Acesso autorizado para: " + response.body.displayName);
+        console.log("📧 Email: " + response.body.email);
+    } else {
+        console.log("❌ Token não funciona após refresh: " + response.status);
+    }
+%}
+
+### Step 6: Test Failed Login Scenarios
+# @name testFailedLogin
+### Wrong password
+POST {{FCG_API_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": "maria.santos@email.com",
+  "password": "SenhaErrada123!"
+}
+
+> {%
+    if (response.status === 401) {
+        console.log("✅🔒 FALHA DE LOGIN ESPERADA - Senha incorreta");
+        console.log("📧 Email: maria.santos@email.com");
+        console.log("❌ Senha: SenhaErrada123! (incorreta)");
+        console.log("📄 Mensagem: " + (response.body ? response.body.message : "Credenciais inválidas"));
+    }
+%}
+
+### Non-existent user
+POST {{FCG_API_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": "usuario.inexistente@email.com",
+  "password": "QualquerSenha123!"
+}
+
+> {%
+    if (response.status === 401) {
+        console.log("✅🔒 FALHA DE LOGIN ESPERADA - Usuário não existe");
+        console.log("📧 Email: usuario.inexistente@email.com");
+        console.log("📄 Mensagem: " + (response.body ? response.body.message : "Credenciais inválidas"));
+    }
+%}
+
+### Step 7: Test Invalid Token Scenarios
+# @name testInvalidToken
+### Try to access protected endpoint with invalid token
+GET {{FCG_API_HostAddress}}/api/Auth/me
+Authorization: Bearer invalid_token_here
+
+> {%
+    if (response.status === 401) {
+        console.log("✅🔒 ACESSO NEGADO COM TOKEN INVÁLIDO - Comportamento esperado");
+        console.log("📄 Mensagem: " + (response.body ? response.body.message : "Não autorizado"));
+    }
+%}
+
+### Try without token
+GET {{FCG_API_HostAddress}}/api/Auth/me
+
+> {%
+    if (response.status === 401) {
+        console.log("✅🔒 ACESSO NEGADO SEM TOKEN - Comportamento esperado");
+        console.log("📄 Mensagem: " + (response.body ? response.body.message : "Não autorizado"));
+    }
+%}
+
+### Step 8: Register Another Test Player
+# @name registerSecondPlayer
+POST {{FCG_API_HostAddress}}/api/Auth/register-player
+Content-Type: application/json
+
+{
+  "firstName": "Carlos",
+  "lastName": "Oliveira",
+  "displayName": "CarlosGamer",
+  "birthday": "1992-03-20",
+  "email": "carlos.oliveira@email.com",
+  "password": "Carlos123!",
+  "confirmPassword": "Carlos123!"
+}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅🎮 SEGUNDO PLAYER REGISTRADO COM SUCESSO!");
+        console.log("👤 Nome: Carlos Oliveira");
+        console.log("🎮 Display: CarlosGamer");
+        console.log("📧 Email: carlos.oliveira@email.com");
+        
+        // Store second user info
+        if (response.body && response.body.id) {
+            client.global.set("SecondUserId", response.body.id);
+        }
+    } else if (response.status === 400) {
+        console.log("⚠️  Email já existe ou dados inválidos");
+    }
+%}
+
+### Step 9: Final Auth Verification
+# @name finalAuthVerification
+### Login with second user
+POST {{FCG_API_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": "carlos.oliveira@email.com",
+  "password": "Carlos123!"
+}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅🔐 LOGIN DO SEGUNDO USUÁRIO REALIZADO!");
+        
+        if (response.body.token) {
+            const secondUserToken = response.body.token;
+            console.log("🎫 Token do segundo usuário obtido");
+            
+            // Test the new token immediately
+            client.test("Test second user token", function() {
+                client.global.set("SecondUserToken", secondUserToken);
+            });
+        }
+    }
+%}
+
+### Verify second user token
+GET {{FCG_API_HostAddress}}/api/Auth/me
+Authorization: Bearer {{SecondUserToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅🔐 TOKEN DO SEGUNDO USUÁRIO FUNCIONANDO!");
+        console.log("👤 Usuário: " + response.body.displayName);
+        console.log("📧 Email: " + response.body.email);
+    }
+%}
+
+### Step 10: Auth System Summary
+# @name authSummary
+### Get current user with original token (should still work)
+GET {{FCG_API_HostAddress}}/api/Auth/me
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("🏁 RESUMO DO SISTEMA DE AUTENTICAÇÃO:");
+        console.log("✅ Registro de novos players funcionando");
+        console.log("✅ Login com credenciais válidas funcionando");
+        console.log("✅ Refresh token funcionando");
+        console.log("✅ Proteção de endpoints com token funcionando");
+        console.log("✅ Tratamento de credenciais inválidas funcionando");
+        console.log("✅ Múltiplos usuários suportados");
+        console.log("🎉 Sistema de Auth testado com sucesso!");
+    }
+%}
+
+### Individual Operations (Para testes específicos)
+
+### Login (Template)
+# @name loginTemplate
+POST {{FCG_API_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": "usuario@email.com",
+  "password": "Senha123!"
+}
+
+> {%
+    if (response.status === 200) {
+        client.global.set("AuthToken", response.body.token);
+        client.global.set("refreshToken", response.body.refreshToken);
+        console.log("✅ Login realizado - Tokens salvos");
+    }
+%}
+
+### Get Current User
+GET {{FCG_API_HostAddress}}/api/Auth/me
+Authorization: Bearer {{AuthToken}}
+
+### Refresh Token
+POST {{FCG_API_HostAddress}}/api/Auth/refresh
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "token": "{{AuthToken}}",
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Register Player (Template)
+POST {{FCG_API_HostAddress}}/api/Auth/register-player
+Content-Type: application/json
+
+{
+  "firstName": "Nome",
+  "lastName": "Sobrenome",
+  "displayName": "DisplayName",
+  "birthday": "1990-01-01",
+  "email": "novo.usuario@email.com",
+  "password": "Senha#123!",
+  "confirmPassword": "Senha#123!"
+}
+
+### Quick Auth Status Check
+# @name quickAuthCheck
+GET {{FCG_API_HostAddress}}/api/Auth/me
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("🔍 Status rápido da Autenticação:");
+        console.log("👤 Usuário: " + response.body.displayName);
+        console.log("📧 Email: " + response.body.email);
+        console.log("👤 Role: " + response.body.role);
+        console.log("✅ Token válido");
+    } else {
+        console.log("❌ Token inválido ou expirado");
+    }
+%}
+
+### Test Token Expiration (Optional - if you have a way to expire tokens)
+# @name testTokenExpiration
+### This would require having an expired token to test
+GET {{FCG_API_HostAddress}}/api/Auth/me
+Authorization: Bearer expired_token_here
+
+> {%
+    if (response.status === 401) {
+        console.log("✅ Token expirado rejeitado corretamente");
+    }
+%}

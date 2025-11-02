@@ -1,0 +1,229 @@
+﻿@FCG_API_HostAddress = http://localhost:5104
+@AuthToken = your_jwt_token_here
+@refreshToken = your_jwt_refresh_token
+@user = seu_usuario
+@password = sua_senha
+
+# Login
+POST {{FCG_API_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": {{user}}},
+  "password": {{password}}
+}
+
+> {%
+    if (response.status === 200) {
+        const loginResponse = response.body;
+        console.log("✅🔐 LOGIN REALIZADO COM SUCESSO!");
+        console.log("👤 Usuário: maria.santos@email.com");
+        
+        if (loginResponse.token) {
+            client.global.set("AuthToken", loginResponse.token);
+            console.log("🎫 Access Token obtido: " + loginResponse.token.substring(0, 50) + "...");
+        }
+        
+        if (loginResponse.refreshToken) {
+            client.global.set("refreshToken", loginResponse.refreshToken);
+            console.log("🔄 Refresh Token obtido: " + loginResponse.refreshToken.substring(0, 50) + "...");
+        }
+        
+        if (loginResponse.expiresIn) {
+            console.log("⏰ Token expira em: " + loginResponse.expiresIn);
+        }
+        
+        console.log("✅ Token salvo nas variáveis globais para uso nas próximas requisições");
+    } else {
+        console.log("❌ Falha no login: " + response.status);
+        console.log("📄 Response: " + response.body);
+    }
+%}
+
+### Cart Endpoints - Dynamic GameId Capture
+
+### Step 1: Get Available Games and Capture GameId
+# @name getAvailableGames
+GET {{FCG_API_HostAddress}}/api/Gallery?PageNumber=1&PageSize=5
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const responseData = response.body;
+        const games = responseData.items;
+        
+        if (games && games.length > 0) {
+            // Store the first game ID for cart operations
+            client.global.set("GameId", games[0].id);
+            client.global.set("GameTitle", games[0].title);
+            client.global.set("GamePrice", games[0].price);
+            
+            console.log("🎮 Jogo selecionado para testes no Carrinho:");
+            console.log("📛 Título: " + games[0].title);
+            console.log("🆔 ID: " + games[0].id);
+            console.log("💰 Preço: R$ " + games[0].price);
+            
+            // Store a second game ID for testing multiple items
+            if (games.length > 1) {
+                client.global.set("GameId2", games[1].id);
+                client.global.set("GameTitle2", games[1].title);
+                console.log("🔄 Segundo jogo disponível: " + games[1].title);
+            }
+        } else {
+            console.log("❌ Nenhum jogo encontrado na galeria");
+        }
+    } else {
+        console.log("⚠️ Erro ao buscar jogos: " + response.status);
+    }
+%}
+
+### Step 2: Get Current Cart (Should be empty initially)
+# @name getEmptyCart
+GET {{FCG_API_HostAddress}}/api/cart
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("🛒 Carrinho atual verificado");
+        console.log("📦 Itens no carrinho: " + (response.body.items ? response.body.items.length : 0));
+    }
+%}
+
+### Step 3: Add First Game to Cart
+# @name addFirstGame
+POST {{FCG_API_HostAddress}}/api/cart/add/{{GameId}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅ Jogo adicionado ao carrinho: {{GameTitle}}");
+    } else {
+        console.log("❌ Erro ao adicionar jogo ao carrinho");
+    }
+%}
+
+### Step 4: Verify Cart After Addition
+# @name getCartAfterAdd
+GET {{FCG_API_HostAddress}}/api/cart
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const cart = response.body;
+        console.log("🛒 Carrinho após adição:");
+        console.log("📦 Total de itens: " + (cart.items ? cart.items.length : 0));
+        if (cart.items && cart.items.length > 0) {
+            console.log("🎮 Itens no carrinho:");
+            cart.items.forEach((item, index) => {
+                console.log("   " + (index + 1) + ". " + item.title + " - R$ " + item.price);
+            });
+        }
+    }
+%}
+
+### Step 5: Add Second Game if Available
+# @name addSecondGame
+POST {{FCG_API_HostAddress}}/api/cart/add/{{GameId2}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅ Segundo jogo adicionado ao carrinho: {{GameTitle2}}");
+    } else if (response.status === 404) {
+        console.log("ℹ️  Segundo jogo não disponível, continuando com um item apenas");
+    } else {
+        console.log("❌ Erro ao adicionar segundo jogo");
+    }
+%}
+
+### Step 6: Verify Cart with Multiple Items
+# @name getCartWithMultiple
+GET {{FCG_API_HostAddress}}/api/cart
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const cart = response.body;
+        console.log("🛒 Carrinho atualizado:");
+        console.log("📦 Total de itens: " + (cart.items ? cart.items.length : 0));
+        if (cart.totalPrice) {
+            console.log("💰 Preço total: R$ " + cart.totalPrice);
+        }
+    }
+%}
+
+### Step 7: Remove First Game from Cart
+# @name removeFirstGame
+DELETE {{FCG_API_HostAddress}}/api/cart/remove/{{GameId}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("🗑️  Jogo removido do carrinho: {{GameTitle}}");
+    } else {
+        console.log("❌ Erro ao remover jogo do carrinho");
+    }
+%}
+
+### Step 8: Verify Cart After Removal
+# @name getCartAfterRemove
+GET {{FCG_API_HostAddress}}/api/cart
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const cart = response.body;
+        console.log("🛒 Carrinho após remoção:");
+        console.log("📦 Itens restantes: " + (cart.items ? cart.items.length : 0));
+    }
+%}
+
+### Step 9: Clear Entire Cart
+# @name clearCart
+DELETE {{FCG_API_HostAddress}}/api/cart/clear
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("🧹 Carrinho limpo com sucesso!");
+    } else {
+        console.log("❌ Erro ao limpar carrinho");
+    }
+%}
+
+### Step 10: Final Cart Verification
+# @name getFinalCart
+GET {{FCG_API_HostAddress}}/api/cart
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const cart = response.body;
+        const itemCount = cart.items ? cart.items.length : 0;
+        console.log("🛒 Carrinho final:");
+        console.log("📦 Total de itens: " + itemCount);
+        if (itemCount === 0) {
+            console.log("✅ Fluxo do carrinho concluído com sucesso!");
+        } else {
+            console.log("⚠️  Ainda há itens no carrinho");
+        }
+    }
+%}
+
+### Individual Operations (Para testes específicos)
+
+### Add Specific Game to Cart
+POST {{FCG_API_HostAddress}}/api/cart/add/{{GameId}}
+Authorization: Bearer {{AuthToken}}
+
+### Remove Specific Game from Cart
+DELETE {{FCG_API_HostAddress}}/api/cart/remove/{{GameId}}
+Authorization: Bearer {{AuthToken}}
+
+### Quick Cart Check
+GET {{FCG_API_HostAddress}}/api/cart
+Authorization: Bearer {{AuthToken}}
+
+### Quick Cart Clear
+DELETE {{FCG_API_HostAddress}}/api/cart/clear
+Authorization: Bearer {{AuthToken}}

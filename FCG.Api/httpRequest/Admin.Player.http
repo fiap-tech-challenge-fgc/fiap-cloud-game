@@ -1,0 +1,445 @@
+﻿@FCG_API_HostAddress = http://localhost:5104
+@AuthToken = your_jwt_token_here
+@user = seu_usuario
+@password = sua_senha
+
+# Login
+POST {{FCG_API_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": {{user}}},
+  "password": {{password}}
+}
+
+> {%
+    if (response.status === 200) {
+        const loginResponse = response.body;
+        console.log("✅🔐 LOGIN REALIZADO COM SUCESSO!");
+        console.log("👤 Usuário: maria.santos@email.com");
+        
+        if (loginResponse.token) {
+            client.global.set("AuthToken", loginResponse.token);
+            console.log("🎫 Access Token obtido: " + loginResponse.token.substring(0, 50) + "...");
+        }
+        
+        if (loginResponse.refreshToken) {
+            client.global.set("refreshToken", loginResponse.refreshToken);
+            console.log("🔄 Refresh Token obtido: " + loginResponse.refreshToken.substring(0, 50) + "...");
+        }
+        
+        if (loginResponse.expiresIn) {
+            console.log("⏰ Token expira em: " + loginResponse.expiresIn);
+        }
+        
+        console.log("✅ Token salvo nas variáveis globais para uso nas próximas requisições");
+    } else {
+        console.log("❌ Falha no login: " + response.status);
+        console.log("📄 Response: " + response.body);
+    }
+%}
+
+### Admin Player Endpoints - Dynamic Player Management
+
+### Step 1: Get Players List with Filters
+# @name getPlayersList
+GET {{FCG_API_HostAddress}}/api/admin/player?PageNumber=1&PageSize=20&OrderBy.SortBy=displayName&Filter.Role=Player
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const players = response.body;
+        console.log("👥 Lista de Players (Admin):");
+        console.log("📊 Total de players: " + players.totalItems);
+        console.log("📄 Páginas: " + players.totalPages);
+        
+        if (players.items && players.items.length > 0) {
+            console.log("🎮 Players encontrados:");
+            players.items.slice(0, 5).forEach((player, index) => {
+                console.log("   " + (index + 1) + ". " + player.displayName + 
+                    " - " + player.email + " - " + player.role);
+            });
+            
+            // Store players for different test scenarios
+            const firstPlayer = players.items[0];
+            client.global.set("PlayerId1", firstPlayer.id);
+            client.global.set("PlayerDisplayName1", firstPlayer.displayName);
+            client.global.set("PlayerEmail1", firstPlayer.email);
+            client.global.set("PlayerFirstName1", firstPlayer.firstName);
+            client.global.set("PlayerLastName1", firstPlayer.lastName);
+            
+            // Store second player for update tests
+            if (players.items.length > 1) {
+                const secondPlayer = players.items[1];
+                client.global.set("PlayerId2", secondPlayer.id);
+                client.global.set("PlayerDisplayName2", secondPlayer.displayName);
+                client.global.set("PlayerEmail2", secondPlayer.email);
+                client.global.set("PlayerFirstName2", secondPlayer.firstName);
+                client.global.set("PlayerLastName2", secondPlayer.lastName);
+            }
+            
+            console.log("✅ Players capturados para testes:");
+            console.log("   Player 1: " + firstPlayer.displayName + " (" + firstPlayer.email + ")");
+            if (players.items.length > 1) {
+                console.log("   Player 2: " + players.items[1].displayName + " (" + players.items[1].email + ")");
+            }
+        }
+    }
+%}
+
+### Step 2: Test Different Player Filters
+# @name testPlayerFilters
+### Filter by email domain
+GET {{FCG_API_HostAddress}}/api/admin/player?PageNumber=1&PageSize=15&Filter.Email=gmail.com
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const filteredPlayers = response.body;
+        console.log("📧 Players Filtrados por Email (@gmail.com):");
+        console.log("📊 Encontrados: " + filteredPlayers.totalItems);
+        
+        if (filteredPlayers.items && filteredPlayers.items.length > 0) {
+            filteredPlayers.items.slice(0, 3).forEach((player, index) => {
+                console.log("   " + (index + 1) + ". " + player.displayName + " - " + player.email);
+            });
+        }
+    }
+%}
+
+### Step 3: Test Name Filter
+# @name testNameFilter
+GET {{FCG_API_HostAddress}}/api/admin/player?PageNumber=1&PageSize=10&Filter.Name={{PlayerFirstName1}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const nameFilteredPlayers = response.body;
+        console.log("🔍 Players Filtrados por Nome (" + client.global.get("PlayerFirstName1") + "):");
+        console.log("📊 Encontrados: " + nameFilteredPlayers.totalItems);
+        
+        if (nameFilteredPlayers.items && nameFilteredPlayers.items.length > 0) {
+            nameFilteredPlayers.items.forEach((player, index) => {
+                console.log("   " + (index + 1) + ". " + player.displayName + " - " + player.email);
+            });
+        }
+    }
+%}
+
+### Step 4: Get Player Details by ID
+# @name getPlayerDetails
+GET {{FCG_API_HostAddress}}/api/admin/user/{{PlayerId1}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const player = response.body;
+        console.log("👤 DETALHES DO PLAYER (Admin View):");
+        console.log("🆔 ID: " + player.id);
+        console.log("📛 Nome: " + player.firstName + " " + player.lastName);
+        console.log("🎮 Display Name: " + player.displayName);
+        console.log("📧 Email: " + player.email);
+        console.log("🎂 Aniversário: " + player.birthday);
+        console.log("👤 Role: " + player.role);
+        console.log("📅 Criado em: " + (player.createdAt ? new Date(player.createdAt).toLocaleDateString() : "N/A"));
+    }
+%}
+
+### Step 5: Update Player Information
+# @name updatePlayer
+PUT {{FCG_API_HostAddress}}/api/admin/player/{{PlayerId2}}
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "firstName": "{{PlayerFirstName2}}",
+  "lastName": "Silva Updated",
+  "displayName": "{{PlayerDisplayName2}}Pro",
+  "email": "{{PlayerEmail2}}",
+  "birthday": "{{$datetime 'YYYY-MM-DD' -1 y}}",
+  "password": "currentPassword123",
+  "newPassword": "NewSecurePassword789!",
+  "confirmNewPassword": "NewSecurePassword789!"
+}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅✏️ PLAYER ATUALIZADO COM SUCESSO!");
+        console.log("👤 Player: {{PlayerDisplayName2}}");
+        console.log("🔄 Alterações realizadas:");
+        console.log("   📛 Sobrenome: {{PlayerLastName2}} → Silva Updated");
+        console.log("   🎮 Display Name: {{PlayerDisplayName2}} → {{PlayerDisplayName2}}Pro");
+        console.log("   🔑 Senha: Alterada para NewSecurePassword789!");
+    } else {
+        console.log("❌ Falha ao atualizar player: " + response.status);
+    }
+%}
+
+### Step 6: Verify Player Update
+# @name verifyPlayerUpdate
+GET {{FCG_API_HostAddress}}/api/admin/user/{{PlayerId2}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const updatedPlayer = response.body;
+        console.log("✅ VERIFICAÇÃO DA ATUALIZAÇÃO:");
+        console.log("🎮 Display Name: " + updatedPlayer.displayName + " (deve terminar com 'Pro')");
+        console.log("📛 Sobrenome: " + updatedPlayer.lastName + " (deve ser 'Silva Updated')");
+        
+        if (updatedPlayer.displayName.endsWith("Pro") && updatedPlayer.lastName === "Silva Updated") {
+            console.log("🎉 Todas as atualizações foram aplicadas corretamente!");
+        }
+    }
+%}
+
+### Step 7: Create Test Player for Deletion (if needed)
+# @name createTestPlayer
+POST {{FCG_API_HostAddress}}/api/Auth/register-player
+Content-Type: application/json
+
+{
+  "firstName": "Teste",
+  "lastName": "Player",
+  "displayName": "TestPlayerForDelete",
+  "birthday": "2000-01-01",
+  "email": "test.player.delete@example.com",
+  "password": "TestPassword123!",
+  "confirmPassword": "TestPassword123!"
+}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅👤 PLAYER DE TESTE CRIADO PARA EXCLUSÃO");
+        console.log("📛 Nome: Teste Player");
+        console.log("🎮 Display: TestPlayerForDelete");
+        console.log("📧 Email: test.player.delete@example.com");
+        
+        // Store the test player ID for deletion
+        if (response.body && response.body.id) {
+            client.global.set("TestPlayerId", response.body.id);
+            console.log("🆔 ID do player de teste: " + response.body.id);
+        }
+    } else {
+        console.log("⚠️  Não foi possível criar player de teste, usando player existente");
+    }
+%}
+
+### Step 8: Verify Test Player Creation
+# @name verifyTestPlayer
+GET {{FCG_API_HostAddress}}/api/admin/player?PageNumber=1&PageSize=10&Filter.Name=TestPlayerForDelete
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const players = response.body;
+        const testPlayer = players.items && players.items.find(player => 
+            player.displayName === "TestPlayerForDelete"
+        );
+        
+        if (testPlayer) {
+            client.global.set("TestPlayerId", testPlayer.id);
+            console.log("✅ Player de teste encontrado: " + testPlayer.displayName);
+        } else {
+            console.log("⚠️  Player de teste não encontrado, usando player existente para delete");
+            client.global.set("TestPlayerId", client.global.get("PlayerId1"));
+        }
+    }
+%}
+
+### Step 9: Delete Test Player
+# @name deletePlayer
+DELETE {{FCG_API_HostAddress}}/api/admin/player/{{TestPlayerId}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("🗑️  PLAYER EXCLUÍDO COM SUCESSO!");
+        console.log("👤 Player excluído: TestPlayerForDelete");
+        console.log("🆔 ID excluído: {{TestPlayerId}}");
+    } else {
+        console.log("❌ Falha ao excluir player: " + response.status);
+    }
+%}
+
+### Step 10: Verify Player Deletion
+# @name verifyPlayerDeletion
+GET {{FCG_API_HostAddress}}/api/admin/player?PageNumber=1&PageSize=30
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const players = response.body;
+        const testPlayerExists = players.items && players.items.some(player => 
+            player.id === client.global.get("TestPlayerId")
+        );
+        
+        console.log("✅ VERIFICAÇÃO DA EXCLUSÃO:");
+        console.log("📊 Total de players após exclusão: " + players.totalItems);
+        console.log("👤 Player de teste ainda existe: " + testPlayerExists);
+        
+        if (!testPlayerExists) {
+            console.log("🎉 Player excluído com sucesso!");
+        } else {
+            console.log("⚠️  Player ainda aparece na lista");
+        }
+    }
+%}
+
+### Step 11: Test Different Sorting Options
+# @name testSortingOptions
+### Sort by email ascending
+GET {{FCG_API_HostAddress}}/api/admin/player?PageNumber=1&PageSize=5&OrderBy.SortBy=email&OrderBy.Ascending=true
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const sortedPlayers = response.body;
+        console.log("📧 Players Ordenados por Email (A-Z):");
+        
+        if (sortedPlayers.items && sortedPlayers.items.length > 0) {
+            sortedPlayers.items.forEach((player, index) => {
+                console.log("   " + (index + 1) + ". " + player.email + " - " + player.displayName);
+            });
+        }
+    }
+%}
+
+### Step 12: Test Role Filter
+# @name testRoleFilter
+GET {{FCG_API_HostAddress}}/api/admin/player?PageNumber=1&PageSize=10&Filter.Role=Admin
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const adminPlayers = response.body;
+        console.log("👑 Players Filtrados por Role (Admin):");
+        console.log("📊 Encontrados: " + adminPlayers.totalItems);
+        
+        if (adminPlayers.items && adminPlayers.items.length > 0) {
+            adminPlayers.items.forEach((player, index) => {
+                console.log("   " + (index + 1) + ". " + player.displayName + " - " + player.email);
+            });
+        }
+    }
+%}
+
+### Step 13: Final Players Summary
+# @name finalSummary
+GET {{FCG_API_HostAddress}}/api/admin/player?PageNumber=1&PageSize=10&OrderBy.SortBy=displayName&OrderBy.Ascending=true
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const players = response.body;
+        console.log("🏁 RESUMO FINAL DOS PLAYERS:");
+        console.log("📊 Total de players no sistema: " + players.totalItems);
+        
+        if (players.items && players.items.length > 0) {
+            console.log("👥 Primeiros players (ordenados por display name):");
+            players.items.slice(0, 3).forEach((player, index) => {
+                console.log("   " + (index + 1) + ". " + player.displayName + 
+                    " - " + player.email + " - " + player.role);
+            });
+        }
+        
+        console.log("✅🎉 Fluxo de Admin Player concluído com sucesso!");
+    }
+%}
+
+### Individual Operations (Para testes específicos)
+
+### Get Players with Custom Filters
+GET {{FCG_API_HostAddress}}/api/admin/player?PageNumber=1&PageSize=20&OrderBy.SortBy=displayName&Filter.Role=Player
+Authorization: Bearer {{AuthToken}}
+
+### Get Players with Email Filter
+GET {{FCG_API_HostAddress}}/api/admin/player?PageNumber=1&PageSize=15&Filter.Email=example.com
+Authorization: Bearer {{AuthToken}}
+
+### Get Players with Name Filter
+GET {{FCG_API_HostAddress}}/api/admin/player?PageNumber=1&PageSize=10&Filter.Name=João
+Authorization: Bearer {{AuthToken}}
+
+### Delete Player
+DELETE {{FCG_API_HostAddress}}/api/admin/player/{{PlayerId}}
+Authorization: Bearer {{AuthToken}}
+
+### Update Player (Template)
+PUT {{FCG_API_HostAddress}}/api/admin/player/{{PlayerId}}
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "firstName": "NovoNome",
+  "lastName": "NovoSobrenome",
+  "displayName": "NovoDisplay",
+  "email": "novo.email@example.com",
+  "birthday": "1990-01-01",
+  "password": "senhaAtual123",
+  "newPassword": "novaSenha456",
+  "confirmNewPassword": "novaSenha456"
+}
+
+### Get Player Details by ID
+GET {{FCG_API_HostAddress}}/api/admin/user/{{PlayerId}}
+Authorization: Bearer {{AuthToken}}
+
+### Test Different Sorting
+# @name testVariousSorting
+### Sort by creation date descending
+GET {{FCG_API_HostAddress}}/api/admin/player?PageNumber=1&PageSize=5&OrderBy.SortBy=createdAt&OrderBy.Ascending=false
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const players = response.body;
+        console.log("📅 Players Mais Recentes:");
+        if (players.items && players.items.length > 0) {
+            players.items.forEach((player, index) => {
+                console.log("   " + (index + 1) + ". " + player.displayName + 
+                    " - " + (player.createdAt ? new Date(player.createdAt).toLocaleDateString() : "N/A"));
+            });
+        }
+    }
+%}
+
+### Quick Players Status Check
+# @name quickPlayersCheck
+GET {{FCG_API_HostAddress}}/api/admin/player?PageNumber=1&PageSize=5
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const players = response.body;
+        console.log("🔍 Status rápido dos Players (Admin):");
+        console.log("📊 Total: " + players.totalItems);
+        console.log("👥 Últimos players:");
+        if (players.items && players.items.length > 0) {
+            players.items.forEach((player, index) => {
+                console.log("   " + (index + 1) + ". " + player.displayName + 
+                    " - " + player.email + " - " + player.role);
+            });
+        }
+    }
+%}
+
+### Bulk Player Operations Test
+# @name bulkPlayerOperations
+### Get multiple players for batch operations
+GET {{FCG_API_HostAddress}}/api/admin/player?PageNumber=1&PageSize=50
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const players = response.body;
+        console.log("📦 Operações em Lote - Players Encontrados: " + players.totalItems);
+        
+        if (players.items && players.items.length > 2) {
+            // Store additional players for testing
+            client.global.set("PlayerId3", players.items[2].id);
+            client.global.set("PlayerDisplayName3", players.items[2].displayName);
+            console.log("✅ Player adicional capturado: " + players.items[2].displayName);
+        }
+    }
+%}

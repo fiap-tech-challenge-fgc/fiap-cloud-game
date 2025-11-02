@@ -1,0 +1,508 @@
+﻿@FCG_API_HostAddress = http://localhost:5104
+@AuthToken = your_jwt_token_here
+@user = seu_usuario
+@password = sua_senha
+
+# Login
+POST {{FCG_API_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": {{user}}},
+  "password": {{password}}
+}
+
+> {%
+    if (response.status === 200) {
+        const loginResponse = response.body;
+        console.log("✅🔐 LOGIN REALIZADO COM SUCESSO!");
+        console.log("👤 Usuário: maria.santos@email.com");
+        
+        if (loginResponse.token) {
+            client.global.set("AuthToken", loginResponse.token);
+            console.log("🎫 Access Token obtido: " + loginResponse.token.substring(0, 50) + "...");
+        }
+        
+        if (loginResponse.refreshToken) {
+            client.global.set("refreshToken", loginResponse.refreshToken);
+            console.log("🔄 Refresh Token obtido: " + loginResponse.refreshToken.substring(0, 50) + "...");
+        }
+        
+        if (loginResponse.expiresIn) {
+            console.log("⏰ Token expira em: " + loginResponse.expiresIn);
+        }
+        
+        console.log("✅ Token salvo nas variáveis globais para uso nas próximas requisições");
+    } else {
+        console.log("❌ Falha no login: " + response.status);
+        console.log("📄 Response: " + response.body);
+    }
+%}
+
+### Purchase Endpoints - Dynamic Data Capture
+
+### Step 1: Get Player Profile and Capture PlayerId
+# @name getPlayerProfile
+GET {{FCG_API_HostAddress}}/api/Auth/me
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const player = response.body;
+        console.log("👤 Perfil do Jogador para Purchases:");
+        console.log("🆔 ID: " + player.id);
+        console.log("📛 Nome: " + player.firstName + " " + player.lastName);
+        
+        client.global.set("PlayerId", player.id);
+        client.global.set("PlayerName", player.firstName + " " + player.lastName);
+        console.log("✅ PlayerId capturado: " + player.id);
+    }
+%}
+
+### Step 2: Get Available Games and Capture GameIds
+# @name getAvailableGames
+GET {{FCG_API_HostAddress}}/api/Gallery?PageNumber=1&PageSize=10
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const games = response.body.items;
+        
+        if (games && games.length > 0) {
+            // Store multiple games for different test scenarios
+            client.global.set("GameId1", games[0].id);
+            client.global.set("GameTitle1", games[0].title);
+            client.global.set("GamePrice1", games[0].price);
+            
+            client.global.set("GameId2", games[1].id);
+            client.global.set("GameTitle2", games[1].title);
+            client.global.set("GamePrice2", games[1].price);
+            
+            // Find games for specific filter tests
+            const expensiveGame = games.find(game => game.price > 100);
+            const cheapGame = games.find(game => game.price < 50);
+            
+            if (expensiveGame) {
+                client.global.set("ExpensiveGameId", expensiveGame.id);
+                client.global.set("ExpensiveGameTitle", expensiveGame.title);
+            }
+            if (cheapGame) {
+                client.global.set("CheapGameId", cheapGame.id);
+                client.global.set("CheapGameTitle", cheapGame.title);
+            }
+            
+            console.log("🎮 Jogos disponíveis para purchase:");
+            console.log("1. " + games[0].title + " - R$ " + games[0].price);
+            console.log("2. " + games[1].title + " - R$ " + games[1].price);
+            if (expensiveGame) console.log("💎 Caro: " + expensiveGame.title + " - R$ " + expensiveGame.price);
+            if (cheapGame) console.log("💸 Barato: " + cheapGame.title + " - R$ " + cheapGame.price);
+        }
+    }
+%}
+
+### Step 3: Clear Cart Before Tests
+# @name clearCart
+DELETE {{FCG_API_HostAddress}}/api/cart/clear
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("🧹 Carrinho limpo para testes de purchase");
+    }
+%}
+
+### Step 4: Add Games to Cart for Cart Purchase Test
+# @name addGamesToCart
+### Add first game
+POST {{FCG_API_HostAddress}}/api/cart/add/{{GameId1}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅ Adicionado ao carrinho: {{GameTitle1}}");
+    }
+%}
+
+### Add second game
+POST {{FCG_API_HostAddress}}/api/cart/add/{{GameId2}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅ Adicionado ao carrinho: {{GameTitle2}}");
+    }
+%}
+
+### Step 5: Verify Cart Before Purchase
+# @name verifyCartBeforePurchase
+GET {{FCG_API_HostAddress}}/api/cart
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const cart = response.body;
+        console.log("🛒 Carrinho antes da purchase:");
+        console.log("📦 Itens: " + (cart.items ? cart.items.length : 0));
+        console.log("💰 Total: R$ " + (cart.totalPrice || 0));
+        
+        if (cart.items) {
+            cart.items.forEach((item, index) => {
+                console.log("   " + (index + 1) + ". " + item.title + " - R$ " + item.price);
+            });
+        }
+    }
+%}
+
+### Step 6: Purchase Entire Cart
+# @name purchaseCart
+POST {{FCG_API_HostAddress}}/api/Purchase/cart
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅✅✅ COMPRA DO CARRINHO REALIZADA COM SUCESSO!");
+        console.log("🎉 Todos os itens do carrinho foram comprados");
+    } else {
+        console.log("❌ Falha na compra do carrinho: " + response.status);
+    }
+%}
+
+### Step 7: Verify Cart After Purchase (Should be empty)
+# @name verifyCartAfterPurchase
+GET {{FCG_API_HostAddress}}/api/cart
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const cart = response.body;
+        const itemCount = cart.items ? cart.items.length : 0;
+        console.log("🛒 Carrinho após purchase:");
+        console.log("📦 Itens restantes: " + itemCount);
+        
+        if (itemCount === 0) {
+            console.log("✅ Carrinho esvaziado após compra - CORRETO!");
+        } else {
+            console.log("⚠️  Ainda há itens no carrinho após compra");
+        }
+    }
+%}
+
+### Step 8: Single Purchase Test
+# @name singlePurchase
+POST {{FCG_API_HostAddress}}/api/Purchase/single
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "playerId": "{{PlayerId}}",
+  "gameId": "{{GameId1}}"
+}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅ PURCHASE INDIVIDUAL REALIZADA!");
+        console.log("🎮 Jogo: {{GameTitle1}}");
+        console.log("👤 Player: {{PlayerName}}");
+    } else {
+        console.log("❌ Falha na purchase individual: " + response.status);
+    }
+%}
+
+### Step 9: Get Player Purchases - All Purchases
+# @name getAllPurchases
+GET {{FCG_API_HostAddress}}/api/Purchase/player
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "pageNumber": 1,
+  "pageSize": 20,
+  "orderBy": {
+    "sortBy": "purchaseDate",
+    "ascending": false
+  },
+  "filter": {
+    "playerName": "",
+    "gameName": "",
+    "minPrice": 0,
+    "maxPrice": 1000,
+    "startDate": "2020-01-01T00:00:00.000Z",
+    "endDate": "2024-12-31T23:59:59.000Z"
+  }
+}
+
+> {%
+    if (response.status === 200) {
+        const purchases = response.body;
+        console.log("📋 TODAS AS PURCHASES DO PLAYER:");
+        console.log("📊 Total de purchases: " + purchases.totalItems);
+        console.log("📄 Páginas: " + purchases.totalPages);
+        
+        if (purchases.items && purchases.items.length > 0) {
+            console.log("🆕 Purchases mais recentes:");
+            purchases.items.slice(0, 5).forEach((purchase, index) => {
+                console.log("   " + (index + 1) + ". " + purchase.gameName + 
+                    " - R$ " + purchase.price + 
+                    " - " + new Date(purchase.purchaseDate).toLocaleDateString());
+            });
+        }
+    }
+%}
+
+### Step 10: Get Player Purchases - Filtered by Game Name
+# @name getFilteredPurchases
+GET {{FCG_API_HostAddress}}/api/Purchase/player
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "pageNumber": 1,
+  "pageSize": 10,
+  "orderBy": {
+    "sortBy": "purchaseDate",
+    "ascending": false
+  },
+  "filter": {
+    "playerName": "",
+    "gameName": "{{GameTitle1}}",
+    "minPrice": 0,
+    "maxPrice": 1000,
+    "startDate": "2020-01-01T00:00:00.000Z",
+    "endDate": "2024-12-31T23:59:59.000Z"
+  }
+}
+
+> {%
+    if (response.status === 200) {
+        const purchases = response.body;
+        console.log("🎯 PURCHASES FILTRADAS POR JOGO: {{GameTitle1}}");
+        console.log("📊 Encontradas: " + purchases.totalItems);
+        
+        if (purchases.items && purchases.items.length > 0) {
+            purchases.items.forEach((purchase, index) => {
+                console.log("   " + (index + 1) + ". " + purchase.gameName + 
+                    " - R$ " + purchase.price + 
+                    " - " + new Date(purchase.purchaseDate).toLocaleString());
+            });
+        } else {
+            console.log("   Nenhuma purchase encontrada com este filtro");
+        }
+    }
+%}
+
+### Step 11: Get Player Purchases - Filtered by Price Range
+# @name getPriceFilteredPurchases
+GET {{FCG_API_HostAddress}}/api/Purchase/player
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "pageNumber": 1,
+  "pageSize": 10,
+  "orderBy": {
+    "sortBy": "price",
+    "ascending": false
+  },
+  "filter": {
+    "playerName": "",
+    "gameName": "",
+    "minPrice": 50,
+    "maxPrice": 200,
+    "startDate": "2020-01-01T00:00:00.000Z",
+    "endDate": "2024-12-31T23:59:59.000Z"
+  }
+}
+
+> {%
+    if (response.status === 200) {
+        const purchases = response.body;
+        console.log("💰 PURCHASES FILTRADAS POR PREÇO (R$ 50-200):");
+        console.log("📊 Encontradas: " + purchases.totalItems);
+        
+        if (purchases.items && purchases.items.length > 0) {
+            purchases.items.forEach((purchase, index) => {
+                console.log("   " + (index + 1) + ". " + purchase.gameName + 
+                    " - R$ " + purchase.price);
+            });
+        } else {
+            console.log("   Nenhuma purchase neste range de preço");
+        }
+    }
+%}
+
+### Step 12: Get Player Purchases - Filtered by Date Range
+# @name getDateFilteredPurchases
+GET {{FCG_API_HostAddress}}/api/Purchase/player
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "pageNumber": 1,
+  "pageSize": 10,
+  "orderBy": {
+    "sortBy": "purchaseDate",
+    "ascending": false
+  },
+  "filter": {
+    "playerName": "",
+    "gameName": "",
+    "minPrice": 0,
+    "maxPrice": 1000,
+    "startDate": "2024-01-01T00:00:00.000Z",
+    "endDate": "2024-12-31T23:59:59.000Z"
+  }
+}
+
+> {%
+    if (response.status === 200) {
+        const purchases = response.body;
+        console.log("📅 PURCHASES FILTRADAS POR DATA (2024):");
+        console.log("📊 Encontradas: " + purchases.totalItems);
+        
+        if (purchases.items && purchases.items.length > 0) {
+            console.log("🆕 Purchases de 2024:");
+            purchases.items.slice(0, 3).forEach((purchase, index) => {
+                console.log("   " + (index + 1) + ". " + purchase.gameName + 
+                    " - " + new Date(purchase.purchaseDate).toLocaleDateString());
+            });
+        }
+    }
+%}
+
+### Step 13: Test Another Single Purchase
+# @name anotherSinglePurchase
+POST {{FCG_API_HostAddress}}/api/Purchase/single
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "playerId": "{{PlayerId}}",
+  "gameId": "{{GameId2}}"
+}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅ SEGUNDA PURCHASE INDIVIDUAL REALIZADA!");
+        console.log("🎮 Jogo: {{GameTitle2}}");
+    }
+%}
+
+### Step 14: Final Purchases Summary
+# @name finalPurchasesSummary
+GET {{FCG_API_HostAddress}}/api/Purchase/player
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "pageNumber": 1,
+  "pageSize": 5,
+  "orderBy": {
+    "sortBy": "purchaseDate",
+    "ascending": false
+  },
+  "filter": {}
+}
+
+> {%
+    if (response.status === 200) {
+        const purchases = response.body;
+        console.log("🏁 RESUMO FINAL DAS PURCHASES:");
+        console.log("📊 Total de purchases realizadas: " + purchases.totalItems);
+        
+        if (purchases.items && purchases.items.length > 0) {
+            let totalSpent = 0;
+            purchases.items.forEach(purchase => {
+                totalSpent += purchase.price;
+            });
+            
+            console.log("💰 Total gasto nas últimas purchases: R$ " + totalSpent.toFixed(2));
+            console.log("✅ Fluxo de Purchases concluído com sucesso!");
+        }
+    }
+%}
+
+### Individual Operations (Para testes específicos)
+
+### Purchase Cart Only
+POST {{FCG_API_HostAddress}}/api/Purchase/cart
+Authorization: Bearer {{AuthToken}}
+
+### Single Purchase with Specific IDs
+POST {{FCG_API_HostAddress}}/api/Purchase/single
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "playerId": "{{PlayerId}}",
+  "gameId": "{{GameId1}}"
+}
+
+### Get Player Purchases with Custom Filters
+GET {{FCG_API_HostAddress}}/api/Purchase/player
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "pageNumber": 1,
+  "pageSize": 10,
+  "orderBy": {
+    "sortBy": "purchaseDate",
+    "ascending": false
+  },
+  "filter": {
+    "gameName": "Cyberpunk",
+    "minPrice": 10,
+    "maxPrice": 200,
+    "startDate": "2024-01-01T00:00:00.000Z",
+    "endDate": "2024-12-31T23:59:59.000Z"
+  }
+}
+
+### Quick Purchases Check
+GET {{FCG_API_HostAddress}}/api/Purchase/player
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "pageNumber": 1,
+  "pageSize": 5,
+  "orderBy": {
+    "sortBy": "purchaseDate",
+    "ascending": false
+  },
+  "filter": {}
+}
+
+### Test Multiple Single Purchases
+# @name bulkSinglePurchases
+### Purchase expensive game if available
+POST {{FCG_API_HostAddress}}/api/Purchase/single
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "playerId": "{{PlayerId}}",
+  "gameId": "{{ExpensiveGameId}}"
+}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅ Purchase de jogo caro realizada: {{ExpensiveGameTitle}}");
+    }
+%}
+
+### Purchase cheap game if available
+POST {{FCG_API_HostAddress}}/api/Purchase/single
+Content-Type: application/json
+Authorization: Bearer {{AuthToken}}
+
+{
+  "playerId": "{{PlayerId}}",
+  "gameId": "{{CheapGameId}}"
+}
+
+> {%
+    if (response.status === 200) {
+        console.log("✅ Purchase de jogo barato realizada: {{CheapGameTitle}}");
+    }
+%}

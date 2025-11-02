@@ -1,0 +1,47 @@
+﻿@FCG_API_HostAddress = http://localhost:5104
+@AuthToken = your_jwt_token_here
+
+### Gallery Workflow - Complete Example
+
+### 1. Get Gallery Games and Auto-capture IDs
+# @name getAllGames
+GET {{FCG_API_HostAddress}}/api/Gallery?PageNumber=1&PageSize=5
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const responseData = response.body;
+        const games = responseData.items;
+        
+        if (games && games.length > 0) {
+            // Store multiple IDs for testing
+            client.global.set("Game1_Id", games[0].id);
+            client.global.set("Game1_Title", games[0].title);
+            
+            if (games.length > 1) {
+                client.global.set("Game2_Id", games[1].id);
+                client.global.set("Game2_Title", games[1].title);
+            }
+            
+            console.log("📋 Jogos encontrados: " + games.length);
+            console.log("🎯 Primeiro jogo: " + games[0].title);
+            console.log("🆔 ID principal: " + games[0].id);
+        } else {
+            console.log("⚠️  Nenhum jogo encontrado na galeria");
+        }
+    } else {
+        console.log("❌ Erro ao buscar jogos: " + response.status);
+    }
+%}
+
+### 2. Get First Game Details
+GET {{FCG_API_HostAddress}}/api/Gallery/{{Game1_Id}}
+Authorization: Bearer {{AuthToken}}
+
+### 3. Get Second Game Details (if available)
+GET {{FCG_API_HostAddress}}/api/Gallery/{{Game2_Id}}
+Authorization: Bearer {{AuthToken}}
+
+### 4. Get Promotions
+GET {{FCG_API_HostAddress}}/api/Gallery/promotions
+Authorization: Bearer {{AuthToken}}

@@ -1,0 +1,465 @@
+﻿@FCG_API_HostAddress = http://localhost:5104
+@AuthToken = your_jwt_token_here
+@user = seu_usuario
+@password = sua_senha
+
+# Login
+POST {{FCG_API_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": {{user}}},
+  "password": {{password}}
+}
+
+> {%
+    if (response.status === 200) {
+        const loginResponse = response.body;
+        console.log("✅🔐 LOGIN REALIZADO COM SUCESSO!");
+        console.log("👤 Usuário: maria.santos@email.com");
+        
+        if (loginResponse.token) {
+            client.global.set("AuthToken", loginResponse.token);
+            console.log("🎫 Access Token obtido: " + loginResponse.token.substring(0, 50) + "...");
+        }
+        
+        if (loginResponse.refreshToken) {
+            client.global.set("refreshToken", loginResponse.refreshToken);
+            console.log("🔄 Refresh Token obtido: " + loginResponse.refreshToken.substring(0, 50) + "...");
+        }
+        
+        if (loginResponse.expiresIn) {
+            console.log("⏰ Token expira em: " + loginResponse.expiresIn);
+        }
+        
+        console.log("✅ Token salvo nas variáveis globais para uso nas próximas requisições");
+    } else {
+        console.log("❌ Falha no login: " + response.status);
+        console.log("📄 Response: " + response.body);
+    }
+%}
+
+### Admin Users Endpoints - Dynamic User Management
+
+### Step 1: Get All Users with Different Role Filters
+# @name getAllUsers
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=50&OrderBy.SortBy=displayName&OrderBy.Ascending=true
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const users = response.body;
+        console.log("👥 TODOS OS USUÁRIOS (Admin View):");
+        console.log("📊 Total de usuários: " + users.totalItems);
+        console.log("📄 Páginas: " + users.totalPages);
+        
+        if (users.items && users.items.length > 0) {
+            console.log("📋 Primeiros usuários:");
+            users.items.slice(0, 5).forEach((user, index) => {
+                console.log("   " + (index + 1) + ". " + user.displayName + 
+                    " - " + user.email + " - " + user.role);
+            });
+            
+            // Store users for different test scenarios
+            const firstUser = users.items[0];
+            client.global.set("UserId1", firstUser.id);
+            client.global.set("UserDisplayName1", firstUser.displayName);
+            client.global.set("UserEmail1", firstUser.email);
+            client.global.set("UserRole1", firstUser.role);
+            
+            // Store second user
+            if (users.items.length > 1) {
+                const secondUser = users.items[1];
+                client.global.set("UserId2", secondUser.id);
+                client.global.set("UserDisplayName2", secondUser.displayName);
+                client.global.set("UserEmail2", secondUser.email);
+                client.global.set("UserRole2", secondUser.role);
+            }
+            
+            // Find a player user for testing
+            const playerUser = users.items.find(user => user.role === "Player");
+            if (playerUser) {
+                client.global.set("PlayerUserId", playerUser.id);
+                client.global.set("PlayerUserDisplayName", playerUser.displayName);
+                console.log("🎮 Player user encontrado: " + playerUser.displayName);
+            }
+            
+            console.log("✅ Usuários capturados para testes:");
+            console.log("   User 1: " + firstUser.displayName + " (" + firstUser.role + ")");
+            if (users.items.length > 1) {
+                console.log("   User 2: " + secondUser.displayName + " (" + secondUser.role + ")");
+            }
+        }
+    }
+%}
+
+### Step 2: Get Admin Users Only
+# @name getAdminUsers
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=30&Filter.Role=Admin
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const adminUsers = response.body;
+        console.log("👑 USUÁRIOS ADMINISTRADORES:");
+        console.log("📊 Total de admins: " + adminUsers.totalItems);
+        
+        if (adminUsers.items && adminUsers.items.length > 0) {
+            console.log("📋 Lista de administradores:");
+            adminUsers.items.forEach((admin, index) => {
+                console.log("   " + (index + 1) + ". " + admin.displayName + 
+                    " - " + admin.email + " - " + admin.role);
+            });
+            
+            // Store admin user for detailed view
+            const firstAdmin = adminUsers.items[0];
+            client.global.set("AdminUserId", firstAdmin.id);
+            client.global.set("AdminDisplayName", firstAdmin.displayName);
+        } else {
+            console.log("   Nenhum administrador encontrado");
+        }
+    }
+%}
+
+### Step 3: Get Player Users Only
+# @name getPlayerUsers
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=20&Filter.Role=Player
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const playerUsers = response.body;
+        console.log("🎮 USUÁRIOS PLAYERS:");
+        console.log("📊 Total de players: " + playerUsers.totalItems);
+        
+        if (playerUsers.items && playerUsers.items.length > 0) {
+            console.log("📋 Primeiros players:");
+            playerUsers.items.slice(0, 3).forEach((player, index) => {
+                console.log("   " + (index + 1) + ". " + player.displayName + 
+                    " - " + player.email);
+            });
+            
+            // Store a player user for detailed view
+            const firstPlayer = playerUsers.items[0];
+            client.global.set("PlayerUserId", firstPlayer.id);
+            client.global.set("PlayerUserDisplayName", firstPlayer.displayName);
+        }
+    }
+%}
+
+### Step 4: Get User by ID - Admin User
+# @name getAdminUserById
+GET {{FCG_API_HostAddress}}/api/admin/user/{{AdminUserId}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const adminUser = response.body;
+        console.log("👑 DETALHES DO USUÁRIO ADMIN:");
+        console.log("🆔 ID: " + adminUser.id);
+        console.log("📛 Nome: " + adminUser.firstName + " " + adminUser.lastName);
+        console.log("🎮 Display Name: " + adminUser.displayName);
+        console.log("📧 Email: " + adminUser.email);
+        console.log("🎂 Aniversário: " + adminUser.birthday);
+        console.log("👤 Role: " + adminUser.role);
+        console.log("📅 Criado em: " + (adminUser.createdAt ? new Date(adminUser.createdAt).toLocaleDateString() : "N/A"));
+        console.log("✏️ Atualizado em: " + (adminUser.updatedAt ? new Date(adminUser.updatedAt).toLocaleDateString() : "N/A"));
+    } else if (response.status === 404) {
+        console.log("❌ Admin user não encontrado com ID: {{AdminUserId}}");
+    }
+%}
+
+### Step 5: Get User by ID - Player User
+# @name getPlayerUserById
+GET {{FCG_API_HostAddress}}/api/admin/user/{{PlayerUserId}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const playerUser = response.body;
+        console.log("🎮 DETALHES DO USUÁRIO PLAYER:");
+        console.log("🆔 ID: " + playerUser.id);
+        console.log("📛 Nome: " + playerUser.firstName + " " + playerUser.lastName);
+        console.log("🎮 Display Name: " + playerUser.displayName);
+        console.log("📧 Email: " + playerUser.email);
+        console.log("🎂 Aniversário: " + playerUser.birthday);
+        console.log("👤 Role: " + playerUser.role);
+        console.log("📅 Criado em: " + (playerUser.createdAt ? new Date(playerUser.createdAt).toLocaleDateString() : "N/A"));
+        
+        // Check if player has additional stats
+        if (playerUser.totalGames) {
+            console.log("🎮 Total de jogos: " + playerUser.totalGames);
+        }
+        if (playerUser.totalSpent) {
+            console.log("💰 Total gasto: R$ " + playerUser.totalSpent);
+        }
+    }
+%}
+
+### Step 6: Test Email Filter
+# @name testEmailFilter
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=15&Filter.Email=gmail.com
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const emailFilteredUsers = response.body;
+        console.log("📧 USUÁRIOS FILTRADOS POR EMAIL (@gmail.com):");
+        console.log("📊 Encontrados: " + emailFilteredUsers.totalItems);
+        
+        if (emailFilteredUsers.items && emailFilteredUsers.items.length > 0) {
+            emailFilteredUsers.items.slice(0, 3).forEach((user, index) => {
+                console.log("   " + (index + 1) + ". " + user.displayName + " - " + user.email);
+            });
+        }
+    }
+%}
+
+### Step 7: Test Name Filter
+# @name testNameFilter
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=10&Filter.Name={{UserDisplayName1}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const nameFilteredUsers = response.body;
+        console.log("🔍 USUÁRIOS FILTRADOS POR NOME (" + client.global.get("UserDisplayName1") + "):");
+        console.log("📊 Encontrados: " + nameFilteredUsers.totalItems);
+        
+        if (nameFilteredUsers.items && nameFilteredUsers.items.length > 0) {
+            nameFilteredUsers.items.forEach((user, index) => {
+                console.log("   " + (index + 1) + ". " + user.displayName + " - " + user.email + " - " + user.role);
+            });
+        }
+    }
+%}
+
+### Step 8: Test Combined Filters
+# @name testCombinedFilters
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=20&Filter.Role=Player&Filter.Email=example.com
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const combinedFilterUsers = response.body;
+        console.log("🎯 USUÁRIOS FILTRADOS (Player + @example.com):");
+        console.log("📊 Encontrados: " + combinedFilterUsers.totalItems);
+        
+        if (combinedFilterUsers.items && combinedFilterUsers.items.length > 0) {
+            combinedFilterUsers.items.forEach((user, index) => {
+                console.log("   " + (index + 1) + ". " + user.displayName + " - " + user.email);
+            });
+        } else {
+            console.log("   Nenhum usuário encontrado com esses filtros combinados");
+        }
+    }
+%}
+
+### Step 9: Get User by Different IDs
+# @name getMultipleUsersById
+### Get first user by ID
+GET {{FCG_API_HostAddress}}/api/admin/user/{{UserId1}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const user1 = response.body;
+        console.log("👤 USUÁRIO 1 POR ID:");
+        console.log("   " + user1.displayName + " - " + user1.role);
+    }
+%}
+
+### Get second user by ID
+GET {{FCG_API_HostAddress}}/api/admin/user/{{UserId2}}
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const user2 = response.body;
+        console.log("👤 USUÁRIO 2 POR ID:");
+        console.log("   " + user2.displayName + " - " + user2.role);
+    }
+%}
+
+### Step 10: Test Pagination
+# @name testPagination
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=2&PageSize=5&OrderBy.SortBy=displayName
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const page2Users = response.body;
+        console.log("📄 PAGINAÇÃO - Página 2 (5 usuários por página):");
+        console.log("📊 Total de usuários: " + page2Users.totalItems);
+        console.log("📄 Página atual: " + page2Users.pageNumber);
+        console.log("🔢 Itens por página: " + page2Users.pageSize);
+        console.log("➡️ Total de páginas: " + page2Users.totalPages);
+        
+        if (page2Users.items && page2Users.items.length > 0) {
+            console.log("👥 Usuários da página 2:");
+            page2Users.items.forEach((user, index) => {
+                console.log("   " + (index + 1) + ". " + user.displayName + " - " + user.email);
+            });
+        }
+    }
+%}
+
+### Step 11: Test Different Sorting Options
+# @name testSortingOptions
+### Sort by email ascending
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=5&OrderBy.SortBy=email&OrderBy.Ascending=true
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const sortedUsers = response.body;
+        console.log("📧 USUÁRIOS ORDENADOS POR EMAIL (A-Z):");
+        
+        if (sortedUsers.items && sortedUsers.items.length > 0) {
+            sortedUsers.items.forEach((user, index) => {
+                console.log("   " + (index + 1) + ". " + user.email + " - " + user.displayName);
+            });
+        }
+    }
+%}
+
+### Sort by creation date descending
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=5&OrderBy.SortBy=createdAt&OrderBy.Ascending=false
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const sortedUsers = response.body;
+        console.log("📅 USUÁRIOS ORDENADOS POR DATA DE CRIAÇÃO (Mais Recentes):");
+        
+        if (sortedUsers.items && sortedUsers.items.length > 0) {
+            sortedUsers.items.forEach((user, index) => {
+                console.log("   " + (index + 1) + ". " + user.displayName + 
+                    " - " + (user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"));
+            });
+        }
+    }
+%}
+
+### Step 12: Final Users Summary
+# @name finalSummary
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=10&OrderBy.SortBy=role&OrderBy.Ascending=true
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const users = response.body;
+        console.log("🏁 RESUMO FINAL DOS USUÁRIOS:");
+        console.log("📊 Total de usuários no sistema: " + users.totalItems);
+        
+        // Count roles
+        let adminCount = 0;
+        let playerCount = 0;
+        if (users.items) {
+            users.items.forEach(user => {
+                if (user.role === "Admin") adminCount++;
+                if (user.role === "Player") playerCount++;
+            });
+        }
+        
+        console.log("👑 Total de administradores: " + adminCount);
+        console.log("🎮 Total de players: " + playerCount);
+        
+        if (users.items && users.items.length > 0) {
+            console.log("👥 Primeiros usuários (ordenados por role):");
+            users.items.slice(0, 3).forEach((user, index) => {
+                console.log("   " + (index + 1) + ". " + user.displayName + 
+                    " - " + user.email + " - " + user.role);
+            });
+        }
+        
+        console.log("✅🎉 Fluxo de Admin Users concluído com sucesso!");
+    }
+%}
+
+### Individual Operations (Para testes específicos)
+
+### Get Users with Role Filter
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=30&Filter.Role=Admin
+Authorization: Bearer {{AuthToken}}
+
+### Get Users with Player Filter
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=20&Filter.Role=Player
+Authorization: Bearer {{AuthToken}}
+
+### Get User by ID
+GET {{FCG_API_HostAddress}}/api/admin/user/{{UserId}}
+Authorization: Bearer {{AuthToken}}
+
+### Get Users with Email Filter
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=15&Filter.Email=example.com
+Authorization: Bearer {{AuthToken}}
+
+### Get Users with Name Filter
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=10&Filter.Name=João
+Authorization: Bearer {{AuthToken}}
+
+### Test Advanced Filter Combinations
+# @name testAdvancedFilters
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=25&Filter.Role=Player&Filter.Email=gmail.com&OrderBy.SortBy=displayName&OrderBy.Ascending=true
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const advancedFilterUsers = response.body;
+        console.log("🎯 FILTROS AVANÇADOS (Player + @gmail.com + Ordenado):");
+        console.log("📊 Encontrados: " + advancedFilterUsers.totalItems);
+        
+        if (advancedFilterUsers.items && advancedFilterUsers.items.length > 0) {
+            advancedFilterUsers.items.forEach((user, index) => {
+                console.log("   " + (index + 1) + ". " + user.displayName + " - " + user.email);
+            });
+        }
+    }
+%}
+
+### Quick Users Status Check
+# @name quickUsersCheck
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=5
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const users = response.body;
+        console.log("🔍 Status rápido dos Usuários (Admin):");
+        console.log("📊 Total: " + users.totalItems);
+        console.log("👥 Últimos usuários:");
+        if (users.items && users.items.length > 0) {
+            users.items.forEach((user, index) => {
+                console.log("   " + (index + 1) + ". " + user.displayName + 
+                    " - " + user.email + " - " + user.role);
+            });
+        }
+    }
+%}
+
+### Bulk User Operations Test
+# @name bulkUserOperations
+### Get multiple users for analysis
+GET {{FCG_API_HostAddress}}/api/admin/user?PageNumber=1&PageSize=100
+Authorization: Bearer {{AuthToken}}
+
+> {%
+    if (response.status === 200) {
+        const users = response.body;
+        console.log("📦 Análise Completa de Usuários:");
+        console.log("📊 Total no sistema: " + users.totalItems);
+        
+        if (users.items && users.items.length > 0) {
+            const roles = {};
+            users.items.forEach(user => {
+                roles[user.role] = (roles[user.role] || 0) + 1;
+            });
+            
+            console.log("📈 Distribuição por Role:");
+            Object.keys(roles).forEach(role => {
+                console.log("   " + role + ": " + roles[role] + " usuários");
+            });
+        }
+    }
+%}
