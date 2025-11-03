@@ -467,7 +467,7 @@ public class SeedService : ISeedService
 
     private List<Game> GetPreconfiguredGames()
     {
-        return new List<Game>
+        return new List<Game>   
             {
                 new Game("7891234560001", "Cyber Rebellion", "Action", "Lute contra corporações em um futuro distópico"),
                 new Game("7891234560002", "Ocean's Whisper", "Adventure", "Explore os mistérios das profundezas do oceano"),

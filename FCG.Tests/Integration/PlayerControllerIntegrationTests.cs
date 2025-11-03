@@ -1,15 +1,17 @@
-﻿using Bogus;
+using Bogus;
+using FCG.Application.Dto.Filter;
+using FCG.Application.Dto.Order;
 using FCG.Application.Dto.Request;
 using FCG.Application.Dto.Response;
+using FCG.Application.Dto.Result;
 using FCG.Tests.Integration.Base;
-using System.Net;
 using System.Net.Http.Json;
 
 namespace FCG.Tests.Integration;
 
 /// <summary>
-/// Testes de integração para o PlayerController
-/// Testa todos os endpoints relacionados ao jogador autenticado
+/// Testes de integra��o para o PlayerController
+/// Testa todos os endpoints acess�veis por jogadores autenticados
 /// </summary>
 public class PlayerControllerIntegrationTests : ApiIntegrationTestBase
 {
@@ -23,9 +25,9 @@ public class PlayerControllerIntegrationTests : ApiIntegrationTestBase
     #region Helper Methods
 
     /// <summary>
-    /// Cria e autentica um usuário para testes
+    /// Registra e autentica um novo jogador, retornando o token JWT
     /// </summary>
-    private async Task<(UserCreateRequestDto user, string token)> CreateAndAuthenticateUserAsync()
+    private async Task<string> CreateAuthenticatedPlayerAsync()
     {
         var password = "Test@1234";
         var registerDto = new UserCreateRequestDto
@@ -39,14 +41,14 @@ public class PlayerControllerIntegrationTests : ApiIntegrationTestBase
             Birthday = _faker.Date.Past(30, DateTime.Now.AddYears(-18))
         };
 
-        var registerResponse = await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
+        var response = await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto,
+            cancellationToken: TestContext.Current.CancellationToken);
 
-        var authResult = await ReadServiceResultAsync<UserAuthResponseDto>(registerResponse);
+        var authResult = await ReadServiceResultAsync<UserAuthResponseDto>(response);
         Assert.NotNull(authResult);
         Assert.NotEmpty(authResult.Token);
 
-        return (registerDto, authResult.Token);
+        return authResult.Token;
     }
 
     #endregion
@@ -56,36 +58,55 @@ public class PlayerControllerIntegrationTests : ApiIntegrationTestBase
     [Fact]
     public async Task UpdatePlayerPassword_DeveAtualizarSenhaComSucesso()
     {
-        // Arrange
-        var (user, token) = await CreateAndAuthenticateUserAsync();
-        SetAuthorizationHeader(token);
+        // Arrange - Cria e autentica jogador
+        var oldPassword = "Test@1234";
+        var newPassword = "NewTest@5678";
+        var registerDto = new UserCreateRequestDto
+        {
+            FirstName = _faker.Name.FirstName(),
+            LastName = _faker.Name.LastName(),
+            DisplayName = _faker.Internet.UserName(),
+            Email = _faker.Internet.Email(),
+            Password = oldPassword,
+            ConfirmPassword = oldPassword,
+            Birthday = _faker.Date.Past(30, DateTime.Now.AddYears(-18))
+        };
+
+        var registerResponse = await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var authResult = await ReadServiceResultAsync<UserAuthResponseDto>(registerResponse);
+
+        SetAuthorizationHeader(authResult.Token);
 
         var updateDto = new UserUpdateRequestDto
         {
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            DisplayName = user.DisplayName,
-            Email = user.Email,
-            Birthday = user.Birthday,
-            Password = "Test@1234", // Senha atual
-            NewPassword = "NewTest@1234",
-            ConfirmNewPassword = "NewTest@1234"
+            FirstName = registerDto.FirstName,
+            LastName = registerDto.LastName,
+            DisplayName = registerDto.DisplayName,
+            Email = registerDto.Email,
+            Birthday = registerDto.Birthday,
+            Password = oldPassword,
+            NewPassword = newPassword,
+            ConfirmNewPassword = newPassword
         };
 
         // Act
-        var response = await ApiClient.PutAsJsonAsync("/api/player/password", updateDto, cancellationToken: TestContext.Current.CancellationToken);
+        var response = await ApiClient.PutAsJsonAsync("/api/player/password", updateDto,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-        // Valida que pode fazer login com a nova senha
+        // Verifica se pode fazer login com nova senha
+        ClearAuthorizationHeader();
         var loginDto = new UserLoginRequestDto
         {
-            Email = user.Email,
-            Password = "NewTest@1234"
+            Email = registerDto.Email,
+            Password = newPassword
         };
+        var loginResponse = await ApiClient.PostAsJsonAsync("/api/auth/login", loginDto,
+            cancellationToken: TestContext.Current.CancellationToken);
 
-        var loginResponse = await ApiClient.PostAsJsonAsync("/api/auth/login", loginDto, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
     }
 
@@ -93,23 +114,24 @@ public class PlayerControllerIntegrationTests : ApiIntegrationTestBase
     public async Task UpdatePlayerPassword_DeveRetornarBadRequest_QuandoSenhaAtualIncorreta()
     {
         // Arrange
-        var (user, token) = await CreateAndAuthenticateUserAsync();
+        var token = await CreateAuthenticatedPlayerAsync();
         SetAuthorizationHeader(token);
 
         var updateDto = new UserUpdateRequestDto
         {
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            DisplayName = user.DisplayName,
-            Email = user.Email,
-            Birthday = user.Birthday,
-            Password = "SenhaErrada@123", // Senha incorreta
-            NewPassword = "NewTest@1234",
-            ConfirmNewPassword = "NewTest@1234"
+            FirstName = _faker.Name.FirstName(),
+            LastName = _faker.Name.LastName(),
+            DisplayName = _faker.Internet.UserName(),
+            Email = _faker.Internet.Email(),
+            Birthday = _faker.Date.Past(30, DateTime.Now.AddYears(-18)),
+            Password = "WrongPassword@123",
+            NewPassword = "NewTest@5678",
+            ConfirmNewPassword = "NewTest@5678"
         };
 
         // Act
-        var response = await ApiClient.PutAsJsonAsync("/api/player/password", updateDto);
+        var response = await ApiClient.PutAsJsonAsync("/api/player/password", updateDto,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -119,48 +141,50 @@ public class PlayerControllerIntegrationTests : ApiIntegrationTestBase
     public async Task UpdatePlayerPassword_DeveRetornarBadRequest_QuandoNovasSenhasNaoConferem()
     {
         // Arrange
-        var (user, token) = await CreateAndAuthenticateUserAsync();
+        var token = await CreateAuthenticatedPlayerAsync();
         SetAuthorizationHeader(token);
 
         var updateDto = new UserUpdateRequestDto
         {
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            DisplayName = user.DisplayName,
-            Email = user.Email,
-            Birthday = user.Birthday,
+            FirstName = _faker.Name.FirstName(),
+            LastName = _faker.Name.LastName(),
+            DisplayName = _faker.Internet.UserName(),
+            Email = _faker.Internet.Email(),
+            Birthday = _faker.Date.Past(30, DateTime.Now.AddYears(-18)),
             Password = "Test@1234",
-            NewPassword = "NewTest@1234",
-            ConfirmNewPassword = "Different@1234" // Não confere
+            NewPassword = "NewTest@5678",
+            ConfirmNewPassword = "DifferentPassword@5678"
         };
 
         // Act
-        var response = await ApiClient.PutAsJsonAsync("/api/player/password", updateDto);
+        var response = await ApiClient.PutAsJsonAsync("/api/player/password", updateDto,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public async Task UpdatePlayerPassword_DeveRetornarUnauthorized_QuandoSemToken()
+    public async Task UpdatePlayerPassword_DeveRetornarUnauthorized_QuandoSemAutenticacao()
     {
         // Arrange
         ClearAuthorizationHeader();
 
         var updateDto = new UserUpdateRequestDto
         {
-            FirstName = "Test",
-            LastName = "User",
-            DisplayName = "testuser",
-            Email = "test@test.com",
-            Birthday = DateTime.Now.AddYears(-20),
+            FirstName = _faker.Name.FirstName(),
+            LastName = _faker.Name.LastName(),
+            DisplayName = _faker.Internet.UserName(),
+            Email = _faker.Internet.Email(),
+            Birthday = _faker.Date.Past(30, DateTime.Now.AddYears(-18)),
             Password = "Test@1234",
-            NewPassword = "NewTest@1234",
-            ConfirmNewPassword = "NewTest@1234"
+            NewPassword = "NewTest@5678",
+            ConfirmNewPassword = "NewTest@5678"
         };
 
         // Act
-        var response = await ApiClient.PutAsJsonAsync("/api/player/password", updateDto);
+        var response = await ApiClient.PutAsJsonAsync("/api/player/password", updateDto,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -171,75 +195,175 @@ public class PlayerControllerIntegrationTests : ApiIntegrationTestBase
     #region Get Available Games Tests
 
     [Fact]
-    public async Task GetAvailableGames_DeveRetornarListaDeJogos()
+    public async Task GetAvailableGames_DeveRetornarJogosDisponiveis()
     {
         // Arrange
-        var (user, token) = await CreateAndAuthenticateUserAsync();
+        var token = await CreateAuthenticatedPlayerAsync();
         SetAuthorizationHeader(token);
 
-        // Act
-        var response = await ApiClient.GetAsync("/api/player/available-games");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        // ✅ Lê diretamente sem ServiceResult wrapper
-        var games = await response.Content.ReadFromJsonAsync<IEnumerable<GameResponseDto>>(JsonOptions);
-        Assert.NotNull(games);
-    }
-
-    [Fact]
-    public async Task GetAvailableGames_DeveRetornarListaOrdenada_QuandoOrderByFornecido()
-    {
-        // Arrange
-        var (user, token) = await CreateAndAuthenticateUserAsync();
-        SetAuthorizationHeader(token);
-
-        // Act - Ordena por nome
-        var response = await ApiClient.GetAsync("/api/player/available-games?orderBy=name");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        // ✅ Lê diretamente sem ServiceResult wrapper
-        var games = await response.Content.ReadFromJsonAsync<IEnumerable<GameResponseDto>>(JsonOptions);
-        Assert.NotNull(games);
-
-        // Valida que está ordenado
-        var gamesList = games.ToList();
-        if (gamesList.Count > 1)
+        var request = new PagedRequestDto<GameFilterDto, GameOrderDto>
         {
-            var sortedList = gamesList.OrderBy(g => g.Title).ToList();
-            Assert.Equal(sortedList.Select(g => g.Title), gamesList.Select(g => g.Title));
-        }
-    }
-
-    [Fact]
-    public async Task GetAvailableGames_DeveExcluirJogosPossuidos_QuandoExcludeOwnedTrue()
-    {
-        // Arrange
-        var (user, token) = await CreateAndAuthenticateUserAsync();
-        SetAuthorizationHeader(token);
+            PageNumber = 1,
+            PageSize = 10
+        };
 
         // Act
-        var response = await ApiClient.GetAsync("/api/player/available-games?excludeOwned=true");
+        var response = await ApiClient.GetAsync(
+            $"/api/player/available-games?PageNumber={request.PageNumber}&PageSize={request.PageSize}",
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        // ✅ Lê diretamente sem ServiceResult wrapper
-        var games = await response.Content.ReadFromJsonAsync<IEnumerable<GameResponseDto>>(JsonOptions);
-        Assert.NotNull(games);
+        var result = await ReadServiceResultAsync<PagedResult<GalleryGameResponseDto>>(response);
+        Assert.NotNull(result);
+        Assert.True(result.PageNumber > 0);
+        Assert.True(result.PageSize > 0);
     }
 
     [Fact]
-    public async Task GetAvailableGames_DeveRetornarUnauthorized_QuandoSemToken()
+    public async Task GetAvailableGames_DeveRetornarUnauthorized_QuandoSemAutenticacao()
     {
         // Arrange
         ClearAuthorizationHeader();
 
         // Act
-        var response = await ApiClient.GetAsync("/api/player/available-games");
+        var response = await ApiClient.GetAsync(
+            "/api/player/available-games?PageNumber=1&PageSize=10",
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetAvailableGames_DeveFiltrarPorNome()
+    {
+        // Arrange
+        var token = await CreateAuthenticatedPlayerAsync();
+        SetAuthorizationHeader(token);
+
+        var gameName = "Cyber Rebellion";
+
+        // Act
+        var response = await ApiClient.GetAsync(
+            $"/api/player/available-games?PageNumber=1&PageSize=10&Filter.Name={gameName}",
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await ReadServiceResultAsync<PagedResult<GalleryGameResponseDto>>(response);
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task GetAvailableGames_DeveFiltrarPorGenero()
+    {
+        // Arrange
+        var token = await CreateAuthenticatedPlayerAsync();
+        SetAuthorizationHeader(token);
+
+        var genre = "Action";
+
+        // Act
+        var response = await ApiClient.GetAsync(
+            $"/api/player/available-games?PageNumber=1&PageSize=10&Filter.Genre={genre}",
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await ReadServiceResultAsync<PagedResult<GalleryGameResponseDto>>(response);
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task GetAvailableGames_DeveFiltrarPorFaixaDePreco()
+    {
+        // Arrange
+        var token = await CreateAuthenticatedPlayerAsync();
+        SetAuthorizationHeader(token);
+
+        // Act
+        var response = await ApiClient.GetAsync(
+            "/api/player/available-games?PageNumber=1&PageSize=10&Filter.MinPrice=10&Filter.MaxPrice=50",
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await ReadServiceResultAsync<PagedResult<GalleryGameResponseDto>>(response);
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task GetAvailableGames_DeveOrdenarPorNome()
+    {
+        // Arrange
+        var token = await CreateAuthenticatedPlayerAsync();
+        SetAuthorizationHeader(token);
+
+        // Act
+        var response = await ApiClient.GetAsync(
+            "/api/player/available-games?PageNumber=1&PageSize=10&OrderBy.OrderBy=Name&OrderBy.Ascending=true",
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await ReadServiceResultAsync<PagedResult<GalleryGameResponseDto>>(response);
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task GetAvailableGames_DeveRetornarBadRequest_QuandoPageNumberInvalido()
+    {
+        // Arrange
+        var token = await CreateAuthenticatedPlayerAsync();
+        SetAuthorizationHeader(token);
+
+        // Act
+        var response = await ApiClient.GetAsync(
+            "/api/player/available-games?PageNumber=0&PageSize=10",
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    #endregion
+
+    #region Get Cart Tests
+
+    [Fact]
+    public async Task GetCartItems_DeveRetornarCarrinhoVazio()
+    {
+        // Arrange
+        var token = await CreateAuthenticatedPlayerAsync();
+        SetAuthorizationHeader(token);
+
+        // Act
+        var response = await ApiClient.GetAsync("/api/player/cart",
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var cart = await ReadServiceResultAsync<CartResponseDto>(response);
+        Assert.NotNull(cart);
+        Assert.NotNull(cart.Items);
+    }
+
+    [Fact]
+    public async Task GetCartItems_DeveRetornarUnauthorized_QuandoSemAutenticacao()
+    {
+        // Arrange
+        ClearAuthorizationHeader();
+
+        // Act
+        var response = await ApiClient.GetAsync("/api/player/cart",
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -247,74 +371,104 @@ public class PlayerControllerIntegrationTests : ApiIntegrationTestBase
 
     #endregion
 
-    #region Get Cart Items Tests
+    #region Get Library Tests
 
     [Fact]
-    public async Task GetCartItems_DeveRetornarCarrinhoVazio_ParaNovoUsuario()
+    public async Task GetLibrary_DeveRetornarBibliotecaDoJogador()
     {
         // Arrange
-        var (user, token) = await CreateAndAuthenticateUserAsync();
+        var token = await CreateAuthenticatedPlayerAsync();
         SetAuthorizationHeader(token);
 
+        var request = new PagedRequestDto<GameFilterDto, GameOrderDto>
+        {
+            PageNumber = 1,
+            PageSize = 10
+        };
+
         // Act
-        var response = await ApiClient.GetAsync("/api/player/cart");
+        var response = await ApiClient.GetAsync(
+            $"/api/player/library?PageNumber={request.PageNumber}&PageSize={request.PageSize}",
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        // ✅ Lê diretamente sem ServiceResult wrapper
-        var cartItems = await response.Content.ReadFromJsonAsync<IEnumerable<GameResponseDto>>(JsonOptions);
-        Assert.NotNull(cartItems);
-        Assert.Empty(cartItems);
+        var result = await ReadServiceResultAsync<PagedResult<LibraryGameResponseDto>>(response);
+        Assert.NotNull(result);
+        Assert.True(result.PageNumber > 0);
+        Assert.True(result.PageSize > 0);
     }
 
     [Fact]
-    public async Task GetCartItems_DeveRetornarUnauthorized_QuandoSemToken()
+    public async Task GetLibrary_DeveRetornarUnauthorized_QuandoSemAutenticacao()
     {
         // Arrange
         ClearAuthorizationHeader();
 
         // Act
-        var response = await ApiClient.GetAsync("/api/player/cart");
+        var response = await ApiClient.GetAsync(
+            "/api/player/library?PageNumber=1&PageSize=10",
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    #endregion
-
-    #region Get Purchased Games Tests
-
     [Fact]
-    public async Task GetPurchasedGames_DeveRetornarListaVazia_ParaNovoUsuario()
+    public async Task GetLibrary_DeveFiltrarPorNome()
     {
         // Arrange
-        var (user, token) = await CreateAndAuthenticateUserAsync();
+        var token = await CreateAuthenticatedPlayerAsync();
         SetAuthorizationHeader(token);
 
+        var gameName = "Cyber Rebellion";
+
         // Act
-        var response = await ApiClient.GetAsync("/api/player/purchases");
+        var response = await ApiClient.GetAsync(
+            $"/api/player/library?PageNumber=1&PageSize=10&Filter.Name={gameName}",
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        // ✅ Lê diretamente sem ServiceResult wrapper
-        var purchases = await response.Content.ReadFromJsonAsync<IEnumerable<GameResponseDto>>(JsonOptions);
-        Assert.NotNull(purchases);
-        Assert.Empty(purchases);
+        var result = await ReadServiceResultAsync<PagedResult<LibraryGameResponseDto>>(response);
+        Assert.NotNull(result);
     }
 
     [Fact]
-    public async Task GetPurchasedGames_DeveRetornarUnauthorized_QuandoSemToken()
+    public async Task GetLibrary_DeveOrdenarPorNome()
     {
         // Arrange
-        ClearAuthorizationHeader();
+        var token = await CreateAuthenticatedPlayerAsync();
+        SetAuthorizationHeader(token);
 
         // Act
-        var response = await ApiClient.GetAsync("/api/player/purchases");
+        var response = await ApiClient.GetAsync(
+            "/api/player/library?PageNumber=1&PageSize=10&OrderBy.OrderBy=Name&OrderBy.Ascending=true",
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await ReadServiceResultAsync<PagedResult<LibraryGameResponseDto>>(response);
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task GetLibrary_DeveRetornarBadRequest_QuandoPageNumberInvalido()
+    {
+        // Arrange
+        var token = await CreateAuthenticatedPlayerAsync();
+        SetAuthorizationHeader(token);
+
+        // Act
+        var response = await ApiClient.GetAsync(
+            "/api/player/library?PageNumber=0&PageSize=10",
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     #endregion
@@ -322,106 +476,99 @@ public class PlayerControllerIntegrationTests : ApiIntegrationTestBase
     #region Integration Flow Tests
 
     [Fact]
-    public async Task FluxoCompleto_RegistroConsultaJogosCarrinhoCompras_DeveFuncionarCorretamente()
+    public async Task FluxoCompleto_ConsultarJogosCarrinhoBiblioteca_DeveFuncionarCorretamente()
     {
-        // 1. Registro e autenticação
-        var (user, token) = await CreateAndAuthenticateUserAsync();
+        // Arrange
+        var token = await CreateAuthenticatedPlayerAsync();
         SetAuthorizationHeader(token);
 
-        // 2. Verifica que o carrinho está vazio
-        var cartResponse = await ApiClient.GetAsync("/api/player/cart");
-        Assert.Equal(HttpStatusCode.OK, cartResponse.StatusCode);
-        // ✅ Lê diretamente sem ServiceResult wrapper
-        var cartItems = await cartResponse.Content.ReadFromJsonAsync<IEnumerable<GameResponseDto>>(JsonOptions);
-        Assert.NotNull(cartItems);
-        Assert.Empty(cartItems);
-
-        // 3. Verifica que não tem compras
-        var purchasesResponse = await ApiClient.GetAsync("/api/player/purchases");
-        Assert.Equal(HttpStatusCode.OK, purchasesResponse.StatusCode);
-        // ✅ Lê diretamente sem ServiceResult wrapper
-        var purchases = await purchasesResponse.Content.ReadFromJsonAsync<IEnumerable<GameResponseDto>>(JsonOptions);
-        Assert.NotNull(purchases);
-        Assert.Empty(purchases);
-
-        // 4. Lista jogos disponíveis
-        var gamesResponse = await ApiClient.GetAsync("/api/player/available-games");
+        // 1. Consulta jogos dispon�veis
+        var gamesResponse = await ApiClient.GetAsync(
+            "/api/player/available-games?PageNumber=1&PageSize=10",
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, gamesResponse.StatusCode);
-        // ✅ Lê diretamente sem ServiceResult wrapper
-        var games = await gamesResponse.Content.ReadFromJsonAsync<IEnumerable<GameResponseDto>>(JsonOptions);
+
+        var games = await ReadServiceResultAsync<PagedResult<GalleryGameResponseDto>>(gamesResponse);
         Assert.NotNull(games);
 
-        // 5. Atualiza senha
-        var updateDto = new UserUpdateRequestDto
-        {
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            DisplayName = user.DisplayName,
-            Email = user.Email,
-            Birthday = user.Birthday,
-            Password = "Test@1234",
-            NewPassword = "NewTest@1234",
-            ConfirmNewPassword = "NewTest@1234"
-        };
+        // 2. Consulta carrinho
+        var cartResponse = await ApiClient.GetAsync("/api/player/cart",
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, cartResponse.StatusCode);
 
-        var updateResponse = await ApiClient.PutAsJsonAsync("/api/player/password", updateDto);
-        Assert.Equal(HttpStatusCode.NoContent, updateResponse.StatusCode);
+        var cart = await ReadServiceResultAsync<CartResponseDto>(cartResponse);
+        Assert.NotNull(cart);
 
-        // 6. Valida login com nova senha
-        ClearAuthorizationHeader();
-        var loginDto = new UserLoginRequestDto
-        {
-            Email = user.Email,
-            Password = "NewTest@1234"
-        };
+        // 3. Consulta biblioteca
+        var libraryResponse = await ApiClient.GetAsync(
+            "/api/player/library?PageNumber=1&PageSize=10",
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, libraryResponse.StatusCode);
 
-        var loginResponse = await ApiClient.PostAsJsonAsync("/api/auth/login", loginDto);
-        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-
-        var loginResult = await ReadServiceResultAsync<UserAuthResponseDto>(loginResponse);
-        Assert.NotNull(loginResult);
-        Assert.NotEmpty(loginResult.Token);
+        var library = await ReadServiceResultAsync<PagedResult<LibraryGameResponseDto>>(libraryResponse);
+        Assert.NotNull(library);
     }
 
     [Fact]
-    public async Task MultipleUsersFlow_DeveIsolarDadosEntreUsuarios()
+    public async Task FluxoCompleto_AtualizarSenhaEConsultarDados_DeveFuncionarCorretamente()
     {
-        // 1. Cria primeiro usuário
-        var (user1, token1) = await CreateAndAuthenticateUserAsync();
+        // Arrange
+        var oldPassword = "Test@1234";
+        var newPassword = "NewTest@5678";
+        var registerDto = new UserCreateRequestDto
+        {
+            FirstName = _faker.Name.FirstName(),
+            LastName = _faker.Name.LastName(),
+            DisplayName = _faker.Internet.UserName(),
+            Email = _faker.Internet.Email(),
+            Password = oldPassword,
+            ConfirmPassword = oldPassword,
+            Birthday = _faker.Date.Past(30, DateTime.Now.AddYears(-18))
+        };
 
-        // 2. Cria segundo usuário
-        var (user2, token2) = await CreateAndAuthenticateUserAsync();
+        // 1. Registra jogador
+        var registerResponse = await ApiClient.PostAsJsonAsync("/api/auth/register-player", registerDto,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var authResult = await ReadServiceResultAsync<UserAuthResponseDto>(registerResponse);
 
-        // 3. Valida que cada usuário tem seus próprios dados
-        SetAuthorizationHeader(token1);
-        var cart1Response = await ApiClient.GetAsync("/api/player/cart");
-        Assert.Equal(HttpStatusCode.OK, cart1Response.StatusCode);
-        // ✅ Lê diretamente sem ServiceResult wrapper
-        var cart1 = await cart1Response.Content.ReadFromJsonAsync<IEnumerable<GameResponseDto>>(JsonOptions);
-        Assert.NotNull(cart1);
+        SetAuthorizationHeader(authResult.Token);
 
-        SetAuthorizationHeader(token2);
-        var cart2Response = await ApiClient.GetAsync("/api/player/cart");
-        Assert.Equal(HttpStatusCode.OK, cart2Response.StatusCode);
-        // ✅ Lê diretamente sem ServiceResult wrapper
-        var cart2 = await cart2Response.Content.ReadFromJsonAsync<IEnumerable<GameResponseDto>>(JsonOptions);
-        Assert.NotNull(cart2);
+        // 2. Atualiza senha
+        var updateDto = new UserUpdateRequestDto
+        {
+            FirstName = registerDto.FirstName,
+            LastName = registerDto.LastName,
+            DisplayName = registerDto.DisplayName,
+            Email = registerDto.Email,
+            Birthday = registerDto.Birthday,
+            Password = oldPassword,
+            NewPassword = newPassword,
+            ConfirmNewPassword = newPassword
+        };
 
-        // 4. Valida que não consegue acessar com token de outro usuário
-        SetAuthorizationHeader(token1);
-        var meResponse1 = await ApiClient.GetAsync("/api/auth/me");
-        Assert.Equal(HttpStatusCode.OK, meResponse1.StatusCode);
-        var user1Info = await ReadServiceResultAsync<UserInfoResponseDto>(meResponse1);
-        Assert.NotNull(user1Info);
-        Assert.Equal(user1.Email, user1Info.Email);
+        var updateResponse = await ApiClient.PutAsJsonAsync("/api/player/password", updateDto,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.NoContent, updateResponse.StatusCode);
 
-        SetAuthorizationHeader(token2);
-        var meResponse2 = await ApiClient.GetAsync("/api/auth/me");
-        Assert.Equal(HttpStatusCode.OK, meResponse2.StatusCode);
-        var user2Info = await ReadServiceResultAsync<UserInfoResponseDto>(meResponse2);
-        Assert.NotNull(user2Info);
-        Assert.Equal(user2.Email, user2Info.Email);
-        Assert.NotEqual(user1Info.Email, user2Info.Email);
+        // 3. Faz login com nova senha
+        ClearAuthorizationHeader();
+        var loginDto = new UserLoginRequestDto
+        {
+            Email = registerDto.Email,
+            Password = newPassword
+        };
+        var loginResponse = await ApiClient.PostAsJsonAsync("/api/auth/login", loginDto,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+
+        var newAuthResult = await ReadServiceResultAsync<UserAuthResponseDto>(loginResponse);
+        SetAuthorizationHeader(newAuthResult.Token);
+
+        // 4. Verifica acesso aos dados do jogador
+        var libraryResponse = await ApiClient.GetAsync(
+            "/api/player/library?PageNumber=1&PageSize=10",
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, libraryResponse.StatusCode);
     }
 
     #endregion
