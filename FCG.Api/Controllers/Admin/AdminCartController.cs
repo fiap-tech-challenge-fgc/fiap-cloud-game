@@ -18,7 +18,7 @@ public class AdminCartController : ControllerBase
         _cartService = cartService;
     }
 
-    [Swashbuckle.AspNetCore.Annotations.SwaggerOperation()]
+    
     [HttpPost("{playerId}/add/{gameId}")]
     public async Task<IActionResult> AddItem(Guid playerId, Guid gameId)
     {

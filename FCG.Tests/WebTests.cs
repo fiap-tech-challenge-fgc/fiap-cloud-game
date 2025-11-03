@@ -29,10 +29,10 @@ public class WebTests
 
         // Aguarda o banco de dados estar pronto
         await app.ResourceNotifications.WaitForResourceHealthyAsync("DbFcg", cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
-        
+
         // Aguarda a API estar pronta
         await app.ResourceNotifications.WaitForResourceHealthyAsync("fcg-api", cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
-        
+
         // Aguarda o Blazor estar pronto
         await app.ResourceNotifications.WaitForResourceHealthyAsync("fcg-blazor", cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
 

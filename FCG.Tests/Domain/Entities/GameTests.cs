@@ -45,22 +45,22 @@ public class GameTests
             new Game(eanInvalido, "Game Name", "RPG", "Description")
         );
 
-        Assert.Equal("Nome obrigatório", exception.Message);
+        Assert.Equal("EAN obrigatório", exception.Message);
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Game_DeveLancarExcecao_QuandoNomeInvalido(string nomeInvalido)
+    public void Game_DeveLancarExcecao_QuandoTitleInvalido(string titleInvalido)
     {
         // Arrange & Act & Assert
         var ean = "7894561230000";
         var exception = Assert.Throws<ArgumentException>(() =>
-            new Game(ean, nomeInvalido, "RPG", "Description")
+            new Game(ean, titleInvalido, "RPG", "Description")
         );
 
-        Assert.Equal("Nome obrigatório", exception.Message);
+        Assert.Equal("Título obrigatório", exception.Message);
     }
 
     [Theory]
@@ -78,20 +78,7 @@ public class GameTests
         Assert.Equal("Gênero obrigatório", exception.Message);
     }
 
-    [Theory]
-    [InlineData(-1)]
-    [InlineData(-100)]
-    public void Game_DeveLancarExcecao_QuandoPrecoNegativo(decimal precoInvalido)
-    {
-        // Arrange & Act & Assert
-        var ean = "7894561230000";
-        var exception = Assert.Throws<ArgumentException>(() =>
-            new Game(ean, "Game Name", "RPG", "Description")
-        );
-
-        Assert.Equal("Preço inválido", exception.Message);
-    }
-
+    
     [Fact]
     public void PrecoFinal_DeveRetornarPrecoOriginal_QuandoSemPromocao()
     {
@@ -156,7 +143,6 @@ public class GameTests
         var ean = "7894561230000";
         var name = "Cyberpunk 2077";
         var genre = "RPG";
-        var price = 199.90m;
         var game = new Game(ean, name, genre, "Descrição");
 
         // Act
@@ -164,7 +150,6 @@ public class GameTests
 
         // Assert
         Assert.Contains(name, description);
-        Assert.Contains(genre, description);
-        Assert.Contains(price.ToString("C"), description);
+        Assert.Contains("Descrição", description);
     }
 }

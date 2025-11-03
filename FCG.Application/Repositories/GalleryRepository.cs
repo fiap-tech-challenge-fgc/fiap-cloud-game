@@ -38,12 +38,12 @@ public class GalleryRepository : IGalleryRepository
 
     public async Task<GalleryGame?> GetGalleryGameByIdAsync(Guid id)
     {
-        return await _dal.FindAsync(g => g.Id == id, g => g.Promotion);
+        return await _dal.FindAsync(g => g.Id == id, g => g.Promotion, g => g.Game);
     }
 
     public async Task<IEnumerable<GalleryGame>> GetAllGalleryGamesAsync()
     {
-        return await _dal.ListAsync(g => g.Promotion);
+        return await _dal.ListAsync(g => g.Promotion, g => g.Game);
     }
 
     public async Task UpdateGalleryGameAsync(GalleryGame game)
@@ -62,14 +62,14 @@ public class GalleryRepository : IGalleryRepository
     {
         return await _dal.FindListAsync(
             g => g.Promotion != null && g.Promotion != Promotion.None,
-            g => g.Promotion);
+            g => g.Promotion, g => g.Game);
     }
 
     public async Task<IEnumerable<GalleryGame>> GetGalleryGameByPriceRangeAsync(decimal minPrice, decimal maxPrice)
     {
         return await _dal.FindListAsync(
             g => g.Price >= minPrice && g.Price <= maxPrice,
-            g => g.Promotion);
+         g => g.Promotion, g => g.Game);
     }
 
     public async Task<bool> IsAvailableForPurchaseAsync(Guid id)
@@ -80,19 +80,19 @@ public class GalleryRepository : IGalleryRepository
 
     public async Task<IEnumerable<GalleryGame>> GetGalleryGamesByGenreAsync(string genre)
     {
-        return await _dal.FindListAsync(
+    return await _dal.FindListAsync(
             g => g.Game.Genre.ToLower() == genre.ToLower(),
-            g => g.Promotion);
+            g => g.Promotion, g => g.Game);
     }
 
     public async Task<IEnumerable<GalleryGame>> SearchGalleryGamesAsync(string searchTerm)
     {
         searchTerm = searchTerm.ToLower();
         return await _dal.FindListAsync(
-            g => g.Game.Title.ToLower().Contains(searchTerm) || 
-                 g.Game.Genre.ToLower().Contains(searchTerm) || 
-                 (g.Game.Description != null && g.Game.Description.ToLower().Contains(searchTerm)),
-            g => g.Promotion);
+          g => g.Game.Title.ToLower().Contains(searchTerm) || 
+           g.Game.Genre.ToLower().Contains(searchTerm) || 
+     (g.Game.Description != null && g.Game.Description.ToLower().Contains(searchTerm)),
+g => g.Promotion, g => g.Game);
     }
 
     public async Task<int> SaveChangesAsync()

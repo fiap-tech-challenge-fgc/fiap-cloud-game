@@ -79,11 +79,13 @@ public class PlayerTests
             _faker.Lorem.Sentence()
         );
 
-        // Act
-        // player.AddGame(game);
-        // player.AddGame(game);
+        var gallery = new GalleryGame(game, _faker.Random.Decimal(49.99m, 459.99m));
 
-        // Assert
+        // Act
+        player.AddGame(gallery);
+
+        // Assert - tentativa de adicionar jogo duplicado deve lançar exceção
+        Assert.Throws<InvalidOperationException>(() => player.AddGame(gallery));
         Assert.Single(player.Library);
     }
 
@@ -105,7 +107,8 @@ public class PlayerTests
         // Act
         foreach (var game in games)
         {
-            // player.AddGame(game);
+            var gallery = new GalleryGame(game, _faker.Random.Decimal(49.99m, 459.99m));
+            player.AddGame(gallery);
         }
 
         // Assert

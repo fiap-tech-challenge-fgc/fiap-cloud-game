@@ -24,7 +24,7 @@ public class AuthController : ControllerBase
         var result = await _authService.RegisterUserAsync(dto, RoleConstants.Player);
 
         if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors });
+            return BadRequest(new { data = (UserAuthResponseDto?)null, succeeded = false, errors = result.Errors });
 
         var loginResult = await _authService.LoginAsync(new UserLoginRequestDto
         {
@@ -33,38 +33,37 @@ public class AuthController : ControllerBase
         });
 
         if (!loginResult.Succeeded)
-            return BadRequest(new { errors = loginResult.Errors });
+            return BadRequest(new { data = (UserAuthResponseDto?)null, succeeded = false, errors = loginResult.Errors });
 
-        return Ok(loginResult.Data);
-
+        return Ok(new { data = loginResult.Data, succeeded = true, errors = new List<string>() });
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] UserLoginRequestDto dto)
     {
         if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+            return BadRequest(new { data = (UserAuthResponseDto?)null, succeeded = false, errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
 
         var result = await _authService.LoginAsync(dto);
 
         if (!result.Succeeded)
-            return Unauthorized(new { message = result.Errors });
+            return Unauthorized(new { data = (UserAuthResponseDto?)null, succeeded = false, errors = result.Errors });
 
-        return Ok(result.Data);
+        return Ok(new { data = result.Data, succeeded = true, errors = new List<string>() });
     }
 
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto dto)
     {
         if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+            return BadRequest(new { data = (UserAuthResponseDto?)null, succeeded = false, errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
 
         var result = await _authService.RefreshTokenAsync(dto);
 
         if (!result.Succeeded)
-            return Unauthorized(new { message = result.Errors });
+            return Unauthorized(new { data = (UserAuthResponseDto?)null, succeeded = false, errors = result.Errors });
 
-        return Ok(result.Data);
+        return Ok(new { data = result.Data, succeeded = true, errors = new List<string>() });
     }
 
     [Authorize]
@@ -74,8 +73,8 @@ public class AuthController : ControllerBase
         var result = await _authService.GetCurrentUserAsync(User);
 
         if (!result.Succeeded)
-            return NotFound(new { message = "Usuário não encontrado" });
+            return NotFound(new { data = (UserInfoResponseDto?)null, succeeded = false, errors = new[] { "Usuário não encontrado" } });
 
-        return Ok(result.Data);
+        return Ok(new { data = result.Data, succeeded = true, errors = new List<string>() });
     }
 }

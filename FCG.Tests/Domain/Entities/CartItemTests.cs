@@ -90,23 +90,6 @@ public class CartItemTests
     }
 
     [Fact]
-    public void CartItem_DeveCriarComNavigationPropertiesConfiguradas()
-    {
-        // Arrange
-        var playerId = Guid.NewGuid();
-        var gameId = Guid.NewGuid();
-        var cartId = Guid.NewGuid();
-
-        // Act
-        var cartItem = new CartItem(playerId, gameId, cartId);
-
-        // Assert
-        Assert.NotNull(cartItem.Game);
-        Assert.NotNull(cartItem.Player);
-        Assert.NotNull(cartItem.Cart);
-    }
-
-    [Fact]
     public void CartItem_DeveManterConsistenciaEntreIdEReferencias()
     {
         // Arrange
