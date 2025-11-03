@@ -1,78 +1,22 @@
-﻿@FCG_API_HostAddress = http://localhost:5104
+﻿@port = 7314
+@FCG_API_HostAddress = http://localhost:{{port}}
 @AuthToken = your_jwt_token_here
-@user = seu_usuario
-@password = sua_senha
 
-# Login
+### Login
 POST {{FCG_API_HostAddress}}/api/Auth/login
 Content-Type: application/json
 
 {
-  "email": {{user}}},
-  "password": {{password}}
+  "email": "seu_usuario",
+  "password": "sua_senha"
 }
 
-> {%
-    if (response.status === 200) {
-        const loginResponse = response.body;
-        console.log("✅🔐 LOGIN REALIZADO COM SUCESSO!");
-        console.log("👤 Usuário: maria.santos@email.com");
-        
-        if (loginResponse.token) {
-            client.global.set("AuthToken", loginResponse.token);
-            console.log("🎫 Access Token obtido: " + loginResponse.token.substring(0, 50) + "...");
-        }
-        
-        if (loginResponse.refreshToken) {
-            client.global.set("refreshToken", loginResponse.refreshToken);
-            console.log("🔄 Refresh Token obtido: " + loginResponse.refreshToken.substring(0, 50) + "...");
-        }
-        
-        if (loginResponse.expiresIn) {
-            console.log("⏰ Token expira em: " + loginResponse.expiresIn);
-        }
-        
-        console.log("✅ Token salvo nas variáveis globais para uso nas próximas requisições");
-    } else {
-        console.log("❌ Falha no login: " + response.status);
-        console.log("📄 Response: " + response.body);
-    }
-%}
-
-
-### Admin Endpoints - Dynamic Data Capture
+### Admin Endpoints
 
 ### Step 1: Get Current Admins List
 # @name getAdminsList
 GET {{FCG_API_HostAddress}}/api/admin/Admin?PageNumber=1&PageSize=20&OrderBy.SortBy=firstName&OrderBy.Ascending=true
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        const admins = response.body;
-        console.log("👥 Lista de Administradores:");
-        console.log("📊 Total de admins: " + admins.totalItems);
-        
-        if (admins.items && admins.items.length > 0) {
-            console.log("📋 Admins encontrados:");
-            admins.items.forEach((admin, index) => {
-                console.log("   " + (index + 1) + ". " + admin.firstName + " " + admin.lastName + 
-                    " (" + admin.displayName + ") - " + admin.email);
-            });
-            
-            // Store first admin ID for update/delete tests (if not the current user)
-            const firstAdmin = admins.items[0];
-            client.global.set("ExistingAdminId", firstAdmin.id);
-            client.global.set("ExistingAdminFirstName", firstAdmin.firstName);
-            client.global.set("ExistingAdminLastName", firstAdmin.lastName);
-            client.global.set("ExistingAdminEmail", firstAdmin.email);
-            
-            console.log("✅ Admin existente capturado para testes: " + firstAdmin.displayName);
-        } else {
-            console.log("ℹ️  Nenhum admin encontrado além do usuário atual");
-        }
-    }
-%}
 
 ### Step 2: Create New Test Admin
 # @name createNewAdmin
@@ -90,65 +34,15 @@ Authorization: Bearer {{AuthToken}}
   "confirmPassword": "TestAdmin123!"
 }
 
-> {%
-    if (response.status === 200) {
-        console.log("✅ NOVO ADMIN CRIADO COM SUCESSO!");
-        console.log("👤 Nome: Teste Administrador");
-        console.log("🎮 Display: TestAdmin");
-        console.log("📧 Email: test.admin@fcg.com");
-        
-        // If the response contains the created admin ID, capture it
-        if (response.body && response.body.id) {
-            client.global.set("NewAdminId", response.body.id);
-            console.log("🆔 ID do novo admin: " + response.body.id);
-        }
-    } else {
-        console.log("❌ Falha ao criar admin: " + response.status);
-    }
-%}
-
 ### Step 3: Verify Admin Creation in List
 # @name verifyAdminCreation
 GET {{FCG_API_HostAddress}}/api/admin/Admin?PageNumber=1&PageSize=25&OrderBy.SortBy=displayName
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const admins = response.body;
-        console.log("👥 Lista atualizada de Admins:");
-        console.log("📊 Total: " + admins.totalItems);
-        
-        // Try to find the newly created admin
-        const testAdmin = admins.items.find(admin => admin.displayName === "TestAdmin");
-        if (testAdmin) {
-            client.global.set("NewAdminId", testAdmin.id);
-            console.log("✅ Novo admin encontrado na lista: " + testAdmin.displayName);
-            console.log("🆔 ID capturado: " + testAdmin.id);
-        } else {
-            console.log("⚠️  Novo admin não encontrado na lista");
-        }
-    }
-%}
-
 ### Step 4: Get Admin by ID (New Admin)
 # @name getAdminById
 GET {{FCG_API_HostAddress}}/api/admin/Admin/{{NewAdminId}}
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        const admin = response.body;
-        console.log("👤 Detalhes do Admin por ID:");
-        console.log("🆔 ID: " + admin.id);
-        console.log("📛 Nome: " + admin.firstName + " " + admin.lastName);
-        console.log("🎮 Display: " + admin.displayName);
-        console.log("📧 Email: " + admin.email);
-        console.log("🎂 Aniversário: " + admin.birthday);
-        console.log("👤 Role: " + (admin.role || "Admin"));
-    } else if (response.status === 404) {
-        console.log("❌ Admin não encontrado com ID: {{NewAdminId}}");
-    }
-%}
 
 ### Step 5: Update Admin Information
 # @name updateAdmin
@@ -167,118 +61,32 @@ Authorization: Bearer {{AuthToken}}
   "confirmNewPassword": "SuperAdmin456!"
 }
 
-> {%
-    if (response.status === 200) {
-        console.log("✅ ADMIN ATUALIZADO COM SUCESSO!");
-        console.log("🔄 Alterações realizadas:");
-        console.log("   📛 Sobrenome: Administrador → Super Administrador");
-        console.log("   🎮 Display: TestAdmin → SuperTestAdmin");
-        console.log("   📧 Email: test.admin@fcg.com → super.test@fcg.com");
-        console.log("   🔑 Senha: TestAdmin123! → SuperAdmin456!");
-    } else {
-        console.log("❌ Falha ao atualizar admin: " + response.status);
-    }
-%}
-
 ### Step 6: Verify Admin Update
 # @name verifyAdminUpdate
 GET {{FCG_API_HostAddress}}/api/admin/Admin/{{NewAdminId}}
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const updatedAdmin = response.body;
-        console.log("✅ VERIFICAÇÃO DA ATUALIZAÇÃO:");
-        console.log("🎮 Display Name: " + updatedAdmin.displayName + " (deve ser: SuperTestAdmin)");
-        console.log("📧 Email: " + updatedAdmin.email + " (deve ser: super.test@fcg.com)");
-        console.log("📛 Nome Completo: " + updatedAdmin.firstName + " " + updatedAdmin.lastName);
-        
-        if (updatedAdmin.displayName === "SuperTestAdmin" && updatedAdmin.email === "super.test@fcg.com") {
-            console.log("🎉 Todas as atualizações foram aplicadas corretamente!");
-        }
-    }
-%}
-
 ### Step 7: Test Admin Filters
 # @name testAdminFilters
-### Filter by email domain
 GET {{FCG_API_HostAddress}}/api/admin/Admin?PageNumber=1&PageSize=10&Filter.Email=fcg.com
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        const filteredAdmins = response.body;
-        console.log("🎯 Admins filtrados por email (@fcg.com):");
-        console.log("📊 Encontrados: " + filteredAdmins.totalItems);
-        
-        if (filteredAdmins.items && filteredAdmins.items.length > 0) {
-            filteredAdmins.items.forEach((admin, index) => {
-                console.log("   " + (index + 1) + ". " + admin.displayName + " - " + admin.email);
-            });
-        }
-    }
-%}
 
 ### Step 8: Test Display Name Filter
 # @name testDisplayNameFilter
 GET {{FCG_API_HostAddress}}/api/admin/Admin?PageNumber=1&PageSize=10&Filter.Name=Test
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const filteredAdmins = response.body;
-        console.log("🎯 Admins filtrados por nome (Test):");
-        console.log("📊 Encontrados: " + filteredAdmins.totalItems);
-        
-        if (filteredAdmins.items && filteredAdmins.items.length > 0) {
-            filteredAdmins.items.forEach((admin, index) => {
-                console.log("   " + (index + 1) + ". " + admin.displayName + " - " + admin.email);
-            });
-        }
-    }
-%}
-
 ### Step 9: Delete Test Admin
 # @name deleteTestAdmin
 DELETE {{FCG_API_HostAddress}}/api/admin/Admin/{{NewAdminId}}
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        console.log("🗑️  ADMIN EXCLUÍDO COM SUCESSO!");
-        console.log("👤 Admin removido: SuperTestAdmin");
-        console.log("🆔 ID excluído: {{NewAdminId}}");
-    } else {
-        console.log("❌ Falha ao excluir admin: " + response.status);
-    }
-%}
 
 ### Step 10: Verify Admin Deletion
 # @name verifyAdminDeletion
 GET {{FCG_API_HostAddress}}/api/admin/Admin?PageNumber=1&PageSize=30
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const admins = response.body;
-        const testAdminExists = admins.items && admins.items.some(admin => 
-            admin.id === client.global.get("NewAdminId")
-        );
-        
-        console.log("✅ VERIFICAÇÃO DA EXCLUSÃO:");
-        console.log("📊 Total de admins após exclusão: " + admins.totalItems);
-        
-        if (!testAdminExists) {
-            console.log("🎉 Admin teste foi excluído com sucesso!");
-        } else {
-            console.log("⚠️  Admin teste ainda aparece na lista");
-        }
-        
-        console.log("🏁 Fluxo de Admin endpoints concluído!");
-    }
-%}
-
-### Individual Operations (Para testes específicos)
+### Individual Operations
 
 ### Get All Admins with Pagination
 GET {{FCG_API_HostAddress}}/api/admin/Admin?PageNumber=1&PageSize=10&OrderBy.SortBy=firstName
@@ -301,7 +109,6 @@ Authorization: Bearer {{AuthToken}}
 
 ### Create Multiple Test Admins
 # @name createMultipleAdmins
-### Admin 1
 POST {{FCG_API_HostAddress}}/api/admin/Admin
 Content-Type: application/json
 Authorization: Bearer {{AuthToken}}
@@ -316,13 +123,6 @@ Authorization: Bearer {{AuthToken}}
   "confirmPassword": "AdminAna123!"
 }
 
-> {%
-    if (response.status === 200) {
-        console.log("✅ Admin Ana criada com sucesso");
-    }
-%}
-
-### Admin 2
 POST {{FCG_API_HostAddress}}/api/admin/Admin
 Content-Type: application/json
 Authorization: Bearer {{AuthToken}}
@@ -336,12 +136,6 @@ Authorization: Bearer {{AuthToken}}
   "password": "AdminPedro123!",
   "confirmPassword": "AdminPedro123!"
 }
-
-> {%
-    if (response.status === 200) {
-        console.log("✅ Admin Pedro criado com sucesso");
-    }
-%}
 
 ### Get Admin by Specific ID
 GET {{FCG_API_HostAddress}}/api/admin/Admin/{{ExistingAdminId}}
@@ -369,42 +163,13 @@ Authorization: Bearer {{AuthToken}}
 
 ### Test Different Filters
 # @name testVariousFilters
-### Filter by role
 GET {{FCG_API_HostAddress}}/api/admin/Admin?PageNumber=1&PageSize=10&Filter.Role=Admin
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const admins = response.body;
-        console.log("🎯 Admins com role 'Admin': " + admins.totalItems);
-    }
-%}
-
-### Filter by first name
 GET {{FCG_API_HostAddress}}/api/admin/Admin?PageNumber=1&PageSize=10&Filter.Name=Carlos
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const admins = response.body;
-        console.log("🎯 Admins com nome 'Carlos': " + admins.totalItems);
-    }
-%}
-
-### Cleanup - Remove Test Admins (Opcional)
+### Cleanup - Remove Test Admins
 # @name cleanupTestAdmins
-### Get all test admins
 GET {{FCG_API_HostAddress}}/api/admin/Admin?PageNumber=1&PageSize=50&Filter.Name=Test
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        const testAdmins = response.body;
-        if (testAdmins.items && testAdmins.items.length > 0) {
-            console.log("🧹 Limpando " + testAdmins.items.length + " admins de teste...");
-            testAdmins.items.forEach(admin => {
-                console.log("   A excluir: " + admin.displayName);
-            });
-        }
-    }
-%}

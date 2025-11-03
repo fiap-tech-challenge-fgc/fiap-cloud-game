@@ -1,247 +1,49 @@
-﻿@FCG_API_HostAddress = http://localhost:5104
+﻿@port = 7314
+@FCG_API_HostAddress = http://localhost:{{port}}
 @AuthToken = your_jwt_token_here
-@user = seu_usuario
-@password = sua_senha
-
-# Login
-POST {{FCG_API_HostAddress}}/api/Auth/login
-Content-Type: application/json
-
-{
-  "email": {{user}}},
-  "password": {{password}}
-}
-
-> {%
-    if (response.status === 200) {
-        const loginResponse = response.body;
-        console.log("✅🔐 LOGIN REALIZADO COM SUCESSO!");
-        console.log("👤 Usuário: maria.santos@email.com");
-        
-        if (loginResponse.token) {
-            client.global.set("AuthToken", loginResponse.token);
-            console.log("🎫 Access Token obtido: " + loginResponse.token.substring(0, 50) + "...");
-        }
-        
-        if (loginResponse.refreshToken) {
-            client.global.set("refreshToken", loginResponse.refreshToken);
-            console.log("🔄 Refresh Token obtido: " + loginResponse.refreshToken.substring(0, 50) + "...");
-        }
-        
-        if (loginResponse.expiresIn) {
-            console.log("⏰ Token expira em: " + loginResponse.expiresIn);
-        }
-        
-        console.log("✅ Token salvo nas variáveis globais para uso nas próximas requisições");
-    } else {
-        console.log("❌ Falha no login: " + response.status);
-        console.log("📄 Response: " + response.body);
-    }
-%}
 
 ### Library Endpoints - Dynamic GameId Capture
 
 ### Step 1: Get Available Games from Gallery for Purchase Testing
-# @name getAvailableGames
 GET {{FCG_API_HostAddress}}/api/Gallery?PageNumber=1&PageSize=10
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const responseData = response.body;
-        const games = responseData.items;
-        
-        if (games && games.length > 0) {
-            // Store games for different test scenarios
-            client.global.set("AvailableGameId", games[0].id);
-            client.global.set("AvailableGameTitle", games[0].title);
-            client.global.set("AvailableGamePrice", games[0].price);
-            
-            // Find a promoted game if available
-            const promotedGame = games.find(game => game.onSale === true);
-            if (promotedGame) {
-                client.global.set("PromotedGameId", promotedGame.id);
-                client.global.set("PromotedGameTitle", promotedGame.title);
-                console.log("🔥 Jogo em promoção: " + promotedGame.title);
-            }
-            
-            // Store multiple games for variety
-            if (games.length > 1) {
-                client.global.set("AvailableGameId2", games[1].id);
-                client.global.set("AvailableGameTitle2", games[1].title);
-            }
-            
-            console.log("🎮 Jogos disponíveis para teste:");
-            console.log("1. " + games[0].title + " (ID: " + games[0].id + ") - R$ " + games[0].price);
-            if (games.length > 1) {
-                console.log("2. " + games[1].title + " (ID: " + games[1].id + ") - R$ " + games[1].price);
-            }
-            console.log("📊 Total de jogos encontrados: " + games.length);
-        } else {
-            console.log("❌ Nenhum jogo disponível na galeria");
-        }
-    }
-%}
-
 ### Step 2: Get Current Library Status
-# @name getInitialLibrary
 GET {{FCG_API_HostAddress}}/api/Library?PageNumber=1&PageSize=5
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const library = response.body;
-        console.log("📚 Biblioteca inicial:");
-        console.log("📦 Total de jogos: " + library.totalItems);
-        console.log("📄 Páginas: " + library.totalPages);
-        
-        if (library.items && library.items.length > 0) {
-            console.log("🎮 Jogos na biblioteca:");
-            library.items.forEach((game, index) => {
-                console.log("   " + (index + 1) + ". " + game.title + " - Comprado em: " + 
-                    new Date(game.purchaseDate).toLocaleDateString());
-            });
-            
-            // Store first owned game ID for testing
-            client.global.set("OwnedGameId", library.items[0].id);
-            client.global.set("OwnedGameTitle", library.items[0].title);
-        } else {
-            console.log("ℹ️  Biblioteca vazia - nenhum jogo comprado ainda");
-        }
-    }
-%}
-
 ### Step 3: Get Library Stats
-# @name getLibraryStats
 GET {{FCG_API_HostAddress}}/api/Library/stats
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const stats = response.body;
-        console.log("📊 Estatísticas da Biblioteca:");
-        console.log("🎮 Total de jogos: " + stats.gameCount);
-        console.log("💰 Total gasto: R$ " + stats.totalSpent);
-    }
-%}
-
 ### Step 4: Check Purchase Eligibility for Available Game
-# @name checkCanPurchase
 GET {{FCG_API_HostAddress}}/api/Library/can-purchase/{{AvailableGameId}}
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const canPurchase = response.body;
-        console.log("❓ Pode comprar '{{AvailableGameTitle}}': " + canPurchase);
-        client.global.set("CanPurchaseResult", canPurchase);
-    }
-%}
-
 ### Step 5: Check Ownership for Available Game
-# @name checkOwnsGame
 GET {{FCG_API_HostAddress}}/api/Library/owns/{{AvailableGameId}}
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const ownsGame = response.body;
-        console.log("❓ Já possui '{{AvailableGameTitle}}': " + ownsGame);
-        client.global.set("OwnsGameResult", ownsGame);
-    }
-%}
-
 ### Step 6: Purchase Game (if eligible)
-# @name purchaseGame
 POST {{FCG_API_HostAddress}}/api/Library/purchase/{{AvailableGameId}}
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        console.log("✅ Compra realizada com sucesso: {{AvailableGameTitle}}");
-        const purchasedGame = response.body;
-        console.log("💰 Preço pago: R$ " + purchasedGame.purchasePrice);
-        console.log("📅 Data da compra: " + new Date(purchasedGame.purchaseDate).toLocaleString());
-    } else if (response.status === 400) {
-        console.log("❌ Não foi possível comprar o jogo (já possui ou saldo insuficiente)");
-    } else {
-        console.log("⚠️  Status inesperado: " + response.status);
-    }
-%}
-
 ### Step 7: Verify Library After Purchase
-# @name getLibraryAfterPurchase
 GET {{FCG_API_HostAddress}}/api/Library?PageNumber=1&PageSize=10&OrderBy.OrderBy=purchaseDate&OrderBy.Ascending=false
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const library = response.body;
-        console.log("📚 Biblioteca após compra:");
-        console.log("📦 Total de jogos: " + library.totalItems);
-        
-        if (library.items && library.items.length > 0) {
-            console.log("🆕 Últimas aquisições:");
-            library.items.slice(0, 3).forEach((game, index) => {
-                console.log("   " + (index + 1) + ". " + game.title + 
-                    " - R$ " + game.purchasePrice + 
-                    " (" + new Date(game.purchaseDate).toLocaleDateString() + ")");
-            });
-        }
-    }
-%}
-
 ### Step 8: Get Recent Games
-# @name getRecentGames
 GET {{FCG_API_HostAddress}}/api/Library/recent?count=5
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const recentGames = response.body;
-        console.log("🕐 Jogos recentes:");
-        if (recentGames.length > 0) {
-            recentGames.forEach((game, index) => {
-                console.log("   " + (index + 1) + ". " + game.title + 
-                    " - " + new Date(game.purchaseDate).toLocaleDateString());
-            });
-        } else {
-            console.log("   Nenhum jogo recente");
-        }
-    }
-%}
-
 ### Step 9: Test Ownership Checks on Different Games
-# @name testOwnershipChecks
 ### Check ownership on newly purchased game
 GET {{FCG_API_HostAddress}}/api/Library/owns/{{AvailableGameId}}
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const ownsNow = response.body;
-        console.log("✅ Verificação pós-compra - Possui '{{AvailableGameTitle}}': " + ownsNow);
-    }
-%}
-
 ### Step 10: Get Specific Library Game Details
-# @name getLibraryGameDetails
 GET {{FCG_API_HostAddress}}/api/Library/{{AvailableGameId}}
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        const gameDetails = response.body;
-        console.log("📋 Detalhes do jogo na biblioteca:");
-        console.log("🎮 Título: " + gameDetails.title);
-        console.log("🆔 ID: " + gameDetails.id);
-        console.log("💵 Preço pago: R$ " + gameDetails.purchasePrice);
-        console.log("📅 Data da compra: " + new Date(gameDetails.purchaseDate).toLocaleString());
-        console.log("👤 Jogador: " + gameDetails.playerDisplayName);
-    } else if (response.status === 404) {
-        console.log("❌ Jogo não encontrado na biblioteca");
-    }
-%}
 
 ### Individual Operations (Para testes específicos)
 
@@ -275,29 +77,9 @@ Authorization: Bearer {{AuthToken}}
 
 ### Test Multiple Purchase Scenarios
 ### Try purchasing second available game
-# @name purchaseSecondGame
 POST {{FCG_API_HostAddress}}/api/Library/purchase/{{AvailableGameId2}}
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        console.log("✅ Segundo jogo comprado: {{AvailableGameTitle2}}");
-    } else {
-        console.log("❌ Não foi possível comprar o segundo jogo");
-    }
-%}
-
 ### Final Library Status Check
-# @name finalLibraryCheck
 GET {{FCG_API_HostAddress}}/api/Library/stats
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        const finalStats = response.body;
-        console.log("🏁 Estatísticas finais da biblioteca:");
-        console.log("🎮 Total de jogos: " + finalStats.gameCount);
-        console.log("💰 Total gasto: R$ " + finalStats.totalSpent);
-        console.log("✅ Fluxo da Biblioteca concluído!");
-    }
-%}

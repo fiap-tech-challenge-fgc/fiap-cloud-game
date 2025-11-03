@@ -1,211 +1,36 @@
-﻿@FCG_API_HostAddress = http://localhost:5104
-@AuthToken = your_jwt_token_here
-@user = seu_usuario
-@password = sua_senha
+﻿@port = 7314
+@FCG_API_HostAddress = https://localhost:{{port}}
+@AuthToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzZDJkY2NiOS1jOTFmLTQ5ZjMtYTBkMi1kYzQ1ZGVmOGU2ZGUiLCJlbWFpbCI6Im1hcmlhLnNhbnRvc0BlbWFpbC5jb20iLCJqdGkiOiIwNWRhOGE2My0xOTAzLTQyYzUtODdhZC03ODI1YjNhMjU4MjAiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjNkMmRjY2I5LWM5MWYtNDlmMy1hMGQyLWRjNDVkZWY4ZTZkZSIsImRpc3BsYXlOYW1lIjoiTWFyaWEgU2FudG9zIiwiZmlyc3ROYW1lIjoiTWFyaWEiLCJsYXN0TmFtZSI6IlNhbnRvcyIsImZ1bGxOYW1lIjoiTWFyaWEgU2FudG9zIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiUGxheWVyIiwiZXhwIjoxNzYyMTMzODE1LCJpc3MiOiJGQ0cuQXBpIiwiYXVkIjoiRkNHLkNsaWVudCJ9.Et0QazkKqEeQ6BmhA_QP84i-pSU1t9hsU6Wlq6PKVVI
 
-# Login
-POST {{FCG_API_HostAddress}}/api/Auth/login
-Content-Type: application/json
-
-{
-  "email": {{user}}},
-  "password": {{password}}
-}
-
-> {%
-    if (response.status === 200) {
-        const loginResponse = response.body;
-        console.log("✅🔐 LOGIN REALIZADO COM SUCESSO!");
-        console.log("👤 Usuário: maria.santos@email.com");
-        
-        if (loginResponse.token) {
-            client.global.set("AuthToken", loginResponse.token);
-            console.log("🎫 Access Token obtido: " + loginResponse.token.substring(0, 50) + "...");
-        }
-        
-        if (loginResponse.refreshToken) {
-            client.global.set("refreshToken", loginResponse.refreshToken);
-            console.log("🔄 Refresh Token obtido: " + loginResponse.refreshToken.substring(0, 50) + "...");
-        }
-        
-        if (loginResponse.expiresIn) {
-            console.log("⏰ Token expira em: " + loginResponse.expiresIn);
-        }
-        
-        console.log("✅ Token salvo nas variáveis globais para uso nas próximas requisições");
-    } else {
-        console.log("❌ Falha no login: " + response.status);
-        console.log("📄 Response: " + response.body);
-    }
-%}
 
 ### Player Endpoints - Dynamic Data Capture
 
 ### Step 1: Get Current Player Profile
-# @name getPlayerProfile
 GET {{FCG_API_HostAddress}}/api/Auth/me
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const player = response.body;
-        console.log("👤 Perfil do Jogador:");
-        console.log("📛 Nome: " + player.firstName + " " + player.lastName);
-        console.log("🎮 Display Name: " + player.displayName);
-        console.log("📧 Email: " + player.email);
-        console.log("🎂 Aniversário: " + player.birthday);
-        
-        // Store player data for update operations
-        client.global.set("PlayerFirstName", player.firstName);
-        client.global.set("PlayerLastName", player.lastName);
-        client.global.set("PlayerDisplayName", player.displayName);
-        client.global.set("PlayerEmail", player.email);
-        client.global.set("PlayerBirthday", player.birthday);
-        
-        console.log("✅ Dados do jogador capturados para testes");
-    }
-%}
-
 ### Step 2: Get Available Games for Player
-# @name getAvailableGames
 GET {{FCG_API_HostAddress}}/api/Player/available-games?PageNumber=1&PageSize=10
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const games = response.body;
-        console.log("🎮 Jogos Disponíveis:");
-        console.log("📦 Total encontrado: " + games.totalItems);
-        
-        if (games.items && games.items.length > 0) {
-            console.log("📋 Primeiros jogos:");
-            games.items.slice(0, 3).forEach((game, index) => {
-                console.log("   " + (index + 1) + ". " + game.title + 
-                    " - " + game.genre + " - R$ " + game.price);
-            });
-            
-            // Store game IDs for testing
-            client.global.set("AvailableGameId1", games.items[0].id);
-            client.global.set("AvailableGameTitle1", games.items[0].title);
-            
-            if (games.items.length > 1) {
-                client.global.set("AvailableGameId2", games.items[1].id);
-                client.global.set("AvailableGameTitle2", games.items[1].title);
-            }
-            
-            // Find games by different genres for filtering tests
-            const actionGame = games.items.find(game => game.genre && game.genre.toLowerCase().includes('action'));
-            const rpgGame = games.items.find(game => game.genre && game.genre.toLowerCase().includes('rpg'));
-            
-            if (actionGame) {
-                client.global.set("ActionGameId", actionGame.id);
-                client.global.set("ActionGameTitle", actionGame.title);
-            }
-            if (rpgGame) {
-                client.global.set("RpgGameId", rpgGame.id);
-                client.global.set("RpgGameTitle", rpgGame.title);
-            }
-        }
-    }
-%}
-
 ### Step 3: Get Player Cart
-# @name getPlayerCart
 GET {{FCG_API_HostAddress}}/api/Player/cart
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const cart = response.body;
-        console.log("🛒 Carrinho do Jogador:");
-        
-        if (cart.items && cart.items.length > 0) {
-            console.log("📦 Itens no carrinho: " + cart.items.length);
-            console.log("💰 Preço total: R$ " + (cart.totalPrice || 0));
-            
-            cart.items.forEach((item, index) => {
-                console.log("   " + (index + 1) + ". " + item.title + " - R$ " + item.price);
-            });
-        } else {
-            console.log("   Carrinho vazio");
-        }
-        
-        // Store cart info for reference
-        client.global.set("CartItemCount", cart.items ? cart.items.length : 0);
-    }
-%}
-
 ### Step 4: Get Player Library
-# @name getPlayerLibrary
 GET {{FCG_API_HostAddress}}/api/Player/library?PageNumber=1&PageSize=15&OrderBy.OrderBy=title&OrderBy.Ascending=true
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const library = response.body;
-        console.log("📚 Biblioteca do Jogador:");
-        console.log("🎮 Total de jogos: " + library.totalItems);
-        console.log("📄 Páginas: " + library.totalPages);
-        
-        if (library.items && library.items.length > 0) {
-            console.log("📋 Jogos na biblioteca (ordenados por título):");
-            library.items.slice(0, 5).forEach((game, index) => {
-                console.log("   " + (index + 1) + ". " + game.title + 
-                    " - Comprado em: " + new Date(game.purchaseDate).toLocaleDateString());
-            });
-            
-            // Store owned game IDs for reference
-            client.global.set("OwnedGameId1", library.items[0].id);
-            client.global.set("OwnedGameTitle1", library.items[0].title);
-        } else {
-            console.log("   Biblioteca vazia - nenhum jogo comprado");
-        }
-    }
-%}
-
 ### Step 5: Test Filtered Available Games
-# @name getFilteredGames
 ### Get Action Games under R$ 50
 GET {{FCG_API_HostAddress}}/api/Player/available-games?PageNumber=1&PageSize=8&Filter.Genre=Action&Filter.MaxPrice=50
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const filteredGames = response.body;
-        console.log("🎯 Jogos de Action até R$ 50:");
-        console.log("📊 Encontrados: " + filteredGames.totalItems);
-        
-        if (filteredGames.items && filteredGames.items.length > 0) {
-            filteredGames.items.forEach((game, index) => {
-                console.log("   " + (index + 1) + ". " + game.title + " - R$ " + game.price);
-            });
-        } else {
-            console.log("   Nenhum jogo encontrado com esses filtros");
-        }
-    }
-%}
-
 ### Step 6: Test RPG Games Filter
-# @name getRpgGames
 GET {{FCG_API_HostAddress}}/api/Player/available-games?PageNumber=1&PageSize=5&Filter.Genre=RPG
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const rpgGames = response.body;
-        console.log("⚔️ Jogos de RPG:");
-        console.log("📊 Encontrados: " + rpgGames.totalItems);
-        
-        if (rpgGames.items && rpgGames.items.length > 0) {
-            rpgGames.items.forEach((game, index) => {
-                console.log("   " + (index + 1) + ". " + game.title + " - R$ " + game.price);
-            });
-        }
-    }
-%}
-
 ### Step 7: Update Player Password
-# @name updatePassword
 PUT {{FCG_API_HostAddress}}/api/Player/password
 Content-Type: application/json
 Authorization: Bearer {{AuthToken}}
@@ -221,63 +46,17 @@ Authorization: Bearer {{AuthToken}}
   "confirmNewPassword": "NovaSenha456!"
 }
 
-> {%
-    if (response.status === 200) {
-        console.log("✅ Senha atualizada com sucesso!");
-        console.log("🔑 Nova senha definida: NovaSenha456!");
-    } else if (response.status === 400) {
-        console.log("❌ Erro ao atualizar senha - verifique a senha atual");
-    } else {
-        console.log("⚠️ Status inesperado: " + response.status);
-    }
-%}
-
 ### Step 8: Verify Profile After Update
-# @name verifyProfile
 GET {{FCG_API_HostAddress}}/api/Auth/me
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const updatedPlayer = response.body;
-        console.log("👤 Perfil após atualização:");
-        console.log("✅ Dados mantidos: " + updatedPlayer.displayName + " - " + updatedPlayer.email);
-        console.log("🔐 Login ainda funciona com o novo token");
-    }
-%}
-
 ### Step 9: Test Different Library Ordering
-# @name getLibraryByPurchaseDate
 GET {{FCG_API_HostAddress}}/api/Player/library?PageNumber=1&PageSize=10&OrderBy.OrderBy=purchaseDate&OrderBy.Ascending=false
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const library = response.body;
-        console.log("📚 Biblioteca ordenada por data de compra (mais recentes primeiro):");
-        
-        if (library.items && library.items.length > 0) {
-            library.items.slice(0, 3).forEach((game, index) => {
-                console.log("   " + (index + 1) + ". " + game.title + 
-                    " - " + new Date(game.purchaseDate).toLocaleDateString());
-            });
-        }
-    }
-%}
-
 ### Step 10: Final Player Summary
-# @name playerSummary
-### Get all endpoints for final summary
 GET {{FCG_API_HostAddress}}/api/Player/available-games?PageNumber=1&PageSize=5
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        const available = response.body;
-        console.log("🏁 Resumo do Player:");
-        console.log("🎮 Jogos disponíveis: " + available.totalItems + " encontrados");
-    }
-%}
 
 ### Individual Operations (Para testes específicos)
 
@@ -326,20 +105,5 @@ GET {{FCG_API_HostAddress}}/api/Auth/me
 Authorization: Bearer {{AuthToken}}
 
 ### Test Multiple Filter Combinations
-# @name multiFilterTest
 GET {{FCG_API_HostAddress}}/api/Player/available-games?PageNumber=1&PageSize=12&Filter.Genre=Action&Filter.MinPrice=10&Filter.MaxPrice=80&OrderBy.OrderBy=price&OrderBy.Ascending=true
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        const results = response.body;
-        console.log("🎯 Jogos de Action entre R$ 10-80 (ordenados por preço):");
-        console.log("📊 Encontrados: " + results.totalItems);
-        
-        if (results.items && results.items.length > 0) {
-            results.items.forEach((game, index) => {
-                console.log("   " + (index + 1) + ". " + game.title + " - R$ " + game.price + " - " + game.genre);
-            });
-        }
-    }
-%}

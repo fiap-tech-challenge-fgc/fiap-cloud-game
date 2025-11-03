@@ -1,337 +1,89 @@
-﻿@FCG_API_HostAddress = http://localhost:5104
+﻿@port = 7314
+@FCG_API_HostAddress = http://localhost:{{port}}
 @AuthToken = your_jwt_token_here
-@user = seu_usuario
-@password = sua_senha
 
-# Login
+### Login
 POST {{FCG_API_HostAddress}}/api/Auth/login
 Content-Type: application/json
 
 {
-  "email": {{user}}},
-  "password": {{password}}
+  "email": "seu_usuario",
+  "password": "sua_senha"
 }
 
-> {%
-    if (response.status === 200) {
-        const loginResponse = response.body;
-        console.log("✅🔐 LOGIN REALIZADO COM SUCESSO!");
-        console.log("👤 Usuário: maria.santos@email.com");
-        
-        if (loginResponse.token) {
-            client.global.set("AuthToken", loginResponse.token);
-            console.log("🎫 Access Token obtido: " + loginResponse.token.substring(0, 50) + "...");
-        }
-        
-        if (loginResponse.refreshToken) {
-            client.global.set("refreshToken", loginResponse.refreshToken);
-            console.log("🔄 Refresh Token obtido: " + loginResponse.refreshToken.substring(0, 50) + "...");
-        }
-        
-        if (loginResponse.expiresIn) {
-            console.log("⏰ Token expira em: " + loginResponse.expiresIn);
-        }
-        
-        console.log("✅ Token salvo nas variáveis globais para uso nas próximas requisições");
-    } else {
-        console.log("❌ Falha no login: " + response.status);
-        console.log("📄 Response: " + response.body);
-    }
-%}
+### Admin Cart Endpoints
 
-
-### Admin Cart Endpoints - Dynamic Player and Game Data Capture
 ### Step 1: Get Players List for Admin Operations
 # @name getPlayersList
 GET {{FCG_API_HostAddress}}/api/admin/player?PageNumber=1&PageSize=10&OrderBy.SortBy=displayName
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        const players = response.body;
-        console.log("👥 Lista de Players para Admin:");
-        console.log("📊 Total de players: " + players.totalItems);
-        
-        if (players.items && players.items.length > 0) {
-            console.log("🎮 Players disponíveis:");
-            players.items.slice(0, 5).forEach((player, index) => {
-                console.log("   " + (index + 1) + ". " + player.displayName + 
-                    " - " + player.email + " - ID: " + player.id);
-            });
-            
-            // Store first player for cart operations
-            const firstPlayer = players.items[0];
-            client.global.set("PlayerId", firstPlayer.id);
-            client.global.set("PlayerDisplayName", firstPlayer.displayName);
-            client.global.set("PlayerEmail", firstPlayer.email);
-            
-            // Store second player for testing multiple players
-            if (players.items.length > 1) {
-                client.global.set("PlayerId2", players.items[1].id);
-                client.global.set("PlayerDisplayName2", players.items[1].displayName);
-            }
-            
-            console.log("✅ Player selecionado: " + firstPlayer.displayName);
-            console.log("🆔 PlayerId capturado: " + firstPlayer.id);
-        }
-    }
-%}
 
 ### Step 2: Get Available Games for Admin Cart Operations
 # @name getAvailableGames
 GET {{FCG_API_HostAddress}}/api/admin/game?PageNumber=1&PageSize=10
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const games = response.body;
-        console.log("🎮 Jogos Disponíveis para Admin Cart:");
-        console.log("📊 Total de jogos: " + games.totalItems);
-        
-        if (games.items && games.items.length > 0) {
-            console.log("📋 Primeiros jogos:");
-            games.items.slice(0, 5).forEach((game, index) => {
-                console.log("   " + (index + 1) + ". " + game.title + 
-                    " - " + game.genre + " - ID: " + game.id);
-            });
-            
-            // Store multiple games for cart operations
-            client.global.set("GameId1", games.items[0].id);
-            client.global.set("GameTitle1", games.items[0].title);
-            client.global.set("GamePrice1", games.items[0].price);
-            
-            client.global.set("GameId2", games.items[1].id);
-            client.global.set("GameTitle2", games.items[1].title);
-            client.global.set("GamePrice2", games.items[1].price);
-            
-            client.global.set("GameId3", games.items[2].id);
-            client.global.set("GameTitle3", games.items[2].title);
-            
-            console.log("✅ Jogos capturados para testes do carrinho");
-        }
-    }
-%}
-
 ### Step 3: Get Player Cart (Admin) - Initial State
 # @name getPlayerCartInitial
 GET {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        const cart = response.body;
-        console.log("🛒 Carrinho Inicial do Player (Admin View):");
-        console.log("👤 Player: {{PlayerDisplayName}}");
-        
-        if (cart.items && cart.items.length > 0) {
-            console.log("📦 Itens no carrinho: " + cart.items.length);
-            console.log("💰 Preço total: R$ " + (cart.totalPrice || 0));
-            
-            cart.items.forEach((item, index) => {
-                console.log("   " + (index + 1) + ". " + item.title + " - R$ " + item.price);
-            });
-        } else {
-            console.log("   Carrinho vazio");
-        }
-        
-        client.global.set("InitialCartItemCount", cart.items ? cart.items.length : 0);
-    }
-%}
 
 ### Step 4: Clear Player Cart (Admin) - Ensure Clean State
 # @name clearPlayerCartInitial
 DELETE {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}/clear
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        console.log("🧹 Carrinho do player limpo pelo Admin");
-        console.log("👤 Player: {{PlayerDisplayName}}");
-    }
-%}
-
 ### Step 5: Add First Game to Player Cart (Admin)
 # @name addFirstGameToPlayerCart
 POST {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}/add/{{GameId1}}
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        console.log("✅ ADMIN adicionou jogo ao carrinho do player:");
-        console.log("🎮 Jogo: {{GameTitle1}}");
-        console.log("👤 Player: {{PlayerDisplayName}}");
-        console.log("💰 Preço: R$ {{GamePrice1}}");
-    }
-%}
 
 ### Step 6: Verify Cart After First Addition (Admin)
 # @name verifyCartAfterFirstAdd
 GET {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const cart = response.body;
-        console.log("🛒 Carrinho após primeira adição (Admin View):");
-        console.log("📦 Itens: " + (cart.items ? cart.items.length : 0));
-        
-        if (cart.items && cart.items.length > 0) {
-            console.log("✅ Jogo adicionado com sucesso:");
-            cart.items.forEach((item, index) => {
-                console.log("   " + (index + 1) + ". " + item.title + " - R$ " + item.price);
-            });
-        }
-    }
-%}
-
 ### Step 7: Add Second Game to Player Cart (Admin)
 # @name addSecondGameToPlayerCart
 POST {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}/add/{{GameId2}}
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        console.log("✅ ADMIN adicionou segundo jogo:");
-        console.log("🎮 Jogo: {{GameTitle2}}");
-        console.log("👤 Player: {{PlayerDisplayName}}");
-        console.log("💰 Preço: R$ {{GamePrice2}}");
-    }
-%}
 
 ### Step 8: Verify Cart with Multiple Items (Admin)
 # @name verifyCartWithMultipleItems
 GET {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const cart = response.body;
-        console.log("🛒 Carrinho com múltiplos itens (Admin View):");
-        console.log("📦 Total de itens: " + (cart.items ? cart.items.length : 0));
-        console.log("💰 Preço total: R$ " + (cart.totalPrice || 0));
-        
-        if (cart.items && cart.items.length > 0) {
-            console.log("📋 Itens no carrinho:");
-            cart.items.forEach((item, index) => {
-                console.log("   " + (index + 1) + ". " + item.title + " - R$ " + item.price);
-            });
-            
-            // Calculate expected total
-            const expectedTotal = {{GamePrice1}} + {{GamePrice2}};
-            console.log("🧮 Total esperado: R$ " + expectedTotal);
-        }
-    }
-%}
-
 ### Step 9: Remove Specific Game from Player Cart (Admin)
 # @name removeGameFromPlayerCart
 DELETE {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}/remove/{{GameId1}}
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        console.log("🗑️  ADMIN removeu jogo do carrinho:");
-        console.log("🎮 Jogo removido: {{GameTitle1}}");
-        console.log("👤 Player: {{PlayerDisplayName}}");
-    }
-%}
 
 ### Step 10: Verify Cart After Removal (Admin)
 # @name verifyCartAfterRemoval
 GET {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const cart = response.body;
-        console.log("🛒 Carrinho após remoção (Admin View):");
-        console.log("📦 Itens restantes: " + (cart.items ? cart.items.length : 0));
-        
-        if (cart.items && cart.items.length > 0) {
-            console.log("📋 Itens remanescentes:");
-            cart.items.forEach((item, index) => {
-                console.log("   " + (index + 1) + ". " + item.title + " - R$ " + item.price);
-            });
-            
-            // Verify the correct game was removed
-            const game1StillExists = cart.items.some(item => item.id === "{{GameId1}}");
-            if (!game1StillExists) {
-                console.log("✅ Jogo {{GameTitle1}} foi removido corretamente");
-            }
-        }
-    }
-%}
-
 ### Step 11: Add Third Game for More Testing (Admin)
 # @name addThirdGameToPlayerCart
 POST {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}/add/{{GameId3}}
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        console.log("✅ ADMIN adicionou terceiro jogo:");
-        console.log("🎮 Jogo: {{GameTitle3}}");
-        console.log("👤 Player: {{PlayerDisplayName}}");
-    }
-%}
-
 ### Step 12: Test with Different Player (Admin)
 # @name testWithDifferentPlayer
-### Get second player's cart
 GET {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId2}}
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        const cart = response.body;
-        console.log("🛒 Carrinho de outro Player (Admin View):");
-        console.log("👤 Player: {{PlayerDisplayName2}}");
-        console.log("📦 Itens: " + (cart.items ? cart.items.length : 0));
-        
-        if (cart.items && cart.items.length > 0) {
-            cart.items.forEach((item, index) => {
-                console.log("   " + (index + 1) + ". " + item.title + " - R$ " + item.price);
-            });
-        }
-    }
-%}
 
 ### Step 13: Clear Player Cart Final (Admin)
 # @name clearPlayerCartFinal
 DELETE {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}/clear
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        console.log("🧹 ADMIN limpou carrinho final:");
-        console.log("👤 Player: {{PlayerDisplayName}}");
-    }
-%}
-
 ### Step 14: Final Verification - Empty Cart (Admin)
 # @name finalCartVerification
 GET {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const cart = response.body;
-        const finalItemCount = cart.items ? cart.items.length : 0;
-        
-        console.log("🏁 VERIFICAÇÃO FINAL DO CARRINHO (Admin):");
-        console.log("👤 Player: {{PlayerDisplayName}}");
-        console.log("📦 Itens no carrinho: " + finalItemCount);
-        
-        if (finalItemCount === 0) {
-            console.log("✅🎉 Fluxo de Admin Cart concluído com sucesso!");
-            console.log("✅ Todas as operações de admin no carrinho funcionaram corretamente");
-        } else {
-            console.log("⚠️  Ainda há itens no carrinho: " + finalItemCount);
-        }
-    }
-%}
-
-### Individual Operations (Para testes específicos)
+### Individual Operations
 
 ### Get Player Cart (Admin)
 GET {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}
@@ -351,7 +103,6 @@ Authorization: Bearer {{AuthToken}}
 
 ### Bulk Operations Test
 # @name bulkAdminCartOperations
-### Add multiple games at once
 POST {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}/add/{{GameId1}}
 Authorization: Bearer {{AuthToken}}
 
@@ -361,54 +112,18 @@ Authorization: Bearer {{AuthToken}}
 POST {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}/add/{{GameId3}}
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    console.log("✅ Múltiplos jogos adicionados ao carrinho do player");
-%}
-
-### Verify bulk addition
 GET {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 200) {
-        const cart = response.body;
-        console.log("📦 Carrinho após adições em massa: " + (cart.items ? cart.items.length : 0) + " itens");
-    }
-%}
-
 ### Test Error Scenarios
 # @name testErrorScenarios
-### Try to add non-existent game
 POST {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}/add/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{AuthToken}}
 
-> {%
-    if (response.status === 404) {
-        console.log("✅ Comportamento correto - Jogo não encontrado");
-    }
-%}
-
-### Try to remove game not in cart
 DELETE {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}/remove/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 404) {
-        console.log("✅ Comportamento correto - Jogo não está no carrinho");
-    }
-%}
 
 ### Quick Admin Cart Status Check
 # @name quickAdminCartCheck
 GET {{FCG_API_HostAddress}}/api/admin/cart/{{PlayerId}}
 Authorization: Bearer {{AuthToken}}
-
-> {%
-    if (response.status === 200) {
-        const cart = response.body;
-        console.log("🔍 Status rápido do carrinho (Admin):");
-        console.log("👤 Player: {{PlayerDisplayName}}");
-        console.log("📦 Itens: " + (cart.items ? cart.items.length : 0));
-        console.log("💰 Total: R$ " + (cart.totalPrice || 0));
-    }
-%}
