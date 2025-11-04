@@ -1,4 +1,6 @@
-﻿using FCG.Application.Dto.Request;
+﻿using FCG.Api.Controllers.Base;
+using FCG.Application.Dto.Request;
+using FCG.Application.Dto.Response;
 using FCG.Application.Interfaces.Service;
 using FCG.Application.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -10,7 +12,7 @@ namespace FCG.API.Controllers;
 [ApiController]
 [Authorize(Roles = RoleConstants.Player)]
 [Route("api/cart")]
-public class CartController : ControllerBase
+public class CartController : ApiControllerBase
 {
     private readonly ICartService _cartService;
 
@@ -22,23 +24,20 @@ public class CartController : ControllerBase
     [HttpPost("add/{gameId}")]
     public async Task<IActionResult> AddItem(Guid gameId)
     {
-        var playerId = GetCurrentUserId();
+        var userId = GetCurrentUserId();
 
-        if (playerId == null)
-            return Unauthorized("Não autorizado.");
+        if (userId == null)
+            return UnauthorizedResult<object>("Não autorizado.");
 
         var request = new CartItemRequestDto
         {
-            PlayerId = playerId.Value,
+            UserId = userId.Value,
             GameId = gameId
         };
 
         var result = await _cartService.AddItemAsync(request);
 
-        if (!result.Succeeded)
-            return BadRequest(new { result.Errors });
-
-        return Ok();
+        return ProcessResult(result);
     }
 
     [HttpDelete("remove/{gameId}")]
@@ -47,7 +46,7 @@ public class CartController : ControllerBase
         var playerId = GetCurrentUserId();
 
         if (playerId == null)
-            return Unauthorized("Não autorizado.");
+            return UnauthorizedResult<object>("Não autorizado.");
 
         var request = new CartItemRequestDto
         {
@@ -57,10 +56,7 @@ public class CartController : ControllerBase
 
         var result = await _cartService.RemoveItemAsync(request);
 
-        if (!result.Succeeded)
-            return BadRequest(new { result.Errors });
-
-        return Ok();
+        return ProcessResult(result);
     }
 
     [HttpGet]
@@ -69,14 +65,11 @@ public class CartController : ControllerBase
         var playerId = GetCurrentUserId();
 
         if (playerId == null)
-            return Unauthorized("Não autorizado.");
+            return UnauthorizedResult<CartResponseDto>("Não autorizado.");
 
-        var result = await _cartService.GetCartAsync(playerId.Value);
+        var result = await _cartService.GetCartByPlayerIdAsync(playerId.Value);
 
-        if (!result.Succeeded)
-            return BadRequest(new { result.Errors });
-
-        return Ok(result.Data);
+        return ProcessResult(result);
     }
 
     [HttpDelete("clear")]
@@ -85,14 +78,11 @@ public class CartController : ControllerBase
         var playerId = GetCurrentUserId();
 
         if (playerId == null)
-            return Unauthorized("Não autorizado.");
+            return UnauthorizedResult<object>("Não autorizado.");
 
         var result = await _cartService.ClearCartAsync(playerId.Value);
 
-        if (!result.Succeeded)
-            return BadRequest(new { result.Errors });
-
-        return Ok();
+        return ProcessResult(result);
     }
 
     private Guid? GetCurrentUserId()

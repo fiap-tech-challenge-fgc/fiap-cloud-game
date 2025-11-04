@@ -56,7 +56,7 @@ public class AdminCartController : ControllerBase
     [HttpGet("{playerId}")]
     public async Task<IActionResult> GetCart(Guid playerId)
     {
-        var result = await _cartService.GetCartAsync(playerId);
+        var result = await _cartService.GetCartByPlayerIdAsync(playerId);
 
         if (!result.Succeeded)
             return BadRequest(new { errors = result.Errors });

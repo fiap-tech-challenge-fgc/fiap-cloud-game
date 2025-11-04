@@ -1,8 +1,7 @@
+using FCG.Api.Controllers.Base;
 using FCG.Application.Dto.Filter;
 using FCG.Application.Dto.Order;
 using FCG.Application.Dto.Request;
-using FCG.Application.Dto.Response;
-using FCG.Application.Dto.Result;
 using FCG.Application.Interfaces.Service;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,7 +9,7 @@ namespace FCG.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class GalleryController : ControllerBase
+public class GalleryController : ApiControllerBase
 {
     private readonly IGalleryService _galleryService;
 
@@ -20,35 +19,32 @@ public class GalleryController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<PagedResult<GalleryGameResponseDto>>> GetGalleryGames([FromQuery] PagedRequestDto<GameFilterDto, GameOrderDto> request)
+    public async Task<IActionResult> GetGalleryGames([FromQuery] PagedRequestDto<GameFilterDto, GameOrderDto> request)
     {
         var result = await _galleryService.GetGalleryGamesAsync(request);
 
-        if (!result.Succeeded)
-            return BadRequest(new { result.Errors });
-
-        return Ok(result.Data);
+        return ProcessResult(result);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<GalleryGameResponseDto>> GetGalleryGame(Guid id)
+    public async Task<IActionResult> GetGalleryGame(Guid id)
     {
         var result = await _galleryService.GetGalleryGameByIdAsync(id);
 
         if (!result.Succeeded)
-            return NotFound(new { result.Errors });
+            return NotFoundResult<object>(result.Errors);
         
-        return Ok(result.Data);
+        return ProcessResult(result);
     }
 
     [HttpGet("promotions")]
-    public async Task<ActionResult<IEnumerable<GalleryGameResponseDto>>> GetPromotionalGames()
+    public async Task<IActionResult> GetPromotionalGames()
     {
         var result = await _galleryService.GetPromotionalGamesAsync();
 
         if (!result.Succeeded)
-            return NotFound(new { result.Errors });
+            return NotFoundResult<object>(result.Errors);
 
-        return Ok(result.Data);
+        return ProcessResult(result);
     }
 }

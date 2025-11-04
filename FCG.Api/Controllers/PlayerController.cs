@@ -73,12 +73,12 @@ public class PlayerController : ApiControllerBase
     [HttpGet("cart")]
     public async Task<IActionResult> GetCartItems()
     {
-        var playerId = GetCurrentUserId();
+        var userId = GetCurrentUserId();
 
-        if (playerId == null)
+        if (userId == null)
             return UnauthorizedResult<object>("Não autorizado.");
 
-        var result = await _cartService.GetCartAsync(playerId.Value);
+        var result = await _cartService.GetCartByUserIdAsync(userId.Value);
 
         return ProcessResult(result);
     }

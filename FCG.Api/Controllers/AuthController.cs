@@ -1,4 +1,5 @@
-﻿using FCG.Application.Dto.Request;
+﻿using FCG.Api.Controllers.Base;
+using FCG.Application.Dto.Request;
 using FCG.Application.Dto.Response;
 using FCG.Application.Interfaces.Service;
 using FCG.Application.Security;
@@ -9,7 +10,7 @@ namespace FCG.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController : ApiControllerBase
 {
     private readonly IAuthService _authService;
 
@@ -24,7 +25,7 @@ public class AuthController : ControllerBase
         var result = await _authService.RegisterUserAsync(dto, RoleConstants.Player);
 
         if (!result.Succeeded)
-            return BadRequest(new { data = (UserAuthResponseDto?)null, succeeded = false, errors = result.Errors });
+            return ErrorResult<UserAuthResponseDto>(result.Errors);
 
         var loginResult = await _authService.LoginAsync(new UserLoginRequestDto
         {
@@ -33,37 +34,37 @@ public class AuthController : ControllerBase
         });
 
         if (!loginResult.Succeeded)
-            return BadRequest(new { data = (UserAuthResponseDto?)null, succeeded = false, errors = loginResult.Errors });
+            return ErrorResult<UserAuthResponseDto>(loginResult.Errors);
 
-        return Ok(new { data = loginResult.Data, succeeded = true, errors = new List<string>() });
+        return SuccessResult(loginResult.Data);
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] UserLoginRequestDto dto)
     {
         if (!ModelState.IsValid)
-            return BadRequest(new { data = (UserAuthResponseDto?)null, succeeded = false, errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
+            return ErrorResult<UserAuthResponseDto>(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
 
         var result = await _authService.LoginAsync(dto);
 
         if (!result.Succeeded)
-            return Unauthorized(new { data = (UserAuthResponseDto?)null, succeeded = false, errors = result.Errors });
+            return UnauthorizedResult<UserAuthResponseDto>(result.Errors);
 
-        return Ok(new { data = result.Data, succeeded = true, errors = new List<string>() });
+        return SuccessResult(result.Data);
     }
 
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto dto)
     {
         if (!ModelState.IsValid)
-            return BadRequest(new { data = (UserAuthResponseDto?)null, succeeded = false, errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
+            return ErrorResult<UserAuthResponseDto>(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
 
         var result = await _authService.RefreshTokenAsync(dto);
 
         if (!result.Succeeded)
-            return Unauthorized(new { data = (UserAuthResponseDto?)null, succeeded = false, errors = result.Errors });
+            return UnauthorizedResult<UserAuthResponseDto>(result.Errors);
 
-        return Ok(new { data = result.Data, succeeded = true, errors = new List<string>() });
+        return SuccessResult(result.Data);
     }
 
     [Authorize]
@@ -73,8 +74,8 @@ public class AuthController : ControllerBase
         var result = await _authService.GetCurrentUserAsync(User);
 
         if (!result.Succeeded)
-            return NotFound(new { data = (UserInfoResponseDto?)null, succeeded = false, errors = new[] { "Usuário não encontrado" } });
+            return NotFoundResult<UserInfoResponseDto>("Usuário não encontrado");
 
-        return Ok(new { data = result.Data, succeeded = true, errors = new List<string>() });
+        return SuccessResult(result.Data);
     }
 }

@@ -8,6 +8,7 @@ public interface ICartService
 {
     Task<OperationResult> AddItemAsync(CartItemRequestDto request);
     Task<OperationResult> RemoveItemAsync(CartItemRequestDto request);
-    Task<OperationResult<CartResponseDto>> GetCartAsync(Guid playerId);
+    Task<OperationResult<CartResponseDto>> GetCartByPlayerIdAsync(Guid playerId);
+    Task<OperationResult<CartResponseDto>> GetCartByUserIdAsync(Guid userId);
     Task<OperationResult> ClearCartAsync(Guid playerId);
 }

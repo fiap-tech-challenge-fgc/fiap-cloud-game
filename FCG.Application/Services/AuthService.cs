@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 using FCG.Application.Dto.Result;
 using FCG.Application.Dto.Request;
+using FCG.Application.Security;
 
 namespace FCG.Application.Services.Auth;
 
@@ -13,19 +14,23 @@ public class AuthService : IAuthService
 {
     private readonly UserManager<User> _userManager;
     private readonly IJwtService _jwtService;
+    private readonly IPlayerService _playerService;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(UserManager<User> userManager,
                        IJwtService jwtService,
+                       IPlayerService playerService,
                        ILogger<AuthService> logger)
     {
         _userManager = userManager;
         _jwtService = jwtService;
+        _playerService = playerService;
         _logger = logger;
     }
 
     /// <summary>
     /// Registra um novo usuário e atribui uma role.
+    /// Se a role for Player, também cria o registro na tabela Players.
     /// </summary>
     public async Task<OperationResult<User>> RegisterUserAsync(UserCreateRequestDto dto, string role)
     {
@@ -46,7 +51,34 @@ public class AuthService : IAuthService
 
         var roleResult = await _userManager.AddToRoleAsync(user, role);
         if (!roleResult.Succeeded)
+        {
+            // Se falhar ao adicionar role, remove o usuário criado
+            await _userManager.DeleteAsync(user);
             return OperationResult<User>.Failure(roleResult.Errors.Select(e => e.Description).ToArray());
+        }
+
+        // Se for um Player, cria o registro na tabela Players
+        if (role == RoleConstants.Player)
+        {
+            var playerCreateDto = new PlayerCreateDto
+            {
+                UserId = user.Id,
+                DisplayName = dto.DisplayName
+            };
+
+            var playerResult = await _playerService.CreateAsync(playerCreateDto);
+            
+            if (!playerResult.Succeeded)
+            {
+                // Se falhar ao criar player, remove o usuário e role
+                await _userManager.DeleteAsync(user);
+                _logger.LogError("Falha ao criar registro de Player para usuário: {Email}. Erro: {Errors}", 
+                    dto.Email, string.Join(", ", playerResult.Errors));
+                return OperationResult<User>.Failure("Erro ao criar perfil de jogador. " + string.Join(", ", playerResult.Errors));
+            }
+
+            _logger.LogInformation("Player criado com sucesso para usuário: {Email}", dto.Email);
+        }
 
         return OperationResult<User>.Success(user);
     }

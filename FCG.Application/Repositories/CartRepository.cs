@@ -17,18 +17,14 @@ namespace FCG.Application.Repositories
         public async Task<Cart?> GetByPlayerIdAsync(Guid playerId)
         {
             // Usa Query() para ter mais controle sobre o Include
-            // Carrega Cart -> Items -> Game para acessar as informações do jogo
-            var cart = await _dal.Query(c => c.Items)
+            // Carrega Cart -> ItemsCollection -> Game para acessar as informações do jogo
+            var cart = await _dal.Query()
                 .Where(c => c.PlayerId == playerId)
-                .Include(c => c.Items)
+                .Include(c => c.ItemsCollection)
                     .ThenInclude(i => i.Game)
                 .FirstOrDefaultAsync();
             
             return cart;
-        }
-        public async Task<Cart?> GetByFindPlayerIdAsync(Guid playerId)
-        {
-            return await _dal.FindAsync(c => c.PlayerId == playerId, c => c.Items, c => c.Items.Select(i => i.Game));
         }
 
         public async Task AddAsync(Cart cart)
