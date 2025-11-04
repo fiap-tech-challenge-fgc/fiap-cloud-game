@@ -41,6 +41,11 @@ public class GalleryRepository : IGalleryRepository
         return await _dal.FindAsync(g => g.Id == id, g => g.Promotion, g => g.Game);
     }
 
+    public async Task<GalleryGame?> GetByGameIdAsync(Guid gameId)
+    {
+        return await _dal.FindAsync(g => g.GameId == gameId, g => g.Promotion, g => g.Game);
+    }
+
     public async Task<IEnumerable<GalleryGame>> GetAllGalleryGamesAsync()
     {
         return await _dal.ListAsync(g => g.Promotion, g => g.Game);

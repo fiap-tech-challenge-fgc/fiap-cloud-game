@@ -12,20 +12,31 @@ public class CartService : ICartService
 {
     private readonly ICartRepository _cartRepository;
     private readonly IGameRepository _gameRepository;
+    private readonly IGalleryRepository _galleryRepository;
+    private readonly IPlayerRepository _playerRepository;
     private readonly ICartDomainService _cartDomainService;
 
     public CartService(
         ICartRepository cartRepository,
         IGameRepository gameRepository,
+        IGalleryRepository galleryRepository,
+        IPlayerRepository playerRepository,
         ICartDomainService cartDomainService)
     {
         _cartRepository = cartRepository;
         _gameRepository = gameRepository;
+        _galleryRepository = galleryRepository;
+        _playerRepository = playerRepository;
         _cartDomainService = cartDomainService;
     }
 
     public async Task<OperationResult> AddItemAsync(CartItemRequestDto request)
     {
+        // Verifica se o player existe
+        var playerExists = await _playerRepository.ExistsAsync(request.PlayerId);
+        if (!playerExists)
+            return OperationResult.Failure("Player não encontrado. Por favor, complete o cadastro do perfil.");
+
         var game = await _gameRepository.GetByIdAsync(request.GameId);
         if (game == null)
             return OperationResult.Failure("Jogo não encontrado.");
@@ -68,7 +79,19 @@ public class CartService : ICartService
                 Items = []
             });
 
-        return OperationResult<CartResponseDto>.Success(CartMapper.ToDto(cart));
+        var cartDto = CartMapper.ToDto(cart);
+
+        // Busca os preços da galeria para cada item do carrinho
+        foreach (var item in cartDto.Items)
+        {
+            var galleryGame = await _galleryRepository.GetByGameIdAsync(item.GameId);
+            if (galleryGame != null)
+            {
+                item.Price = galleryGame.FinalPrice;
+            }
+        }
+
+        return OperationResult<CartResponseDto>.Success(cartDto);
     }
 
     public async Task<OperationResult> ClearCartAsync(Guid playerId)

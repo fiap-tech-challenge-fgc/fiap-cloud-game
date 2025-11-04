@@ -3,6 +3,7 @@ using FCG.Application.Interfaces.Service;
 using FCG.Application.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace FCG.API.Controllers;
 
@@ -96,9 +97,7 @@ public class CartController : ControllerBase
 
     private Guid? GetCurrentUserId()
     {
-        // Tenta buscar em várias claims padrão
-        var claim = User.FindFirst("sub")?.Value
-                       ?? User.FindFirst("nameidentifier")?.Value;
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         return Guid.TryParse(claim, out var guid) ? guid : null;
     }

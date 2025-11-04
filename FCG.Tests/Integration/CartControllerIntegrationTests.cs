@@ -102,9 +102,7 @@ public class CartControllerIntegrationTests : ApiIntegrationTestBase
         SetAuthorizationHeader(token);
 
         // Obtém um jogo disponível da galeria
-        var gamesResponse = await ApiClient.GetAsync(
-   "/api/gallery?PageNumber=1&PageSize=1",
- cancellationToken: TestContext.Current.CancellationToken);
+        var gamesResponse = await ApiClient.GetAsync("/api/gallery?PageNumber=1&PageSize=1",cancellationToken: TestContext.Current.CancellationToken);
         var gamesResult = await ReadServiceResultAsync<PagedResult<GalleryGameResponseDto>>(gamesResponse);
 
         Assert.NotNull(gamesResult);
@@ -113,20 +111,19 @@ public class CartControllerIntegrationTests : ApiIntegrationTestBase
         var gameId = gamesResult.Items.First().Id;
 
         // Act
-  var response = await ApiClient.PostAsync($"/api/cart/add/{gameId}", null,
-     cancellationToken: TestContext.Current.CancellationToken);
+        var response = await ApiClient.PostAsync($"/api/cart/add/{gameId}", null, cancellationToken: TestContext.Current.CancellationToken);
 
-      // Assert
+        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         // Verifica se o item foi adicionado
-      var cartResponse = await ApiClient.GetAsync("/api/cart",
-         cancellationToken: TestContext.Current.CancellationToken);
+        var cartResponse = await ApiClient.GetAsync("/api/cart",
+           cancellationToken: TestContext.Current.CancellationToken);
         var cart = await ReadServiceResultAsync<CartResponseDto>(cartResponse);
 
         Assert.NotNull(cart);
-    Assert.Single(cart.Items);
-     Assert.Contains(cart.Items, item => item.GameId == gameId);
+        Assert.Single(cart.Items);
+        Assert.Contains(cart.Items, item => item.GameId == gameId);
     }
 
     [Fact]
@@ -137,8 +134,7 @@ public class CartControllerIntegrationTests : ApiIntegrationTestBase
         var gameId = Guid.NewGuid();
 
         // Act
-        var response = await ApiClient.PostAsync($"/api/cart/add/{gameId}", null,
-            cancellationToken: TestContext.Current.CancellationToken);
+        var response = await ApiClient.PostAsync($"/api/cart/add/{gameId}", null, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -147,24 +143,20 @@ public class CartControllerIntegrationTests : ApiIntegrationTestBase
     [Fact]
     public async Task AddItem_DeveRetornarBadRequest_QuandoJogoJaExisteNoCarrinho()
     {
- // Arrange
+        // Arrange
         var token = await CreateAuthenticatedPlayerAsync();
         SetAuthorizationHeader(token);
 
         // Obtém um jogo disponível
-        var gamesResponse = await ApiClient.GetAsync(
-       "/api/gallery?PageNumber=1&PageSize=1",
-       cancellationToken: TestContext.Current.CancellationToken);
+        var gamesResponse = await ApiClient.GetAsync("/api/gallery?PageNumber=1&PageSize=1",cancellationToken: TestContext.Current.CancellationToken);
         var gamesResult = await ReadServiceResultAsync<PagedResult<GalleryGameResponseDto>>(gamesResponse);
         var gameId = gamesResult.Items.First().Id;
 
         // Adiciona o jogo pela primeira vez
-        await ApiClient.PostAsync($"/api/cart/add/{gameId}", null,
-            cancellationToken: TestContext.Current.CancellationToken);
+        await ApiClient.PostAsync($"/api/cart/add/{gameId}", null, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act - Tenta adicionar novamente
-      var response = await ApiClient.PostAsync($"/api/cart/add/{gameId}", null,
-            cancellationToken: TestContext.Current.CancellationToken);
+        var response = await ApiClient.PostAsync($"/api/cart/add/{gameId}", null,cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -174,13 +166,12 @@ public class CartControllerIntegrationTests : ApiIntegrationTestBase
     public async Task AddItem_DeveRetornarBadRequest_QuandoJogoNaoExiste()
     {
         // Arrange
- var token = await CreateAuthenticatedPlayerAsync();
+        var token = await CreateAuthenticatedPlayerAsync();
         SetAuthorizationHeader(token);
         var gameIdInexistente = Guid.NewGuid();
 
         // Act
- var response = await ApiClient.PostAsync($"/api/cart/add/{gameIdInexistente}", null,
-         cancellationToken: TestContext.Current.CancellationToken);
+        var response = await ApiClient.PostAsync($"/api/cart/add/{gameIdInexistente}", null, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -190,14 +181,14 @@ public class CartControllerIntegrationTests : ApiIntegrationTestBase
 
     #region Remove Item Tests
 
- [Fact]
+    [Fact]
     public async Task RemoveItem_DeveRemoverJogoDoCarrinho()
     {
         // Arrange
- var token = await CreateAuthenticatedPlayerAsync();
- SetAuthorizationHeader(token);
+        var token = await CreateAuthenticatedPlayerAsync();
+        SetAuthorizationHeader(token);
 
-     // Adiciona um jogo ao carrinho
+        // Adiciona um jogo ao carrinho
         var gamesResponse = await ApiClient.GetAsync(
         "/api/gallery?PageNumber=1&PageSize=1",
     cancellationToken: TestContext.Current.CancellationToken);
@@ -211,22 +202,22 @@ public class CartControllerIntegrationTests : ApiIntegrationTestBase
         var response = await ApiClient.DeleteAsync($"/api/cart/remove/{gameId}",
             cancellationToken: TestContext.Current.CancellationToken);
 
-  // Assert
+        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-  // Verifica se o carrinho está vazio
+        // Verifica se o carrinho está vazio
         var cartResponse = await ApiClient.GetAsync("/api/cart",
             cancellationToken: TestContext.Current.CancellationToken);
         var cart = await ReadServiceResultAsync<CartResponseDto>(cartResponse);
 
-    Assert.NotNull(cart);
-   Assert.Empty(cart.Items);
+        Assert.NotNull(cart);
+        Assert.Empty(cart.Items);
     }
 
     [Fact]
     public async Task RemoveItem_DeveRetornarUnauthorized_QuandoSemAutenticacao()
     {
- // Arrange
+        // Arrange
         ClearAuthorizationHeader();
         var gameId = Guid.NewGuid();
 
@@ -235,22 +226,22 @@ public class CartControllerIntegrationTests : ApiIntegrationTestBase
        cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-    Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
- }
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 
     [Fact]
     public async Task RemoveItem_DeveRetornarBadRequest_QuandoJogoNaoEstaNoCarrinho()
     {
         // Arrange
         var token = await CreateAuthenticatedPlayerAsync();
-   SetAuthorizationHeader(token);
-   var gameIdNaoExistente = Guid.NewGuid();
+        SetAuthorizationHeader(token);
+        var gameIdNaoExistente = Guid.NewGuid();
 
         // Act
         var response = await ApiClient.DeleteAsync($"/api/cart/remove/{gameIdNaoExistente}",
             cancellationToken: TestContext.Current.CancellationToken);
 
-   // Assert
+        // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -265,19 +256,19 @@ public class CartControllerIntegrationTests : ApiIntegrationTestBase
         var token = await CreateAuthenticatedPlayerAsync();
         SetAuthorizationHeader(token);
 
-      // Adiciona múltiplos jogos ao carrinho
-  var gamesResponse = await ApiClient.GetAsync(
-            "/api/gallery?PageNumber=1&PageSize=3",
-            cancellationToken: TestContext.Current.CancellationToken);
+        // Adiciona múltiplos jogos ao carrinho
+        var gamesResponse = await ApiClient.GetAsync(
+                  "/api/gallery?PageNumber=1&PageSize=3",
+                  cancellationToken: TestContext.Current.CancellationToken);
         var gamesResult = await ReadServiceResultAsync<PagedResult<GalleryGameResponseDto>>(gamesResponse);
 
         foreach (var game in gamesResult.Items)
-    {
-     await ApiClient.PostAsync($"/api/cart/add/{game.Id}", null,
-    cancellationToken: TestContext.Current.CancellationToken);
- }
+        {
+            await ApiClient.PostAsync($"/api/cart/add/{game.Id}", null,
+           cancellationToken: TestContext.Current.CancellationToken);
+        }
 
- // Act
+        // Act
         var response = await ApiClient.DeleteAsync("/api/cart/clear",
         cancellationToken: TestContext.Current.CancellationToken);
 
@@ -290,19 +281,19 @@ public class CartControllerIntegrationTests : ApiIntegrationTestBase
         var cart = await ReadServiceResultAsync<CartResponseDto>(cartResponse);
 
         Assert.NotNull(cart);
-    Assert.Empty(cart.Items);
+        Assert.Empty(cart.Items);
         Assert.Equal(0, cart.Total);
     }
 
     [Fact]
-public async Task ClearCart_DeveRetornarUnauthorized_QuandoSemAutenticacao()
+    public async Task ClearCart_DeveRetornarUnauthorized_QuandoSemAutenticacao()
     {
         // Arrange
         ClearAuthorizationHeader();
 
         // Act
-  var response = await ApiClient.DeleteAsync("/api/cart/clear",
-            cancellationToken: TestContext.Current.CancellationToken);
+        var response = await ApiClient.DeleteAsync("/api/cart/clear",
+                  cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -328,7 +319,7 @@ public async Task ClearCart_DeveRetornarUnauthorized_QuandoSemAutenticacao()
     #region Integration Flow Tests
 
     [Fact]
-public async Task FluxoCompleto_AdicionarRemoverLimparCarrinho_DeveFuncionarCorretamente()
+    public async Task FluxoCompleto_AdicionarRemoverLimparCarrinho_DeveFuncionarCorretamente()
     {
         // Arrange
         var token = await CreateAuthenticatedPlayerAsync();
@@ -339,43 +330,43 @@ public async Task FluxoCompleto_AdicionarRemoverLimparCarrinho_DeveFuncionarCorr
       "/api/gallery?PageNumber=1&PageSize=3",
      cancellationToken: TestContext.Current.CancellationToken);
         var gamesResult = await ReadServiceResultAsync<PagedResult<GalleryGameResponseDto>>(gamesResponse);
-   var games = gamesResult.Items.ToList();
+        var games = gamesResult.Items.ToList();
 
         // 1. Adiciona três jogos
         foreach (var game in games)
         {
             var addResponse = await ApiClient.PostAsync($"/api/cart/add/{game.Id}", null,
         cancellationToken: TestContext.Current.CancellationToken);
-     Assert.Equal(HttpStatusCode.OK, addResponse.StatusCode);
- }
+            Assert.Equal(HttpStatusCode.OK, addResponse.StatusCode);
+        }
 
         // Verifica se tem 3 itens
         var cartResponse1 = await ApiClient.GetAsync("/api/cart",
             cancellationToken: TestContext.Current.CancellationToken);
         var cart1 = await ReadServiceResultAsync<CartResponseDto>(cartResponse1);
-      Assert.Equal(3, cart1.Items.Count());
+        Assert.Equal(3, cart1.Items.Count());
 
         // 2. Remove um jogo
-    var removeResponse = await ApiClient.DeleteAsync($"/api/cart/remove/{games[0].Id}",
-            cancellationToken: TestContext.Current.CancellationToken);
+        var removeResponse = await ApiClient.DeleteAsync($"/api/cart/remove/{games[0].Id}",
+                cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, removeResponse.StatusCode);
 
         // Verifica se tem 2 itens
         var cartResponse2 = await ApiClient.GetAsync("/api/cart",
     cancellationToken: TestContext.Current.CancellationToken);
         var cart2 = await ReadServiceResultAsync<CartResponseDto>(cartResponse2);
-  Assert.Equal(2, cart2.Items.Count());
+        Assert.Equal(2, cart2.Items.Count());
 
-   // 3. Limpa o carrinho
-  var clearResponse = await ApiClient.DeleteAsync("/api/cart/clear",
-            cancellationToken: TestContext.Current.CancellationToken);
+        // 3. Limpa o carrinho
+        var clearResponse = await ApiClient.DeleteAsync("/api/cart/clear",
+                  cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, clearResponse.StatusCode);
 
         // Verifica se está vazio
         var cartResponse3 = await ApiClient.GetAsync("/api/cart",
           cancellationToken: TestContext.Current.CancellationToken);
-      var cart3 = await ReadServiceResultAsync<CartResponseDto>(cartResponse3);
-   Assert.Empty(cart3.Items);
+        var cart3 = await ReadServiceResultAsync<CartResponseDto>(cartResponse3);
+        Assert.Empty(cart3.Items);
     }
 
     [Fact]
@@ -395,11 +386,11 @@ public async Task FluxoCompleto_AdicionarRemoverLimparCarrinho_DeveFuncionarCorr
         decimal totalEsperado = 0;
 
         // Adiciona jogos e calcula total esperado
-  foreach (var game in games)
-  {
+        foreach (var game in games)
+        {
             await ApiClient.PostAsync($"/api/cart/add/{game.Id}", null,
  cancellationToken: TestContext.Current.CancellationToken);
-         totalEsperado += game.FinalPrice;
+            totalEsperado += game.FinalPrice;
         }
 
         // Act
@@ -407,11 +398,11 @@ public async Task FluxoCompleto_AdicionarRemoverLimparCarrinho_DeveFuncionarCorr
             cancellationToken: TestContext.Current.CancellationToken);
         var cart = await ReadServiceResultAsync<CartResponseDto>(cartResponse);
 
-  // Assert
-     Assert.NotNull(cart);
+        // Assert
+        Assert.NotNull(cart);
         Assert.Equal(totalEsperado, cart.Total);
         Assert.Equal(games.Count, cart.Items.Count());
-  }
+    }
 
     #endregion
 }

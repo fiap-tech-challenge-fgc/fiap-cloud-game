@@ -282,19 +282,27 @@ public class PlayerControllerIntegrationTests : ApiIntegrationTestBase
     public async Task GetAvailableGames_DeveFiltrarPorFaixaDePreco()
     {
         // Arrange
-        var token = await CreateAuthenticatedPlayerAsync();
-        SetAuthorizationHeader(token);
+        try
+        {
+            var token = await CreateAuthenticatedPlayerAsync();
+            SetAuthorizationHeader(token);
 
-        // Act
-        var response = await ApiClient.GetAsync(
-            "/api/player/available-games?PageNumber=1&PageSize=10&Filter.MinPrice=10&Filter.MaxPrice=50",
-            cancellationToken: TestContext.Current.CancellationToken);
+            // Act
+            var response = await ApiClient.GetAsync(
+                "/api/player/available-games?PageNumber=1&PageSize=10&Filter.MinPrice=10&Filter.MaxPrice=500",
+                cancellationToken: TestContext.Current.CancellationToken);
 
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            // Assert
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await ReadServiceResultAsync<PagedResult<GalleryGameResponseDto>>(response);
-        Assert.NotNull(result);
+            var result = await ReadServiceResultAsync<PagedResult<GalleryGameResponseDto>>(response);
+            Assert.NotNull(result);
+        }
+        catch (Exception ex)
+        {
+
+            throw ex;
+        }
     }
 
     [Fact]

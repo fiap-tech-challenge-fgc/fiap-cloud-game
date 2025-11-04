@@ -7,6 +7,7 @@ public interface IGalleryRepository
     Task<bool> OwnsGalleryGameAsync(string EAN);
     Task<bool> OwnsGalleryGameAsync(Guid id);
     Task<GalleryGame?> GetGalleryGameByIdAsync(Guid id);
+    Task<GalleryGame?> GetByGameIdAsync(Guid gameId);
     Task<IEnumerable<GalleryGame>> GetAllGalleryGamesAsync();
     Task<GalleryGame> AddToGalleryGameAsync(GalleryGame game);
     Task UpdateGalleryGameAsync(GalleryGame game);

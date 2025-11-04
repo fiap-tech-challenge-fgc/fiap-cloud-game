@@ -25,7 +25,8 @@ public static class CartMapper
             GameId = item.Game.Id,
             Name = item.Game.Title,
             Genre = item.Game.Genre,
-            Description = item.Game.Description,
+            Description = item.Game.Description ?? string.Empty,
+            Price = 0 // O preço deve vir da GalleryGame, não do Game
         };
     }
 }

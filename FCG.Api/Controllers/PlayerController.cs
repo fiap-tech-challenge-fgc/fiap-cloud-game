@@ -4,6 +4,7 @@ using FCG.Application.Dto.Request;
 using FCG.Application.Interfaces;
 using FCG.Application.Interfaces.Service;
 using FCG.Application.Security;
+using FCG.Api.Controllers.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -13,7 +14,7 @@ namespace FCG.Api.Controllers;
 [Authorize(Roles = RoleConstants.Player)]
 [ApiController]
 [Route("api/[controller]")]
-public class PlayerController : ControllerBase
+public class PlayerController : ApiControllerBase
 {
     private readonly IUserService _userService;
     private readonly IPlayerService _playerService;
@@ -49,13 +50,11 @@ public class PlayerController : ControllerBase
         var playerId = GetCurrentUserId();
 
         if (playerId == null)
-            return Unauthorized("Não autorizado.");
+            return UnauthorizedResult<object>("Não autorizado.");
 
         var result = await _userService.UpdatePasswordAsync(playerId.Value, dto);
-        if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors });
-
-        return NoContent();
+        
+        return ProcessResult(result);
     }
 
     [HttpGet("available-games")]
@@ -64,14 +63,11 @@ public class PlayerController : ControllerBase
         var playerId = GetCurrentUserId();
 
         if (playerId == null)
-            return Unauthorized("Não autorizado.");
+            return UnauthorizedResult<object>("Não autorizado.");
 
         var result = await _galleryService.GetAvailableGamesAsync(dto, playerId.Value);
 
-        if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors });
-
-        return Ok(result.Data);
+        return ProcessResult(result);
     }
 
     [HttpGet("cart")]
@@ -80,14 +76,11 @@ public class PlayerController : ControllerBase
         var playerId = GetCurrentUserId();
 
         if (playerId == null)
-            return Unauthorized("Não autorizado.");
+            return UnauthorizedResult<object>("Não autorizado.");
 
         var result = await _cartService.GetCartAsync(playerId.Value);
 
-        if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors });
-
-        return Ok(result.Data);
+        return ProcessResult(result);
     }
 
     [HttpGet("library")]
@@ -96,12 +89,10 @@ public class PlayerController : ControllerBase
         var playerId = GetCurrentUserId();
 
         if (playerId == null)
-            return Unauthorized("Não autorizado.");
+            return UnauthorizedResult<object>("Não autorizado.");
 
         var result = await _libraryService.GetPlayerLibraryAsync(playerId.Value, dto);
-        if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors });
-
-        return Ok(result.Data);
+        
+        return ProcessResult(result);
     }
 }
