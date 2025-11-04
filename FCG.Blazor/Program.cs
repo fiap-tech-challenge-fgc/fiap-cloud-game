@@ -1,6 +1,6 @@
 using FCG.Blazor;
 using FCG.Blazor.Components;
-using FCG.Infrastructure.Enums;
+using FCG.Domain.Enums;
 using FCG.Infrastructure.Extensions.App;
 using FCG.Infrastructure.Extensions.Builder;
 
