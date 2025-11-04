@@ -96,6 +96,22 @@ dotnet run --project FCG.Host
 ## 🧪 TESTES
 Para executar os testes unitários:
 
+1. Abra o terminal na raiz do projeto.
+2. Execute o comando abaixo:
+
+```bash
+dotnet test
+```
+
+Esse comando irá buscar e executar todos os testes unitários presentes no projeto, especialmente na pasta `FCG.Tests`.
+
+Caso queira rodar apenas os testes de um projeto específico, utilize:
+
+```bash
+dotnet test FCG.Tests/FCG.Tests.csproj
+```
+
+Os resultados dos testes serão exibidos diretamente no terminal.
 
 ---
 
