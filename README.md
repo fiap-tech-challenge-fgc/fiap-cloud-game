@@ -103,12 +103,16 @@ Para executar os testes unitários:
 
 # 👨🏽‍💻 EQUIPE
 Integrante                    GitHub
-Jhonatan B                    https://github.com/Jhonbrayaan
-Miguel O                      https://github.com/Miguel084
-João C                        https://github.com/jsoft-ti
-Marcelo O                     https://github.com/marcel0liveira
-Matias N                      https://github.com/MatiasNeto
+Jhonatan B - https://github.com/Jhonbrayaan
+---
+Miguel O - https://github.com/Miguel084
+---
+João C - https://github.com/jsoft-ti
+---
+Marcelo O - https://github.com/marcel0liveira
+---
+Matias N - https://github.com/MatiasNeto
 
 ---
 
-<p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=6C63FF&height=120&section=footer" /> </p> <p align="center"> <b>FIAP Cloud Games (FCG)</b> • Desenvolvido com 💙 pela equipe <b>Tech Challenge FGC</b><br> <i>"Build fast. Learn faster. Deliver value."</i> </p>
+<p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=6C63FF&height=120&section=footer" /> </p> <p align="center"> <b>FIAP Cloud Games (FCG)</b> • Desenvolvido  pela equipe <b>Grupo 4</b><br> <i>"Build fast. Learn faster. Deliver value."</i> </p>
