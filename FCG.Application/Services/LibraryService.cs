@@ -44,7 +44,7 @@ public class LibraryService : ILibraryService
             if (player == null)
                 return OperationResult<LibraryGameResponseDto>.Failure("Jogador não encontrado.");
 
-            var libraryGame = new LibraryGame(galleryGame.Game.Id, player.Id, purchasePrice);
+            var libraryGame = new LibraryGame(galleryGame.Id, player.Id, purchasePrice);
             var libraryResult = await _libraryRepository.AddToLibraryAsync(libraryGame);
 
             if (libraryResult.Item1)

@@ -342,7 +342,7 @@ public class SeedService : ISeedService
                 {
                     var cartItem = new CartItemRequestDto
                     {
-                        GameId = game.Id,
+                        GalleryId = game.Id,
                         PlayerId = player.Id,
                     };
 

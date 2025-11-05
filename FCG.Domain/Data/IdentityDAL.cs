@@ -118,5 +118,11 @@ namespace FCG.Domain.Data
 
             return query.AsQueryable();
         }
+
+        // ✅ Método novo
+        public DbContext GetDbContext()
+        {
+            return _context;
+        }
     }
 }

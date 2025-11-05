@@ -20,12 +20,12 @@ public class AdminCartController : ControllerBase
 
     
     [HttpPost("{playerId}/add/{gameId}")]
-    public async Task<IActionResult> AddItem(Guid playerId, Guid gameId)
+    public async Task<IActionResult> AddItem(Guid playerId, Guid galleryId)
     {
         var request = new CartItemRequestDto
         {
             PlayerId = playerId,
-            GameId = gameId
+            GalleryId = galleryId
         };
 
         var result = await _cartService.AddItemAsync(request);
@@ -37,12 +37,12 @@ public class AdminCartController : ControllerBase
     }
 
     [HttpDelete("{playerId}/remove/{gameId}")]
-    public async Task<IActionResult> RemoveItem(Guid playerId, Guid gameId)
+    public async Task<IActionResult> RemoveItem(Guid playerId, Guid galleryId)
     {
         var request = new CartItemRequestDto
         {
             PlayerId = playerId,
-            GameId = gameId
+            GalleryId = galleryId
         };
 
         var result = await _cartService.RemoveItemAsync(request);

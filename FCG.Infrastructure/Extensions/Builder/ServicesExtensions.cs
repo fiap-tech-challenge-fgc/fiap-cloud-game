@@ -70,6 +70,7 @@ public static class ServicesExtensions
         builder.Services.AddScoped<IGalleryRepository, GalleryRepository>();
         builder.Services.AddScoped<ILibraryRepository, LibraryRepository>();
         builder.Services.AddScoped<ICartRepository, CartRepository>();
+        builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
         builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
 
         builder.Services.AddScoped<ICartDomainService, CartDomainService>();

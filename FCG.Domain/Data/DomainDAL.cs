@@ -118,5 +118,10 @@ namespace FCG.Domain.Data
 
             return query.AsQueryable();
         }
+
+        public DbContext GetDbContext()
+        {
+            return _context;
+        }
     }
 }

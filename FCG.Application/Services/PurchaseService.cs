@@ -50,7 +50,7 @@ public class PurchaseService : IPurchaseService
         if (await _libraryRepository.HasGameInLibraryAsync(dto.PlayerId, galleryGame.Game.Title))
             return OperationResult<PurchaseResponseDto>.Failure("Jogador já possui este jogo.");
 
-        var libraryGame = new LibraryGame(galleryGame.Game.Id, player.Id, galleryGame.FinalPrice);
+        var libraryGame = new LibraryGame(galleryGame.Id, player.Id, galleryGame.FinalPrice);
         await _libraryRepository.AddToLibraryAsync(libraryGame);
 
         _logger.LogInformation("Compra registrada: Player {PlayerId}, Game {GameId}, Preço {Price}",
@@ -87,7 +87,7 @@ public class PurchaseService : IPurchaseService
             if (await _libraryRepository.HasGameInLibraryAsync(playerId, galleryGame.Game.Title))
                 continue;
 
-            var libraryGame = new LibraryGame(galleryGame.Game.Id, player.Id, galleryGame.FinalPrice);
+            var libraryGame = new LibraryGame(galleryGame.Id, player.Id, galleryGame.FinalPrice);
             await _libraryRepository.AddToLibraryAsync(libraryGame);
 
             _logger.LogInformation("Compra registrada via carrinho: Player {PlayerId}, Game {GameId}, Preço {Price}",

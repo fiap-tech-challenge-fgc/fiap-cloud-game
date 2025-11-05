@@ -4,6 +4,8 @@ using FCG.Application.Dto.Result;
 using FCG.Application.Interfaces.Repository;
 using FCG.Application.Interfaces.Service;
 using FCG.Application.Mappers;
+using FCG.Application.Repositories;
+using FCG.Domain.Entities;
 using FCG.Domain.Service;
 
 namespace FCG.Application.Services;
@@ -11,23 +13,20 @@ namespace FCG.Application.Services;
 public class CartService : ICartService
 {
     private readonly ICartRepository _cartRepository;
-    private readonly IGameRepository _gameRepository;
+    private readonly ICartItemRepository _cartItemRepository;
     private readonly IGalleryRepository _galleryRepository;
     private readonly IPlayerRepository _playerRepository;
-    private readonly ICartDomainService _cartDomainService;
 
     public CartService(
         ICartRepository cartRepository,
-        IGameRepository gameRepository,
+        ICartItemRepository cartItemRepository,
         IGalleryRepository galleryRepository,
-        IPlayerRepository playerRepository,
-        ICartDomainService cartDomainService)
+        IPlayerRepository playerRepository)
     {
         _cartRepository = cartRepository;
-        _gameRepository = gameRepository;
+        _cartItemRepository = cartItemRepository;
         _galleryRepository = galleryRepository;
         _playerRepository = playerRepository;
-        _cartDomainService = cartDomainService;
     }
 
     public async Task<OperationResult> AddItemAsync(CartItemRequestDto request)
@@ -38,30 +37,18 @@ public class CartService : ICartService
         if (player == null)
             return OperationResult.Failure("User não encontrado. Por favor, complete o cadastro do perfil.");
 
-        var gallery = await _galleryRepository.GetGalleryGameByIdAsync(request.GameId);
+        var gallery = await _galleryRepository.GetGalleryGameByIdAsync(request.GalleryId);
+
         if (gallery == null)
             return OperationResult.Failure("Jogo não encontrado.");
 
-        var cart = await _cartRepository.GetByPlayerIdAsync(player.Id);
-
         try
         {
-            if (cart == null)
-            {
-                cart = _cartDomainService.CreateCart(player.Id);
-                _cartDomainService.AddItemToCart(cart, gallery);
-                await _cartRepository.AddAsync(cart);
-            }
-            else
-            {
-                var itemOwn = await _cartRepository.OwnsItemAsync(player.Id, gallery.Id);
+            var cart = await _cartRepository.GetOrCreateByPlayerIdAsync(player.Id);
+            var ownsItem = await _cartItemRepository.OwnsItemAsync(player.Id, gallery.Id, cart.Id);
 
-                if (!itemOwn)
-                {
-                    _cartDomainService.AddItemToCart(cart, gallery);
-                    await _cartRepository.UpdateAsync(cart);
-                }
-            }
+            if (!ownsItem)
+                await _cartItemRepository.AddAsync(player.Id, gallery.Id, cart.Id);
 
             return OperationResult.Success();
         }
@@ -77,9 +64,7 @@ public class CartService : ICartService
         if (cart == null)
             return OperationResult.Failure("Carrinho não encontrado.");
 
-        _cartDomainService.RemoveItemFromCart(cart, request.GameId);
-        await _cartRepository.UpdateAsync(cart);
-
+        await _cartItemRepository.RemoveAsync(cart.PlayerId, request.GalleryId, cart.Id);
         return OperationResult.Success();
     }
 
@@ -143,8 +128,10 @@ public class CartService : ICartService
         if (cart == null)
             return OperationResult.Failure("Carrinho não encontrado.");
 
-        _cartDomainService.ClearCart(cart);
-        await _cartRepository.UpdateAsync(cart);
+        foreach (var item in cart.Items)
+        {
+            await _cartItemRepository.RemoveAsync(item.PlayerId, item.PlayerId, item.GalleryId);
+        }
 
         return OperationResult.Success();
     }

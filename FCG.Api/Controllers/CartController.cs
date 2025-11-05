@@ -32,7 +32,7 @@ public class CartController : ApiControllerBase
         var request = new CartItemRequestDto
         {
             PlayerId = userId.Value,
-            GameId = gameId
+            GalleryId = gameId
         };
 
         var result = await _cartService.AddItemAsync(request);
@@ -51,7 +51,7 @@ public class CartController : ApiControllerBase
         var request = new CartItemRequestDto
         {
             PlayerId = playerId.Value,
-            GameId = gameId
+            GalleryId = gameId
         };
 
         var result = await _cartService.RemoveItemAsync(request);
