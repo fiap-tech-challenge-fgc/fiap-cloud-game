@@ -1,9 +1,17 @@
-using FCG.Infrastructure.Enums;
+using FCG.Application.Interfaces;
+using FCG.Application.Interfaces.Repository;
+using FCG.Application.Interfaces.Service;
+using FCG.Application.Repositories;
+using FCG.Application.Services;
+using FCG.Application.Services.Auth;
+using FCG.Domain.Data;
+using FCG.Domain.Enums;
+using FCG.Domain.Service;
 using FCG.Infrastructure.Initializer;
 using FCG.Infrastructure.Interfaces;
-using FCG.Infrastructure.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
@@ -21,7 +29,7 @@ public static class ServicesExtensions
         switch (projectType)
         {
             case ProjectType.Api:
-                builder.ConfigureApiServices();                
+                builder.ConfigureApiServices();
                 break;
 
             case ProjectType.Blazor:
@@ -52,13 +60,37 @@ public static class ServicesExtensions
         builder.AddAuthorizationJWT();
         builder.AddAuthorizationPolicies();
 
+        builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+
+        builder.Services.AddScoped(typeof(IdentityDAL<>)); // para identidade
+        builder.Services.AddScoped(typeof(IDAL<>), typeof(DomainDAL<>)); // padrão para domínio
+        builder.Services.AddScoped<IUserRepository, UserRepository>();
+        builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
+        builder.Services.AddScoped<IGameRepository, GameRepository>();
+        builder.Services.AddScoped<IGalleryRepository, GalleryRepository>();
+        builder.Services.AddScoped<ILibraryRepository, LibraryRepository>();
+        builder.Services.AddScoped<ICartRepository, CartRepository>();
+        builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
+
+        builder.Services.AddScoped<ICartDomainService, CartDomainService>();
+        builder.Services.AddScoped<IPurchaseDomainService, PurchaseDomainService>();
+
         builder.Services.AddScoped<ISeedService, SeedService>();
         builder.Services.AddScoped<IInfrastructureInitializer, InfrastructureInitializer>();
         builder.Services.AddScoped<IJwtService, JwtService>();
+        builder.Services.AddScoped<IAuthService, AuthService>();
+        builder.Services.AddScoped<IPlayerService, PlayerService>();
+        builder.Services.AddScoped<IUserService, UserService>();
+        builder.Services.AddScoped<IGameService, GameService>();
+        builder.Services.AddScoped<IGalleryService, GalleryService>();
+        builder.Services.AddScoped<ICartService, CartService>();
+        builder.Services.AddScoped<ILibraryService, LibraryService>();
+        builder.Services.AddScoped<IPurchaseService, PurchaseService>();
+
 
         builder.Services.AddControllers();
-        builder.Services.AddProblemDetails();
-        builder.Services.AddSwaggerGen();
+        builder.Services.AddExceptionHandler();
+        builder.Services.AddSwaggerDocumentation();
 
         builder.Services.ConfigureHttpClientDefaults(static http =>
         {

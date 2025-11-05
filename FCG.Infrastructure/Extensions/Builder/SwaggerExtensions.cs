@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using FCG.Infrastructure.Swagger;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 
 namespace FCG.Infrastructure.Extensions.Builder;
@@ -45,6 +46,8 @@ public static class SwaggerExtensions
                     Array.Empty<string>()
                 }
             });
+
+            c.DocumentFilter<AlphabeticalDocumentFilter>();
         });
 
         return services;

@@ -2,10 +2,9 @@
 
 public interface IUser
 {
-    Guid Id { get; }
-    string FirstName { get; }
-    string LastName { get; }
+    string FirstName { get; set; } 
+    string LastName { get; set; } 
     string FullName { get; }
-    string DisplayName { get; }
-    DateTime Birthday { get; }
+    string DisplayName { get; set; }
+    DateTime Birthday { get; set; }
 }
