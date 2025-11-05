@@ -1,4 +1,4 @@
-﻿using FCG.Infrastructure.Enums;
+﻿using FCG.Domain.Enums;
 using FCG.Infrastructure.Extensions.Builder;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -10,13 +10,9 @@ public static class ConfigurePipelineExtensions
 {
     public static async Task<WebApplication> ConfigurePipeline(this WebApplication app, ProjectType projectType)
     {
-        if (app.Environment.IsDevelopment())
+        // HSTS should be enabled in production
+        if (!app.Environment.IsDevelopment())
         {
-            app.UseDeveloperExceptionPage();
-        }
-        else
-        {
-            app.UseExceptionHandler("/Error", createScopeForErrors: true);
             app.UseHsts();
         }
 
@@ -48,6 +44,9 @@ public static class ConfigurePipelineExtensions
 
     private static void ConfigureApiPipeline(this WebApplication app)
     {
+        // Configure global exception handler first in the pipeline
+        app.UseExceptionHandler();
+
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();

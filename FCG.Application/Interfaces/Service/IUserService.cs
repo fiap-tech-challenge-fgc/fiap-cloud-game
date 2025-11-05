@@ -1,0 +1,19 @@
+﻿using FCG.Application.Dto.Filter;
+using FCG.Application.Dto.Order;
+using FCG.Application.Dto.Request;
+using FCG.Application.Dto.Response;
+using FCG.Application.Dto.Result;
+using FCG.Domain.Enums;
+
+namespace FCG.Application.Interfaces
+{
+    public interface IUserService
+    {
+        Task<OperationResult<PagedResult<UserInfoResponseDto>>> GetAllAsync(PagedRequestDto<UserFilterDto, UserOrderDto> dto);
+        Task<OperationResult<PagedResult<UserInfoResponseDto>>> GetUsersByRoleAsync(Roles role, PagedRequestDto<UserFilterDto, UserOrderDto> dto);
+        Task<OperationResult<UserInfoResponseDto?>> GetByIdAsync(Guid userId);
+        Task<OperationResult> UpdateUserAsync(Guid userId, UserUpdateRequestDto dto);
+        Task<OperationResult> UpdatePasswordAsync(Guid userId, UserUpdateRequestDto dto);
+        Task<OperationResult> DeleteUserAsync(Guid id);
+    }
+}

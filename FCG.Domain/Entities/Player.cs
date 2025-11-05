@@ -1,30 +1,44 @@
-﻿namespace FCG.Domain.Entities;
+namespace FCG.Domain.Entities;
+
 public class Player
 {
     public Guid Id { get; private set; }
     public string DisplayName { get; private set; }
-    public List<Game> Biblioteca { get; private set; }
+    public Guid UserId { get; private set; }
+    public IReadOnlyCollection<LibraryGame> Library => _library.AsReadOnly();
+    private readonly List<LibraryGame> _library;
 
-    private Player() {
+    private Player()
+    {
         DisplayName = string.Empty;
-        Biblioteca = new List<Game>();
+        _library = new List<LibraryGame>();
     }
 
-    public Player(Guid id, string displayName)
+    public Player(Guid userId, string displayName)
     {
-        Id = id;
+        if (string.IsNullOrWhiteSpace(displayName))
+            throw new ArgumentException("DisplayName não pode ser vazio.");
+
+        Id = Guid.NewGuid();
+        UserId = userId;
         DisplayName = displayName;
-        Biblioteca = new List<Game>();
+        _library = new List<LibraryGame>();
     }
 
-    public void AlterarDisplayName(string displayName)
+    public void DisplayNameChange(string displayName)
     {
+        if (string.IsNullOrWhiteSpace(displayName))
+            throw new ArgumentException("DisplayName não pode ser vazio.");
         DisplayName = displayName;
     }
 
-    public void AdicionarJogo(Game jogo)
+    public LibraryGame AddGame(GalleryGame gallery)
     {
-        if (!Biblioteca.Contains(jogo))
-            Biblioteca.Add(jogo);
+        if (_library.Any(g => g.Game.Title == gallery.Game.Title))
+            throw new InvalidOperationException("Jogo já existe na biblioteca.");
+
+        var libraryGame = new LibraryGame(gallery.Game, this, gallery.FinalPrice);
+        _library.Add(libraryGame);
+        return libraryGame;
     }
 }
