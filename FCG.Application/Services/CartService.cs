@@ -33,28 +33,42 @@ public class CartService : ICartService
     public async Task<OperationResult> AddItemAsync(CartItemRequestDto request)
     {
         // Verifica se o player existe
-        var user = await _playerRepository.GetByUserIdAsync(request.UserId);
-        if (user == null)
+        var player = await _playerRepository.GetByIdAsync(request.PlayerId);
+        
+        if (player == null)
             return OperationResult.Failure("User não encontrado. Por favor, complete o cadastro do perfil.");
 
-        var game = await _gameRepository.GetByIdAsync(request.GameId);
-        if (game == null)
+        var gallery = await _galleryRepository.GetGalleryGameByIdAsync(request.GameId);
+        if (gallery == null)
             return OperationResult.Failure("Jogo não encontrado.");
 
-        var cart = await _cartRepository.GetByPlayerIdAsync(user.Id);
-        if (cart == null)
-        {
-            cart = _cartDomainService.CreateCart(user.Id);
-            _cartDomainService.AddItemToCart(cart, game);
-            await _cartRepository.AddAsync(cart);
-        }
-        else
-        {
-            _cartDomainService.AddItemToCart(cart, game);
-            await _cartRepository.UpdateAsync(cart);
-        }
+        var cart = await _cartRepository.GetByPlayerIdAsync(player.Id);
 
-        return OperationResult.Success();
+        try
+        {
+            if (cart == null)
+            {
+                cart = _cartDomainService.CreateCart(player.Id);
+                _cartDomainService.AddItemToCart(cart, gallery);
+                await _cartRepository.AddAsync(cart);
+            }
+            else
+            {
+                var itemOwn = await _cartRepository.OwnsItemAsync(player.Id, gallery.Id);
+
+                if (!itemOwn)
+                {
+                    _cartDomainService.AddItemToCart(cart, gallery);
+                    await _cartRepository.UpdateAsync(cart);
+                }
+            }
+
+            return OperationResult.Success();
+        }
+        catch (Exception e)
+        {
+            return OperationResult.Failure(e.Message);
+        }
     }
 
     public async Task<OperationResult> RemoveItemAsync(CartItemRequestDto request)

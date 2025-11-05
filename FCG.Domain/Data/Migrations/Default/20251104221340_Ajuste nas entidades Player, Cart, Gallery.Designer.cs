@@ -3,6 +3,7 @@ using System;
 using FCG.Domain.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FCG.Domain.Data.Migrations.Default
 {
     [DbContext(typeof(FcgDbContext))]
-    partial class FcgDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251104221340_Ajuste nas entidades Player, Cart, Gallery")]
+    partial class AjustenasentidadesPlayerCartGallery
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -127,7 +130,7 @@ namespace FCG.Domain.Data.Migrations.Default
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("GalleryId")
+                    b.Property<Guid>("GameId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("PlayerId")
@@ -141,7 +144,7 @@ namespace FCG.Domain.Data.Migrations.Default
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GalleryId");
+                    b.HasIndex("GameId");
 
                     b.HasIndex("PlayerId");
 
@@ -276,9 +279,9 @@ namespace FCG.Domain.Data.Migrations.Default
 
             modelBuilder.Entity("FCG.Domain.Entities.LibraryGame", b =>
                 {
-                    b.HasOne("FCG.Domain.Entities.GalleryGame", "Gallery")
+                    b.HasOne("FCG.Domain.Entities.Game", "Game")
                         .WithMany()
-                        .HasForeignKey("GalleryId")
+                        .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -288,7 +291,7 @@ namespace FCG.Domain.Data.Migrations.Default
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Gallery");
+                    b.Navigation("Game");
 
                     b.Navigation("Player");
                 });

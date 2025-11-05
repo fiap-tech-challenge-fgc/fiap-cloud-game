@@ -14,4 +14,5 @@ public interface IGameService
     Task<OperationResult<GameResponseDto>> UpdateGameAsync(Guid id, GameUpdateRequestDto dto);
     Task<OperationResult> DeleteGameAsync(Guid id);
     Task<bool> GameExistsAsync(Guid id);
+    Task<bool> GameExistsAsync(string ean);
 }

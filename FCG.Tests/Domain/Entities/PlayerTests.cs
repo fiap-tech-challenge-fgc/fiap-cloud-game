@@ -57,7 +57,7 @@ public class PlayerTests
         );
 
         var gallery = new GalleryGame(game, _faker.Random.Decimal(49.99m, 459.99m));
-        var library = new LibraryGame(game, player, gallery.FinalPrice);
+        var library = new LibraryGame(game.Id, player.Id, gallery.FinalPrice);
 
         // Act
         player.AddGame(gallery);

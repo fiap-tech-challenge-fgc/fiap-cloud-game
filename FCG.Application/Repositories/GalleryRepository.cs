@@ -85,17 +85,17 @@ public class GalleryRepository : IGalleryRepository
 
     public async Task<IEnumerable<GalleryGame>> GetGalleryGamesByGenreAsync(string genre)
     {
-    return await _dal.FindListAsync(
-            g => g.Game.Genre.ToLower() == genre.ToLower(),
-            g => g.Promotion, g => g.Game);
+        return await _dal.FindListAsync(
+                g => g.Game.Genre.ToLower() == genre.ToLower(),
+                g => g.Promotion, g => g.Game);
     }
 
     public async Task<IEnumerable<GalleryGame>> SearchGalleryGamesAsync(string searchTerm)
     {
         searchTerm = searchTerm.ToLower();
         return await _dal.FindListAsync(
-          g => g.Game.Title.ToLower().Contains(searchTerm) || 
-           g.Game.Genre.ToLower().Contains(searchTerm) || 
+          g => g.Game.Title.ToLower().Contains(searchTerm) ||
+           g.Game.Genre.ToLower().Contains(searchTerm) ||
      (g.Game.Description != null && g.Game.Description.ToLower().Contains(searchTerm)),
 g => g.Promotion, g => g.Game);
     }

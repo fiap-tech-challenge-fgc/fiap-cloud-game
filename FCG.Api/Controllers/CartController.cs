@@ -31,7 +31,7 @@ public class CartController : ApiControllerBase
 
         var request = new CartItemRequestDto
         {
-            UserId = userId.Value,
+            PlayerId = userId.Value,
             GameId = gameId
         };
 
@@ -87,6 +87,11 @@ public class CartController : ApiControllerBase
 
     private Guid? GetCurrentUserId()
     {
+        // Tenta buscar em várias claims padrão
+        var claimOld = User.FindFirst("sub")?.Value
+                       ?? User.FindFirst("nameidentifier")?.Value;
+
+
         var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         return Guid.TryParse(claim, out var guid) ? guid : null;

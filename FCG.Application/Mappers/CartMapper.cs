@@ -22,10 +22,11 @@ public static class CartMapper
     {
         return new CartItemResponseDto
         {
-            GameId = item.Game.Id,
-            Name = item.Game.Title,
-            Genre = item.Game.Genre,
-            Description = item.Game.Description ?? string.Empty,
+            GameId = item.Gallery.Id,
+            Title = item.Gallery.Game.Title,
+            SubTitle = item.Gallery.Game.SubTitle ?? string.Empty,
+            Genre = item.Gallery.Game.Genre,
+            Description = item.Gallery.Game.Description ?? string.Empty,
             Price = 0 // O preço deve vir da GalleryGame, não do Game
         };
     }

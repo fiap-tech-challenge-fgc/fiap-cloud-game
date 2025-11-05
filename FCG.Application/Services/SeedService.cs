@@ -1,44 +1,45 @@
+using FCG.Application.Dto.Filter;
+using FCG.Application.Dto.Order;
+using FCG.Application.Dto.Request;
+using FCG.Application.Dto.Response;
 using FCG.Application.Interfaces.Repository;
 using FCG.Application.Interfaces.Service;
-using FCG.Domain.Data;
-using FCG.Domain.Data.Contexts;
 using FCG.Domain.Entities;
 using FCG.Domain.Enums;
 using FCG.Domain.ValuesObjects;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System;
-using System.ComponentModel.DataAnnotations;
 
 namespace FCG.Application.Services;
 
 public class SeedService : ISeedService
 {
     private readonly ILogger<SeedService> _logger;
-    private readonly IGameRepository _gameRepository;
-    private readonly IGalleryRepository _galleryRepository;
-    private readonly IPlayerRepository _playerRepository;
-    private readonly ICartRepository _cartRepository;
-    private readonly ILibraryRepository _libraryRepository;
+    private readonly IGameService _gameService;
+    private readonly IGalleryService _galleryService;
+    private readonly IPlayerService _playerService;
+    private readonly ICartService _cartService;
+    private readonly ILibraryService _libraryService;
+    private readonly IPurchaseService _purchaseService;
 
     public SeedService(
         IServiceProvider provider,
         ILogger<SeedService> logger,
-        IGameRepository gameRepository,
-        IGalleryRepository galleryRepository,
-        IPlayerRepository playerRepository,
-        ICartRepository cartRepository,
-        ILibraryRepository libraryRepository)
+        IGameService gameService,
+        IGalleryService galleryService,
+        IPlayerService playerService,
+        ICartService cartService,
+        ILibraryService libraryService,
+        IPurchaseService purchaseService)
     {
         _logger = logger;
-        _gameRepository = gameRepository;
-        _galleryRepository = galleryRepository;
-        _playerRepository = playerRepository;
-        _cartRepository = cartRepository;
-        _libraryRepository = libraryRepository;
+        _gameService = gameService;
+        _galleryService = galleryService;
+        _playerService = playerService;
+        _cartService = cartService;
+        _libraryService = libraryService;
+        _purchaseService = purchaseService;
     }
 
     #region Starter
@@ -61,10 +62,10 @@ public class SeedService : ISeedService
         await SeedPlayersAsync(sp, cancellationToken);
 
         // 4. Seed de carrinhos
-        await SeedCartsAsync(cancellationToken);
+        await SeedAddCartsAsync(cancellationToken);
 
         // 5. Seed de biblioteca
-        await SeedLibraryAsync(cancellationToken);
+        await SeedAddLibraryAsync(cancellationToken);
     }
     #endregion
 
@@ -180,16 +181,27 @@ public class SeedService : ISeedService
             var gamesList = GetPreconfiguredGames();
             var savedGames = new List<Game>();
 
+            var rng = new Random();
+
             foreach (var game in gamesList)
             {
                 if (cancellationToken.IsCancellationRequested)
                     return savedGames;
 
-                var exists = await _gameRepository.ExistsAsync(game.EAN);
+                var exists = await _gameService.GameExistsAsync(game.EAN);
 
                 if (!exists)
                 {
-                    await _gameRepository.AddAsync(game);
+                    var createGame = new GameCreateRequestDto
+                    {
+                        Title = game.Title,
+                        Description = game.Description,
+                        EAN = game.EAN,
+                        Genre = game.Genre,
+                        Price = rng.Next(80, 300), // Preço aleatório
+                    };
+
+                    await _gameService.CreateGameAsync(createGame);
                     savedGames.Add(game);
                 }
             }
@@ -218,20 +230,40 @@ public class SeedService : ISeedService
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                var exists = await _galleryRepository.OwnsGalleryGameAsync(game.EAN);
+                var exists = false;
+                    
+                var galleryExists = await _galleryService.OwnsGalleryGameAsync(game.EAN);
+
+                if (galleryExists.Succeeded)
+                    exists = galleryExists.Data;
 
                 if (!exists)
                 {
                     var price = rng.Next(80, 300); // Preço aleatório
-                    var galleryGame = new GalleryGame(game, price);
 
-                    // Aplicar promoção aleatória
+                    //var galleryGame = new GalleryGame(game, price);
+
+                    //// Aplicar promoção aleatória
                     var promoType = rng.Next(0, 2) == 0 ? PromotionType.FixedDiscount : PromotionType.PercentageDiscount;
                     var discount = promoType == PromotionType.FixedDiscount ? 50m : rng.Next(10, 50);
                     var promotion = Promotion.Create(promoType, discount, DateTime.UtcNow, DateTime.UtcNow.AddMonths(1));
-                    galleryGame.ApplyPromotion(promotion);
+                    //galleryGame.ApplyPromotion(promotion);
 
-                    await _galleryRepository.AddToGalleryGameAsync(galleryGame);
+                    var galleryDto = new GalleryGameCreateRequestDto
+                    {
+                        Title = game.Title,
+                        SubTitle = game.SubTitle,
+                        Description = game.Description,
+                        EAN = game.EAN,
+                        Genre = game.Genre,
+                        Price = price,
+                        PromotionEndDate = promotion.EndOf,
+                        PromotionStartDate = promotion.StartOf,
+                        PromotionType = promoType.ToString(),
+                        PromotionValue = promotion.Value,
+                    };
+
+                    await _galleryService.AddToGalleryAsync(galleryDto);
                 }
             }
 
@@ -286,27 +318,47 @@ public class SeedService : ISeedService
         }
     }
 
-
-    private async Task SeedCartsAsync(CancellationToken cancellationToken)
+    private async Task SeedAddCartsAsync(CancellationToken cancellationToken)
     {
         try
         {
             _logger.LogInformation("Seed de Carts iniciada");
 
-            var players = (await _playerRepository.GetAllAsync()).Take(3).ToList();
-            var galleryGames = await _galleryRepository.GetAllGalleryGamesAsync();
+            var players = await GetPlayerResponseDtos(2);
 
+            // via service
             foreach (var player in players)
             {
-                if (cancellationToken.IsCancellationRequested) return;
-                var cart = new Cart(player.Id);
-                var playerGames = galleryGames.OrderBy(_ => Guid.NewGuid()).Take(2).ToList();
-                foreach (var game in playerGames)
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                var result = await _galleryService.GetAvailableGamesAsync(new PagedRequestDto<GameFilterDto, GameOrderDto>(), player.Id);
+                var gallery = result.Data?.Items?.Take(2).ToList();
+
+                if (gallery == null || gallery.Count == 0)
+                    continue;
+
+                foreach (var game in gallery)
                 {
-                    cart.AddItem(game.Game);
+                    var cartItem = new CartItemRequestDto
+                    {
+                        GameId = game.Id,
+                        PlayerId = player.Id,
+                    };
+
+                    try
+                    {
+                        await _cartService.AddItemAsync(cartItem);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Erro ao adicionar jogo {GameId} para jogador {PlayerId}", game.Id, player.Id);
+                    }
                 }
-                await _cartRepository.AddAsync(cart);
             }
+
+            if (cancellationToken.IsCancellationRequested) 
+                return;
 
             _logger.LogInformation("Seed de Carts concluída");
         }
@@ -316,30 +368,39 @@ public class SeedService : ISeedService
         }
     }
 
-    private async Task SeedLibraryAsync(CancellationToken cancellationToken)
+    private async Task SeedAddLibraryAsync(CancellationToken cancellationToken)
     {
         try
         {
             _logger.LogInformation("Seed de LibraryGames iniciada");
 
-            var players = (await _playerRepository.GetAllAsync()).Take(2).ToList();
-            var galleryGames = await _galleryRepository.GetAllGalleryGamesAsync();
+            var players = await GetPlayerResponseDtos();
 
             foreach (var player in players)
             {
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                var playerGames = galleryGames.OrderBy(_ => Guid.NewGuid()).Take(3).ToList();
+                var galleryGames = await GetGalleryGameResponseDtos(player.Id);
 
-                foreach (var game in playerGames)
+                foreach (var gallery in galleryGames)
                 {
-                    var ownsGameAsync = await _libraryRepository.OwnsLibraryGameAsync(player.Id, game.Id);
+                    var ownsGameResult = await _libraryService.OwnsGameAsync(player.Id, gallery.Id);
 
-                    if (!ownsGameAsync)
+                    var ownsGame = false;
+
+                    if (ownsGameResult.Succeeded)
+                        ownsGame = ownsGameResult.Data;
+
+                    if (!ownsGame)
                     {
-                        var libraryGame = new LibraryGame(game.Game, player, game.FinalPrice);
-                        await _libraryRepository.AddToLibraryAsync(libraryGame);
+                        var purchase = new PurchaseCreateRequestDto
+                        {
+                            GameId = gallery.Id,
+                            PlayerId = player.Id,
+                        };
+
+                        await _purchaseService.RegisterPurchaseAsync(purchase);
                     }
                 }
             }
@@ -354,6 +415,29 @@ public class SeedService : ISeedService
 #endregion
 
     #region private lists
+    private async Task<List<PlayerResponseDto>> GetPlayerResponseDtos(int take = 2)
+    {
+        var players = new List<PlayerResponseDto>();
+        var playersResult = await _playerService.GetAllAsync();
+
+        if (playersResult.Data != null)
+            players = playersResult.Data.Take(take).ToList();
+
+        return players;
+    }
+
+    private async Task<List<GalleryGameResponseDto>> GetGalleryGameResponseDtos(Guid id, int take = 2)
+    {
+        var galleries = new List<GalleryGameResponseDto>();
+        var galerryResult = await _galleryService.GetAvailableGamesAsync(new PagedRequestDto<GameFilterDto, GameOrderDto>(), id);
+
+        if (galerryResult.Data != null)
+            galleries = galerryResult.Data?.Items?.Take(take).ToList();
+
+        return galleries;
+    }
+
+
     // Métodos de configuração de usuários omitidos para brevidade
     private List<User> GetPreconfiguredAdminUsers()
     {

@@ -20,23 +20,23 @@ public class Cart
         PlayerId = playerId;
     }
 
-    public void AddItem(Game game)
+    public void AddItem(GalleryGame gallery)
     {
-        if (game == null)
-            throw new ArgumentNullException(nameof(game));
+        if (gallery == null)
+            throw new ArgumentNullException(nameof(gallery));
 
-        if (game.Id == Guid.Empty)
-            throw new ArgumentException("Game Id cannot be empty", nameof(game));
+        if (gallery.Id == Guid.Empty)
+            throw new ArgumentException("Game Id cannot be empty", nameof(gallery));
 
-        if (_items.Any(i => i.GameId == game.Id)) 
+        if (_items.Any(i => i.GalleryId == gallery.Id)) 
             return;
 
-        _items.Add(new CartItem(PlayerId, game.Id, Id));
+        _items.Add(new CartItem(PlayerId, gallery.Id, Id));
     }
 
     public void RemoveItem(Guid gameId)
     {
-        var item = _items.FirstOrDefault(i => i.GameId == gameId);
+        var item = _items.FirstOrDefault(i => i.GalleryId == gameId);
         if (item != null) _items.Remove(item);
     }
 

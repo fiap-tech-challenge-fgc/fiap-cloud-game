@@ -10,13 +10,13 @@ public class GameCreateRequestDto
     [RegularExpression(@"^\d{13}$", ErrorMessage = "{0} deve conter exatamente 13 dígitos numéricos.")]
     public string EAN { get; set; } = string.Empty;
 
-    [Display(Name = "Nome do jogo")]
+    [Display(Name = "Título")]
     [Required(ErrorMessage = "{0} é obrigatório")]
     [StringLength(100, MinimumLength = 2, ErrorMessage = "O {0} deve ter entre {2} e {1} caracteres")]
     public string Title { get; set; } = string.Empty;
 
     [StringLength(50, MinimumLength = 1, ErrorMessage = "O subtítulo deve ter entre {2} e {1} caracteres.")]
-    public string? SubTitle { get; private set; }
+    public string? SubTitle { get; set; }
 
     [Display(Name = "Gênero")]
     [Required(ErrorMessage = "{0} é obrigatório")]

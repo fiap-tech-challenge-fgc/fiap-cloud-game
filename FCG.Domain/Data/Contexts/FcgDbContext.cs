@@ -65,9 +65,9 @@ public class FcgDbContext : DbContext
             library.ToTable("LibraryGames");
             library.HasKey(l => l.Id);
 
-            library.HasOne(l => l.Game)
+            library.HasOne(l => l.Gallery)
                 .WithMany()
-                .HasForeignKey(l => l.GameId)
+                .HasForeignKey(l => l.GalleryId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             library.HasOne(l => l.Player)
@@ -106,12 +106,11 @@ public class FcgDbContext : DbContext
         builder.Entity<Cart>(cart =>
         {
             cart.ToTable("Carts");
+
             cart.HasKey(c => c.Id);
 
-            cart.HasOne(c => c.Player)
-                .WithMany()
-                .HasForeignKey(c => c.PlayerId)
-                .OnDelete(DeleteBehavior.Cascade);
+            cart.Property(c => c.PlayerId)
+                .IsRequired();
 
             cart.HasMany(c => c.Items)
                 .WithOne(i => i.Cart)
@@ -119,17 +118,18 @@ public class FcgDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+
         // --- CartItem ---
         builder.Entity<CartItem>(item =>
         {
             item.ToTable("CartItems");
             item.HasKey(i => i.Id);
 
-            item.HasIndex(i => new { i.CartId, i.GameId }).IsUnique();
+            item.HasIndex(i => new { i.CartId, i.GalleryId }).IsUnique();
 
-            item.HasOne(i => i.Game)
+            item.HasOne(i => i.Gallery)
                 .WithMany()
-                .HasForeignKey(i => i.GameId)
+                .HasForeignKey(i => i.GalleryId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             item.HasOne(i => i.Player)

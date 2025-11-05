@@ -50,7 +50,7 @@ public class PurchaseService : IPurchaseService
         if (await _libraryRepository.HasGameInLibraryAsync(dto.PlayerId, galleryGame.Game.Title))
             return OperationResult<PurchaseResponseDto>.Failure("Jogador já possui este jogo.");
 
-        var libraryGame = new LibraryGame(galleryGame.Game, player, galleryGame.FinalPrice);
+        var libraryGame = new LibraryGame(galleryGame.Game.Id, player.Id, galleryGame.FinalPrice);
         await _libraryRepository.AddToLibraryAsync(libraryGame);
 
         _logger.LogInformation("Compra registrada: Player {PlayerId}, Game {GameId}, Preço {Price}",
@@ -80,14 +80,14 @@ public class PurchaseService : IPurchaseService
 
         foreach (var item in cart.Items)
         {
-            var galleryGame = await _galleryRepository.GetGalleryGameByIdAsync(item.GameId);
-            if (galleryGame == null || !await _galleryRepository.IsAvailableForPurchaseAsync(item.GameId))
+            var galleryGame = await _galleryRepository.GetGalleryGameByIdAsync(item.GalleryId);
+            if (galleryGame == null || !await _galleryRepository.IsAvailableForPurchaseAsync(item.GalleryId))
                 continue;
 
             if (await _libraryRepository.HasGameInLibraryAsync(playerId, galleryGame.Game.Title))
                 continue;
 
-            var libraryGame = new LibraryGame(galleryGame.Game, player, galleryGame.FinalPrice);
+            var libraryGame = new LibraryGame(galleryGame.Game.Id, player.Id, galleryGame.FinalPrice);
             await _libraryRepository.AddToLibraryAsync(libraryGame);
 
             _logger.LogInformation("Compra registrada via carrinho: Player {PlayerId}, Game {GameId}, Preço {Price}",
@@ -109,7 +109,7 @@ public class PurchaseService : IPurchaseService
             {
                 PurchaseId = g.Id,
                 PlayerName = g.Player?.DisplayName ?? string.Empty,
-                GameName = g.Game.Title,
+                GameName = g.Gallery.Game.Title,
                 Price = g.PurchasePrice,
                 PurchaseDate = g.PurchaseDate
             }).OrderByDescending(p => p.PurchaseDate);
@@ -142,7 +142,7 @@ public class PurchaseService : IPurchaseService
             {
                 PurchaseId = g.Id,
                 PlayerName = g.Player?.DisplayName ?? string.Empty,
-                GameName = g.Game.Title,
+                GameName = g.Gallery.Game.Title,
                 Price = g.PurchasePrice,
                 PurchaseDate = g.PurchaseDate
             });
@@ -218,7 +218,7 @@ public class PurchaseService : IPurchaseService
                 query = query.Where(p => p.Player.DisplayName.Contains(dto.Filter.PlayerName));
 
             if (!string.IsNullOrWhiteSpace(dto.Filter.GameName))
-                query = query.Where(p => p.Game.Title.Contains(dto.Filter.GameName));
+                query = query.Where(p => p.Gallery.Game.Title.Contains(dto.Filter.GameName));
 
             if (dto.Filter.MinPrice.HasValue)
                 query = query.Where(p => p.PurchasePrice >= dto.Filter.MinPrice.Value);
@@ -239,7 +239,7 @@ public class PurchaseService : IPurchaseService
             query = dto.OrderBy.SortBy.ToLower() switch
             {
                 "playername" => dto.OrderBy.Ascending ? query.OrderBy(p => p.Player.DisplayName) : query.OrderByDescending(p => p.Player.DisplayName),
-                "gamename" => dto.OrderBy.Ascending ? query.OrderBy(p => p.Game.Title) : query.OrderByDescending(p => p.Game.Title),
+                "gamename" => dto.OrderBy.Ascending ? query.OrderBy(p => p.Gallery.Game.Title) : query.OrderByDescending(p => p.Gallery.Game.Title),
                 "price" => dto.OrderBy.Ascending ? query.OrderBy(p => p.PurchasePrice) : query.OrderByDescending(p => p.PurchasePrice),
                 "date" => dto.OrderBy.Ascending ? query.OrderBy(p => p.PurchaseDate) : query.OrderByDescending(p => p.PurchaseDate),
                 _ => query.OrderByDescending(p => p.PurchaseDate)
@@ -255,7 +255,7 @@ public class PurchaseService : IPurchaseService
             {
                 PurchaseId = g.Id,
                 PlayerName = g.Player.DisplayName,
-                GameName = g.Game.Title,
+                GameName = g.Gallery.Game.Title,
                 Price = g.PurchasePrice,
                 PurchaseDate = g.PurchaseDate
             })

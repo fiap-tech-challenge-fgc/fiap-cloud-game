@@ -44,7 +44,7 @@ public class AdminGalleryController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<GalleryGameResponseDto>> UpdateGalleryGame(Guid id, [FromBody] GalleryGameCreateRequestDto request)
+    public async Task<ActionResult<GalleryGameResponseDto>> UpdateGalleryGame(Guid id, [FromBody] GalleryGameUpdateRequestDto request)
     {
         var result = await _galleryService.UpdateGalleryGameAsync(id, request);
 

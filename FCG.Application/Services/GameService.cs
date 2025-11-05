@@ -70,7 +70,6 @@ public class GameService : IGameService
         return OperationResult<GameResponseDto>.Success(MapToResponse(game));
     }
 
-
     public async Task<OperationResult<GameResponseDto?>> GetGameByIdAsync(Guid id)
     {
         var game = await _gameRepository.GetByIdAsync(id);
@@ -146,6 +145,16 @@ public class GameService : IGameService
         if (!exists)
         {
             _logger.LogDebug("Jogo não encontrado: {GameId}", id);
+        }
+        return exists;
+    }
+
+    public async Task<bool> GameExistsAsync(string ean)
+    {
+        var exists = await _gameRepository.ExistsAsync(ean);
+        if (!exists)
+        {
+            _logger.LogDebug("Jogo não encontrado: {GameId}", ean);
         }
         return exists;
     }

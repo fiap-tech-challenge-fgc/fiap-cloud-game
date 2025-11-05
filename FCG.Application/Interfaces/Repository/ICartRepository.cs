@@ -8,5 +8,6 @@ public interface ICartRepository
     Task AddAsync(Cart cart);
     Task UpdateAsync(Cart cart);
     Task RemoveAsync(Guid cartId);
+    Task<bool> OwnsItemAsync(Guid playerId, Guid galleryId);
 }
 

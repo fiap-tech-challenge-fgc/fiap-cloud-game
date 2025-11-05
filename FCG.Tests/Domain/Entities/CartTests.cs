@@ -28,12 +28,12 @@ public class CartTests
     [Fact]
     public void Constructor_DeveLancarExcecao_QuandoPlayerIdVazio()
     {
-     // Arrange
-     var playerId = Guid.Empty;
+        // Arrange
+        var playerId = Guid.Empty;
 
         // Act & Assert
-   var exception = Assert.Throws<ArgumentException>(() => new Cart(playerId));
-    Assert.Contains("PlayerId cannot be empty", exception.Message);
+        var exception = Assert.Throws<ArgumentException>(() => new Cart(playerId));
+        Assert.Contains("PlayerId cannot be empty", exception.Message);
     }
 
     #endregion
@@ -45,47 +45,49 @@ public class CartTests
     {
         // Arrange
         var playerId = Guid.NewGuid();
-      var cart = new Cart(playerId);
+        var cart = new Cart(playerId);
         var game = new Game("7891234560001", "Test Game", "Action", "Description");
 
-      // Act
-        cart.AddItem(game);
+        var gallery = new GalleryGame(game, 99.95m);
+
+        // Act
+        cart.AddItem(gallery);
 
         // Assert
-Assert.Single(cart.Items);
-    Assert.Contains(cart.Items, item => item.GameId == game.Id);
+        Assert.Single(cart.Items);
+        Assert.Contains(cart.Items, item => item.GalleryId == game.Id);
     }
 
     [Fact]
     public void AddItem_DeveAdicionarMultiplosJogos_QuandoJogosDiferentes()
     {
         // Arrange
-  var playerId = Guid.NewGuid();
+        var playerId = Guid.NewGuid();
         var cart = new Cart(playerId);
         var game1 = new Game("7891234560001", "Game 1", "Action", "Description 1");
         var game2 = new Game("7891234560002", "Game 2", "RPG", "Description 2");
 
-        // Act
-        cart.AddItem(game1);
-        cart.AddItem(game2);
+        // Act        
+        cart.AddItem(new GalleryGame(game1, 99.95m));
+        cart.AddItem(new GalleryGame(game2, 199.95m));
 
         // Assert
         Assert.Equal(2, cart.Items.Count);
-        Assert.Contains(cart.Items, item => item.GameId == game1.Id);
-        Assert.Contains(cart.Items, item => item.GameId == game2.Id);
+        Assert.Contains(cart.Items, item => item.GalleryId == game1.Id);
+        Assert.Contains(cart.Items, item => item.GalleryId == game2.Id);
     }
 
     [Fact]
     public void AddItem_NaoDeveAdicionarJogoDuplicado_QuandoJogoJaExiste()
     {
-      // Arrange
-   var playerId = Guid.NewGuid();
+        // Arrange
+        var playerId = Guid.NewGuid();
         var cart = new Cart(playerId);
-      var game = new Game("7891234560001", "Test Game", "Action", "Description");
+        var game = new Game("7891234560001", "Test Game", "Action", "Description");
 
         // Act
-        cart.AddItem(game);
-        cart.AddItem(game); // Tenta adicionar novamente
+        cart.AddItem(new GalleryGame(game, 99.95m));
+        cart.AddItem(new GalleryGame(game, 99.95m));
 
         // Assert
         Assert.Single(cart.Items); // Deve continuar com apenas 1 item
@@ -99,26 +101,26 @@ Assert.Single(cart.Items);
         var cart = new Cart(playerId);
 
         // Act & Assert
-     Assert.Throws<ArgumentNullException>(() => cart.AddItem(null!));
- }
+        Assert.Throws<ArgumentNullException>(() => cart.AddItem(null!));
+    }
 
     [Fact]
     public void AddItem_DeveLancarExcecao_QuandoGameIdVazio()
     {
         // Arrange
         var playerId = Guid.NewGuid();
-      var cart = new Cart(playerId);
-   
+        var cart = new Cart(playerId);
+
         // Cria um jogo com construtor padrão (Id será Guid.Empty)
         var gameType = typeof(Game);
         var game = (Game)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(gameType);
 
         // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() => cart.AddItem(game));
-   Assert.Contains("Game Id cannot be empty", exception.Message);
+        var exception = Assert.Throws<ArgumentException>(() => cart.AddItem(new GalleryGame(game, 99.95m)));
+        Assert.Contains("Game Id cannot be empty", exception.Message);
     }
 
- #endregion
+    #endregion
 
     #region RemoveItem Tests
 
@@ -129,7 +131,7 @@ Assert.Single(cart.Items);
         var playerId = Guid.NewGuid();
         var cart = new Cart(playerId);
         var game = new Game("7891234560001", "Test Game", "Action", "Description");
-        cart.AddItem(game);
+        cart.AddItem(new GalleryGame(game, 99.95m));
 
         // Act
         cart.RemoveItem(game.Id);
@@ -138,44 +140,44 @@ Assert.Single(cart.Items);
         Assert.Empty(cart.Items);
     }
 
- [Fact]
+    [Fact]
     public void RemoveItem_DeveRemoverApenasJogoEspecifico_QuandoMultiplosJogos()
     {
         // Arrange
         var playerId = Guid.NewGuid();
         var cart = new Cart(playerId);
-      var game1 = new Game("7891234560001", "Game 1", "Action", "Description 1");
-   var game2 = new Game("7891234560002", "Game 2", "RPG", "Description 2");
+        var game1 = new Game("7891234560001", "Game 1", "Action", "Description 1");
+        var game2 = new Game("7891234560002", "Game 2", "RPG", "Description 2");
         var game3 = new Game("7891234560003", "Game 3", "Strategy", "Description 3");
-    
-        cart.AddItem(game1);
-      cart.AddItem(game2);
- cart.AddItem(game3);
 
-      // Act
+        cart.AddItem(new GalleryGame(game1, 99.99m));
+        cart.AddItem(new GalleryGame(game2, 199.98m));
+        cart.AddItem(new GalleryGame(game3, 299.97m));
+
+        // Act
         cart.RemoveItem(game2.Id);
 
-   // Assert
+        // Assert
         Assert.Equal(2, cart.Items.Count);
-        Assert.Contains(cart.Items, item => item.GameId == game1.Id);
-   Assert.DoesNotContain(cart.Items, item => item.GameId == game2.Id);
-  Assert.Contains(cart.Items, item => item.GameId == game3.Id);
+        Assert.Contains(cart.Items, item => item.GalleryId == game1.Id);
+        Assert.DoesNotContain(cart.Items, item => item.GalleryId == game2.Id);
+        Assert.Contains(cart.Items, item => item.GalleryId == game3.Id);
     }
 
     [Fact]
     public void RemoveItem_NaoDeveFazerNada_QuandoJogoNaoExiste()
- {
-     // Arrange
+    {
+        // Arrange
         var playerId = Guid.NewGuid();
-   var cart = new Cart(playerId);
+        var cart = new Cart(playerId);
         var game = new Game("7891234560001", "Test Game", "Action", "Description");
-        cart.AddItem(game);
+        cart.AddItem(new GalleryGame(game, 99.95m));
         var gameIdInexistente = Guid.NewGuid();
 
         // Act
         cart.RemoveItem(gameIdInexistente);
 
-      // Assert
+        // Assert
         Assert.Single(cart.Items); // Deve manter o item original
     }
 
@@ -183,13 +185,13 @@ Assert.Single(cart.Items);
     public void RemoveItem_NaoDeveLancarExcecao_QuandoCarrinhoVazio()
     {
         // Arrange
-  var playerId = Guid.NewGuid();
+        var playerId = Guid.NewGuid();
         var cart = new Cart(playerId);
-  var gameId = Guid.NewGuid();
+        var gameId = Guid.NewGuid();
 
-    // Act & Assert
-  var exception = Record.Exception(() => cart.RemoveItem(gameId));
- Assert.Null(exception);
+        // Act & Assert
+        var exception = Record.Exception(() => cart.RemoveItem(gameId));
+        Assert.Null(exception);
         Assert.Empty(cart.Items);
     }
 
@@ -202,17 +204,17 @@ Assert.Single(cart.Items);
     {
         // Arrange
         var playerId = Guid.NewGuid();
-    var cart = new Cart(playerId);
-   var game1 = new Game("7891234560001", "Game 1", "Action", "Description 1");
+        var cart = new Cart(playerId);
+        var game1 = new Game("7891234560001", "Game 1", "Action", "Description 1");
         var game2 = new Game("7891234560002", "Game 2", "RPG", "Description 2");
         var game3 = new Game("7891234560003", "Game 3", "Strategy", "Description 3");
-        
-        cart.AddItem(game1);
-        cart.AddItem(game2);
-    cart.AddItem(game3);
 
-   // Act
-    cart.Clear();
+        cart.AddItem(new GalleryGame(game1, 99.99m));
+        cart.AddItem(new GalleryGame(game2, 199.98m));
+        cart.AddItem(new GalleryGame(game3, 299.97m));
+
+        // Act
+        cart.Clear();
 
         // Assert
         Assert.Empty(cart.Items);
@@ -225,10 +227,10 @@ Assert.Single(cart.Items);
         var playerId = Guid.NewGuid();
         var cart = new Cart(playerId);
 
-   // Act & Assert
+        // Act & Assert
         var exception = Record.Exception(() => cart.Clear());
-      Assert.Null(exception);
-      Assert.Empty(cart.Items);
+        Assert.Null(exception);
+        Assert.Empty(cart.Items);
     }
 
     #endregion
@@ -238,7 +240,7 @@ Assert.Single(cart.Items);
     [Fact]
     public void FluxoCompleto_AdicionarRemoverLimpar_DeveFuncionarCorretamente()
     {
-    // Arrange
+        // Arrange
         var playerId = Guid.NewGuid();
         var cart = new Cart(playerId);
         var game1 = new Game("7891234560001", "Game 1", "Action", "Description 1");
@@ -246,18 +248,18 @@ Assert.Single(cart.Items);
         var game3 = new Game("7891234560003", "Game 3", "Strategy", "Description 3");
 
         // Act & Assert - Adiciona itens
-        cart.AddItem(game1);
-        cart.AddItem(game2);
-        cart.AddItem(game3);
+        cart.AddItem(new GalleryGame(game1, 99.99m));
+        cart.AddItem(new GalleryGame(game2, 199.98m));
+        cart.AddItem(new GalleryGame(game3, 299.97m));
         Assert.Equal(3, cart.Items.Count);
 
-// Remove um item
+        // Remove um item
         cart.RemoveItem(game2.Id);
         Assert.Equal(2, cart.Items.Count);
-        Assert.DoesNotContain(cart.Items, item => item.GameId == game2.Id);
+        Assert.DoesNotContain(cart.Items, item => item.GalleryId == game2.Id);
 
         // Adiciona novamente
-        cart.AddItem(game2);
+        cart.AddItem(new GalleryGame(game2, 99.95m));
         Assert.Equal(3, cart.Items.Count);
 
         // Limpa tudo
@@ -268,16 +270,16 @@ Assert.Single(cart.Items);
     [Fact]
     public void Items_DeveRetornarColecaoReadOnly()
     {
-   // Arrange
-   var playerId = Guid.NewGuid();
-     var cart = new Cart(playerId);
+        // Arrange
+        var playerId = Guid.NewGuid();
+        var cart = new Cart(playerId);
         var game = new Game("7891234560001", "Test Game", "Action", "Description");
-        cart.AddItem(game);
+        cart.AddItem(new GalleryGame(game, 99.95m));
 
         // Act
         var items = cart.Items;
 
-     // Assert
+        // Assert
         Assert.IsAssignableFrom<IReadOnlyCollection<CartItem>>(items);
         Assert.Single(items);
     }

@@ -26,7 +26,7 @@ public class CartItemTests
         // Assert
         Assert.NotEqual(Guid.Empty, cartItem.Id);
         Assert.Equal(playerId, cartItem.PlayerId);
-        Assert.Equal(gameId, cartItem.GameId);
+        Assert.Equal(gameId, cartItem.GalleryId);
         Assert.Equal(cartId, cartItem.CartId);
     }
 
@@ -65,8 +65,8 @@ public class CartItemTests
         Assert.Equal(cartId, cartItem1.CartId);
         Assert.Equal(cartId, cartItem2.CartId);
         Assert.Equal(cartId, cartItem3.CartId);
-        Assert.NotEqual(cartItem1.GameId, cartItem2.GameId);
-        Assert.NotEqual(cartItem2.GameId, cartItem3.GameId);
+        Assert.NotEqual(cartItem1.GalleryId, cartItem2.GalleryId);
+        Assert.NotEqual(cartItem2.GalleryId, cartItem3.GalleryId);
     }
 
     [Fact]
@@ -83,8 +83,8 @@ public class CartItemTests
         var cartItem2 = new CartItem(playerId, gameId, cart2Id);
 
         // Assert
-        Assert.Equal(gameId, cartItem1.GameId);
-        Assert.Equal(gameId, cartItem2.GameId);
+        Assert.Equal(gameId, cartItem1.GalleryId);
+        Assert.Equal(gameId, cartItem2.GalleryId);
         Assert.NotEqual(cartItem1.CartId, cartItem2.CartId);
         Assert.NotEqual(cartItem1.Id, cartItem2.Id);
     }
@@ -102,7 +102,7 @@ public class CartItemTests
 
         // Assert
         Assert.Equal(playerId, cartItem.PlayerId);
-        Assert.Equal(gameId, cartItem.GameId);
+        Assert.Equal(gameId, cartItem.GalleryId);
         Assert.Equal(cartId, cartItem.CartId);
     }
 
@@ -130,6 +130,6 @@ public class CartItemTests
             Assert.Equal(cartId, item.CartId);
         });
         Assert.Equal(cartItems.Count, cartItems.Select(c => c.Id).Distinct().Count());
-        Assert.Equal(cartItems.Count, cartItems.Select(c => c.GameId).Distinct().Count());
+        Assert.Equal(cartItems.Count, cartItems.Select(c => c.GalleryId).Distinct().Count());
     }
 }

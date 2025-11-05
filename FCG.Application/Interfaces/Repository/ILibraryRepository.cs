@@ -7,8 +7,8 @@ public interface ILibraryRepository
     // Library management
     Task<LibraryGame?> GetLibraryGameAsync(Guid playerId, Guid gameId);
     Task<IEnumerable<LibraryGame>> GetPlayerLibraryAsync(Guid playerId);
-    Task<LibraryGame> AddToLibraryAsync(LibraryGame game);
-    
+    Task<(bool, LibraryGame)> AddToLibraryAsync(LibraryGame game);
+
     // Ownership and verification
     Task<bool> OwnsLibraryGameAsync(Guid playerId, Guid gameId);
     Task<bool> HasGameInLibraryAsync(Guid playerId, string gameName);

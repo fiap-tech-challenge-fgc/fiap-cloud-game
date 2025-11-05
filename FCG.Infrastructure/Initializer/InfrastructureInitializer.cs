@@ -36,8 +36,10 @@ public class InfrastructureInitializer : IInfrastructureInitializer
 
                 var dropDatabase = _configuration.GetValue<bool>("db_delete:database");
 
+#if DEBUG
                 if (dropDatabase)
                     identityDbContext.Database.EnsureDeleted();
+#endif
 
                 // Aplica apenas migrations pendentes do Identity
                 var pendingMigrations = await identityDbContext.Database.GetPendingMigrationsAsync(cancellationToken);

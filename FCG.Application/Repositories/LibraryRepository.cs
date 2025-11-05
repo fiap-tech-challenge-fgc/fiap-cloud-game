@@ -3,7 +3,6 @@ using FCG.Domain.Data;
 using FCG.Domain.Data.Contexts;
 using FCG.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Immutable;
 
 namespace FCG.Application.Repositories;
 
@@ -18,11 +17,20 @@ public class LibraryRepository : ILibraryRepository
         _context = context;
     }
 
-    public async Task<LibraryGame> AddToLibraryAsync(LibraryGame game)
+    public async Task<(bool, LibraryGame)> AddToLibraryAsync(LibraryGame game)
     {
-        await _dal.AddAsync(game);
-        await SaveChangesAsync();
-        return game;
+        try
+        {
+            await _dal.AddAsync(game);
+            await SaveChangesAsync();
+            return (true, game);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+            return (false, game);
+        }
+
     }
 
     public async Task<LibraryGame?> GetLibraryGameAsync(Guid playerId, Guid gameId)
@@ -48,7 +56,7 @@ public class LibraryRepository : ILibraryRepository
     public async Task<bool> HasGameInLibraryAsync(Guid playerId, string gameName)
     {
         var game = await _dal.FindAsync(
-            g => g.PlayerId == playerId && g.Game.Title.ToLower() == gameName.ToLower());
+            g => g.PlayerId == playerId && g.Gallery.Game.Title.ToLower() == gameName.ToLower());
         return game != null;
     }
 
@@ -64,7 +72,7 @@ public class LibraryRepository : ILibraryRepository
     public async Task<IEnumerable<LibraryGame>> GetGamesByGenreAsync(Guid playerId, string genre)
     {
         return await _dal.FindListAsync(
-            g => g.PlayerId == playerId && g.Game.Genre.ToLower() == genre.ToLower(),
+            g => g.PlayerId == playerId && g.Gallery.Game.Genre.ToLower() == genre.ToLower(),
             g => g.Player);
     }
 

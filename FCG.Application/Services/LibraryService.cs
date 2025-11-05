@@ -44,10 +44,17 @@ public class LibraryService : ILibraryService
             if (player == null)
                 return OperationResult<LibraryGameResponseDto>.Failure("Jogador não encontrado.");
 
-            var libraryGame = new LibraryGame(galleryGame.Game, player, purchasePrice);
-            await _libraryRepository.AddToLibraryAsync(libraryGame);
+            var libraryGame = new LibraryGame(galleryGame.Game.Id, player.Id, purchasePrice);
+            var libraryResult = await _libraryRepository.AddToLibraryAsync(libraryGame);
 
-            _logger.LogInformation("Jogo adicionado à biblioteca: {GameId} para o jogador: {PlayerId}", galleryGameId, playerId);
+            if (libraryResult.Item1)
+            {
+                _logger.LogInformation("Jogo Não fooi adicionado à biblioteca: {GameId} do jogador: {PlayerId}", galleryGameId, playerId);
+            }
+            else
+            {
+                _logger.LogInformation("Jogo adicionado à biblioteca: {GameId} para o jogador: {PlayerId}", galleryGameId, playerId);
+            }
 
             return OperationResult<LibraryGameResponseDto>.Success(MapToResponse(libraryGame));
         }
@@ -86,10 +93,10 @@ public class LibraryService : ILibraryService
 
             // Apply filters
             if (!string.IsNullOrWhiteSpace(pagedRequestDto.Filter?.Name))
-                libraryGame = libraryGame.Where(g => g.Game.Title.Contains(pagedRequestDto.Filter.Name));
+                libraryGame = libraryGame.Where(g => g.Gallery.Game.Title.Contains(pagedRequestDto.Filter.Name));
 
             if (!string.IsNullOrWhiteSpace(pagedRequestDto.Filter?.Genre))
-                libraryGame = libraryGame.Where(g => g.Game.Genre.Contains(pagedRequestDto.Filter.Genre));
+                libraryGame = libraryGame.Where(g => g.Gallery.Game.Genre.Contains(pagedRequestDto.Filter.Genre));
 
             // Apply ordering
             string? orderBy = pagedRequestDto.OrderBy?.OrderBy?.ToLower();
@@ -97,8 +104,8 @@ public class LibraryService : ILibraryService
 
             libraryGame = orderBy switch
             {
-                "name" => ascending ? libraryGame.OrderBy(g => g.Game.Title) : libraryGame.OrderByDescending(g => g.Game.Title),
-                "genre" => ascending ? libraryGame.OrderBy(g => g.Game.Genre) : libraryGame.OrderByDescending(g => g.Game.Genre),
+                "name" => ascending ? libraryGame.OrderBy(g => g.Gallery.Game.Title) : libraryGame.OrderByDescending(g => g.Gallery.Game.Title),
+                "genre" => ascending ? libraryGame.OrderBy(g => g.Gallery.Game.Genre) : libraryGame.OrderByDescending(g => g.Gallery.Game.Genre),
                 "purchasedate" => ascending ? libraryGame.OrderBy(g => g.PurchaseDate) : libraryGame.OrderByDescending(g => g.PurchaseDate),
                 _ => libraryGame.OrderByDescending(g => g.PurchaseDate)
             };
@@ -209,10 +216,10 @@ public class LibraryService : ILibraryService
         return new LibraryGameResponseDto
         {
             Id = libraryGame.Id,
-            EAN = libraryGame.Game.EAN,
-            Title = libraryGame.Game.Title,
-            Genre = libraryGame.Game.Genre,
-            Description = libraryGame.Game.Description,
+            EAN = libraryGame.Gallery.Game.EAN,
+            Title = libraryGame.Gallery.Game.Title,
+            Genre = libraryGame.Gallery.Game.Genre,
+            Description = libraryGame.Gallery.Game.Description,
             PlayerId = libraryGame.PlayerId,
             PlayerDisplayName = libraryGame.Player?.DisplayName ?? string.Empty,
             PurchaseDate = libraryGame.PurchaseDate,

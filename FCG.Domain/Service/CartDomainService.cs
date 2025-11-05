@@ -12,24 +12,24 @@ public class CartDomainService : ICartDomainService
         return new Cart(playerId);
     }
 
-    public void AddItemToCart(Cart cart, Game game)
+    public void AddItemToCart(Cart cart, GalleryGame gallery)
     {
         if (cart == null)
             throw new ArgumentNullException(nameof(cart));
-        if (game == null)
-            throw new ArgumentNullException(nameof(game));
+        if (gallery == null)
+            throw new ArgumentNullException(nameof(gallery));
 
-        cart.AddItem(game);
+        cart.AddItem(gallery);
     }
 
-    public void RemoveItemFromCart(Cart cart, Guid gameId)
+    public void RemoveItemFromCart(Cart cart, Guid galleryId)
     {
         if (cart == null)
             throw new ArgumentNullException(nameof(cart));
-        if (gameId == Guid.Empty)
-            throw new ArgumentException("GameId cannot be empty", nameof(gameId));
+        if (galleryId == Guid.Empty)
+            throw new ArgumentException("GameId cannot be empty", nameof(galleryId));
 
-        cart.RemoveItem(gameId);
+        cart.RemoveItem(galleryId);
     }
 
     public void ClearCart(Cart cart)
