@@ -1,4 +1,5 @@
-﻿using FCG.Application.Dto.Request;
+﻿using FCG.Api.Controllers.Base;
+using FCG.Application.Dto.Request;
 using FCG.Application.Dto.Response;
 using FCG.Application.Interfaces.Service;
 using FCG.Application.Security;
@@ -11,7 +12,7 @@ namespace FCG.Api.Controllers.Admin;
 [Authorize(Roles = RoleConstants.Admin)]
 [Tags("Admin")]
 [Route("api/admin/gallery")]
-public class AdminGalleryController : ControllerBase
+public class AdminGalleryController : ApiControllerBase
 {
     private readonly IGalleryService _galleryService;
 

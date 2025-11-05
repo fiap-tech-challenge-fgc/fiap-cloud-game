@@ -1,4 +1,5 @@
-﻿using FCG.Application.Dto.Filter;
+﻿using FCG.Api.Controllers.Base;
+using FCG.Application.Dto.Filter;
 using FCG.Application.Dto.Order;
 using FCG.Application.Dto.Request;
 using FCG.Application.Interfaces;
@@ -14,7 +15,7 @@ namespace FCG.Api.Controllers.Admin;
 [Authorize(Roles = RoleConstants.Admin)]
 [Tags("Admin")]
 [Route("api/admin/[Controller]")]
-public class AdminController : ControllerBase
+public class AdminController : ApiControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IUserService _userService;

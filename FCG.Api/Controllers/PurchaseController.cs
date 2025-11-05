@@ -1,4 +1,5 @@
-﻿using FCG.Application.Dto.Filter;
+﻿using FCG.Api.Controllers.Base;
+using FCG.Application.Dto.Filter;
 using FCG.Application.Dto.Order;
 using FCG.Application.Dto.Request;
 using FCG.Application.Dto.Response;
@@ -14,7 +15,7 @@ namespace FCG.Api.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 
-public class PurchaseController : ControllerBase
+public class PurchaseController : ApiControllerBase
 {
     private readonly IPurchaseService _purchaseAppService;
 

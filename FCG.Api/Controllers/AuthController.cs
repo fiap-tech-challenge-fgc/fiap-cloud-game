@@ -1,4 +1,5 @@
-﻿using FCG.Application.Dto.Request;
+﻿using FCG.Api.Controllers.Base;
+using FCG.Application.Dto.Request;
 using FCG.Application.Dto.Response;
 using FCG.Application.Interfaces.Service;
 using FCG.Application.Security;
@@ -9,7 +10,7 @@ namespace FCG.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController : ApiControllerBase
 {
     private readonly IAuthService _authService;
 

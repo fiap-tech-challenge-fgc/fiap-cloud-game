@@ -1,4 +1,5 @@
-﻿using FCG.Application.Dto.Filter;
+﻿using FCG.Api.Controllers.Base;
+using FCG.Application.Dto.Filter;
 using FCG.Application.Dto.Order;
 using FCG.Application.Dto.Request;
 using FCG.Application.Dto.Response;
@@ -14,7 +15,7 @@ namespace FCG.Api.Controllers.Admin;
 [Authorize(Roles = RoleConstants.Admin)]
 [Tags("Admin")]
 [Route("api/admin/game")]
-public class AdminGameController : ControllerBase
+public class AdminGameController : ApiControllerBase
 {
     private readonly IGameService _gameService;
 

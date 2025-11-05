@@ -1,4 +1,5 @@
-﻿using FCG.Application.Dto.Request;
+﻿using FCG.Api.Controllers.Base;
+using FCG.Application.Dto.Request;
 using FCG.Application.Interfaces.Service;
 using FCG.Application.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -10,14 +11,13 @@ namespace FCG.Api.Controllers.Admin;
 [Authorize(Roles = RoleConstants.Admin)]
 [Tags("Admin")]
 [Route("api/admin/cart")]
-public class AdminCartController : ControllerBase
+public class AdminCartController : ApiControllerBase
 {
     private readonly ICartService _cartService;
     public AdminCartController(ICartService cartService)
     {
         _cartService = cartService;
     }
-
     
     [HttpPost("{playerId}/add/{gameId}")]
     public async Task<IActionResult> AddItem(Guid playerId, Guid galleryId)

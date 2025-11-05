@@ -1,3 +1,4 @@
+using FCG.Api.Controllers.Base;
 using FCG.Application.Dto.Filter;
 using FCG.Application.Dto.Order;
 using FCG.Application.Dto.Request;
@@ -12,7 +13,7 @@ namespace FCG.Api.Controllers;
 [ApiController]
 [Authorize(Roles = "Player")]
 [Route("api/[controller]")]
-public class LibraryController : ControllerBase
+public class LibraryController : ApiControllerBase
 {
     private readonly IAuthService _authService;
     private readonly ILibraryService _libraryService;

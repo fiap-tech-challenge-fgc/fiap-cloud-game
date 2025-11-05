@@ -91,7 +91,6 @@ public class CartController : ApiControllerBase
         var claimOld = User.FindFirst("sub")?.Value
                        ?? User.FindFirst("nameidentifier")?.Value;
 
-
         var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         return Guid.TryParse(claim, out var guid) ? guid : null;

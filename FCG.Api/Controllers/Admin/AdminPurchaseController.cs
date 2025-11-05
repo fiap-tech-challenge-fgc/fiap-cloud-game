@@ -1,4 +1,5 @@
-﻿using FCG.Application.Dto.Filter;
+﻿using FCG.Api.Controllers.Base;
+using FCG.Application.Dto.Filter;
 using FCG.Application.Dto.Order;
 using FCG.Application.Dto.Request;
 using FCG.Application.Dto.Response;
@@ -14,7 +15,7 @@ namespace FCG.Api.Controllers.Admin;
 [Authorize(Roles = RoleConstants.Admin)]
 [Tags("Admin")]
 [Route("api/admin/purchases")]
-public class AdminPurchaseController : ControllerBase
+public class AdminPurchaseController : ApiControllerBase
 {
     private readonly IPurchaseService _purchaseAppService;
 
